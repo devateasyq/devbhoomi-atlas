@@ -107,7 +107,7 @@ function userDoc(fb, user){
   return fb.firestore().collection("users").doc(user.uid);
 }
 /* Students share devices. localStorage is not partitioned by user, so the
-   three progress keys on this device may belong to whoever last used it —
+   synced keys on this device may belong to whoever last used it —
    not to the account now signing in. hpatlas:owner tracks whose progress is
    currently sitting in local storage:
      - owner empty        -> guest data on this device: merge it in, exactly
