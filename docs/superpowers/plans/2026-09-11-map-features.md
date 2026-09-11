@@ -1221,7 +1221,7 @@ git commit -m "feat: index features and route map markers to their own records"
 In `MAP_MODES`, replace the `geo` entry:
 
 ```js
-  {id:"geo", lb:"Peaks · Passes · Lakes", kinds:["peak","pass","lake","glacier"]},
+  {id:"geo", lb:"Peaks · Passes · Lakes · Glaciers", kinds:["peak","pass","lake","glacier"]},
 ```
 
 Delete the now-unused `MK_COLOR` and `MK_LABEL` consts and replace every use with `LAYER_BY_KIND[k].c` and `LAYER_BY_KIND[k].lb`.
@@ -1255,9 +1255,15 @@ function relabel(){
   if(!marks.length) return;
   const inv = 1/ZT.k;
   const items = marks.map((m,i) => {
-    const t = (m.dataset.at || m.getAttribute("transform")).match(/translate\(([-\d.]+)[, ]+([-\d.]+)\)/);
+    /* applyZoom() caches the marker's untransformed origin in dataset.at as
+       BARE numbers ("340.2,120.5"), while the transform attribute wraps them
+       in translate(...). Read whichever is present and normalise, or this
+       throws the moment a zoom has happened. */
+    const raw = m.dataset.at ||
+      ((m.getAttribute("transform") || "").match(/translate\(([^)]*)\)/) || [,""])[1];
+    const xy = raw.split(/[\s,]+/).map(Number);
     const n = m.dataset.n || "";
-    return {id:i, x:+t[1], y:+t[2],
+    return {id:i, x:xy[0], y:xy[1],
             w:(n.length*5.6+6)*inv, h:13*inv,
             pri:(LABEL_PRI[m.dataset.k] || 1)*1000 - n.length};
   });
@@ -1276,7 +1282,8 @@ Replace `app/components.css:24-28` with:
 
 ```css
 .mk{cursor:pointer}
-.mk .gly{stroke:var(--surface);stroke-width:1.4;transition:transform .12s}
+.mk .gly{stroke:var(--surface);stroke-width:1.4;transition:transform .12s;
+  transform-box:fill-box;transform-origin:center}
 .mk:hover .gly{transform:scale(1.35)}
 .mk.sel .gly{stroke:var(--accent);stroke-width:2.2;transform:scale(1.35)}
 .mk text{font-family:var(--f-body);font-size:10.5px;font-weight:600;fill:var(--ink-2);
