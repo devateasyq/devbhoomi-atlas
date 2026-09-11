@@ -69,11 +69,14 @@ function layerToggle(hidden, k){
 }
 function layerIsolate(hidden, k, visibleKinds){
   var others = visibleKinds.filter(function(x){ return x !== k; });
+  /* Anything hidden that this legend does not show belongs to another map
+     mode — hide peaks in geo mode, switch to Heritage, and "peak" is still
+     in `hidden` but absent from `visibleKinds`. It must survive BOTH
+     isolating and restoring, so restoring returns `keep`, not []. */
+  var keep = hidden.filter(function(x){ return visibleKinds.indexOf(x) < 0 && x !== k; });
   var isolated = others.every(function(x){ return hidden.indexOf(x) >= 0; })
               && hidden.indexOf(k) < 0;
-  if(isolated) return [];
-  var keep = hidden.filter(function(x){ return visibleKinds.indexOf(x) < 0 && x !== k; });
-  return keep.concat(others);
+  return isolated ? keep : keep.concat(others);
 }
 
 if(typeof module !== "undefined" && module.exports){
