@@ -367,3 +367,5 @@ button.brow:hover .blab{color:var(--accent)}
 .rlab.t2{font-size:11px;fill:var(--water-soft)}
 /* locator: trace the river across the state outline */
 .locator .lr{fill:none;stroke:var(--water);stroke-width:9;stroke-linecap:round;stroke-linejoin:round}
+
+#stage.noscroll{overflow:hidden}

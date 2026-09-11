@@ -29,6 +29,8 @@ const IDX = new Map();
    fixed array-to-kind mapping above. */
 (D.features || []).forEach(r => IDX.set(r.id, {r, kind:r.k}));
 const PLACE_REC = new Map((D.features || []).map(r => [r.pid, r.id]));
+/* Facts are a projection of the records, built once at load like SEARCH. */
+const FACTS = buildFacts(D);
 
 const nameOf = o => o.r.name || o.r.t || o.r.title;
 const eraOf  = o => o.r.era ? ERA[o.r.era] : null;
@@ -71,7 +73,7 @@ function factsList(pairs){
 
 /* ---------- app state ---------- */
 const S = {
-  view:"home", sel:null, trail:[],
+  view:"home", sel:null, trail:[], seen:[],
   era:"all", battleFilter:"all", topicSec:"all",
   revMode:"cards", cardIdx:0, cardFlip:false, cardSec:"all",
   qIdx:0, qSec:"all", qAnswered:null,
@@ -86,17 +88,19 @@ const NAV = [
   {id:"topics",   lb:"Topics",   ic:'<path d="M4 5h16M4 12h16M4 19h10"/>'},
   {id:"people",   lb:"People",   ic:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-6 7-6s7 2.1 7 6"/>'},
   {id:"trends",   lb:"Trends",   ic:'<path d="M4 19V5"/><path d="M4 15l5-5 4 4 7-7"/><path d="M20 11V7h-4"/>'},
+  {id:"rounds",   lb:"Rounds",   ic:'<path d="M12 3a9 9 0 109 9"/><path d="M12 7a5 5 0 105 5"/><circle cx="12" cy="12" r="1.6"/>'},
   {id:"revise",   lb:"Revise",   ic:'<path d="M4 5.5A2.5 2.5 0 016.5 3H19v15H6.5A2.5 2.5 0 004 20.5z"/><path d="M9 8h6"/>'}
 ];
 const COUNTS = {map:D.districts.length, timeline:D.events.length, battles:D.battles.length,
                 topics:D.topics.length, people:D.people.length, trends:D.pyq.length,
-                revise:D.quiz.length + D.pyq.length};
+                rounds:FACTS.length, revise:D.quiz.length + D.pyq.length};
 const SUB = {home:"Start here", map:"12 districts · "+D.states.length+" hill states",
              timeline:"Prehistory to 1971", battles:"Wars, sieges and treaties",
              topics:"Notes by subject", people:"Rulers, rebels, builders",
-             trends:"What the papers actually ask", revise:"Flashcards, quiz and past papers"};
+             trends:"What the papers actually ask", rounds:"One fact at a time",
+             revise:"Flashcards, quiz and past papers"};
 const TITLE = {home:"Overview", map:"Atlas", timeline:"Timeline", battles:"Battles & Treaties",
-               topics:"Topics", people:"People", trends:"Question Trends", revise:"Revise"};
+               topics:"Topics", people:"People", trends:"Question Trends", rounds:"Rounds", revise:"Revise"};
 
 /* ---------- router: #/view or #/view/record-id ---------- */
 function currentHash(){ return "#/"+S.view+(S.sel ? "/"+S.sel : ""); }
@@ -1140,9 +1144,33 @@ function moveSearch(d){
   items[i].classList.add("act"); items[i].scrollIntoView({block:"nearest"});
 }
 
+/* ============================================================
+   ROUNDS — one prelims fact per screen, moved by a flick.
+   Facts are a projection of the records' exam hooks, so a card
+   can never drift from the note it came from.
+   ============================================================ */
+function viewRounds(){
+  return '<div id="roundsfeed" class="rounds" tabindex="0" role="region" '+
+    'aria-label="Prelims facts, one per screen"></div>';
+}
+/* One fact per card. The kind label reuses the map legend's colour, so a
+   glance says whether this is a pass, a lake, a district or a treaty. */
+function roundCard(f){
+  const k = KINDS[f.kind];
+  return '<button class="short" type="button" data-fid="'+f.id+'" data-src="'+f.srcId+'">'+
+    '<span class="k" style="color:'+(k ? k.c : "var(--accent)")+'">'+(k ? k.lb : "Fact")+'</span>'+
+    '<span class="nm">'+f.name+'</span>'+
+    '<span class="ft">'+f.text+'</span>'+
+    '<span class="go">Open the note &rarr;</span></button>';
+}
+function mountRounds(){ /* filled in by the feed task */ }
+
 /* ---------- render dispatcher ---------- */
 function render(){
   const s = $("#stage");
+  /* #stage scrolls itself; a scroll-snap feed nested inside it would give
+     two scrollbars and snapping that fights the outer scroll. */
+  s.classList.toggle("noscroll", S.view === "rounds");
   if(S.view === "home")           s.innerHTML = viewHome();
   else if(S.view === "map")     { s.innerHTML = viewMap(); mountMap(); }
   else if(S.view === "timeline"){ s.innerHTML = viewTimeline(); paintSelection(); }
@@ -1150,6 +1178,7 @@ function render(){
   else if(S.view === "topics")  { s.innerHTML = viewTopics(); paintSelection(); }
   else if(S.view === "people")  { s.innerHTML = viewPeople(); paintSelection(); }
   else if(S.view === "trends")    s.innerHTML = viewTrends();
+  else if(S.view === "rounds")  { s.innerHTML = viewRounds(); mountRounds(); }
   else if(S.view === "revise")    s.innerHTML = viewRevise();
 }
 
@@ -1264,6 +1293,7 @@ function applyTheme(){
 applyTheme();
 /* The old boolean rivers toggle is now two legend layers. Migrate it so
    a returning visitor who had rivers off does not see them reappear. */
+S.seen   = store.get("seen", []);
 S.mapOff = store.get("mapoff", null) ||
   (store.get("rivers", true) ? [] : ["river1","river2"]);
 store.del("rivers");
