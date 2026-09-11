@@ -58,6 +58,24 @@ function placeLabels(items){
   return keep;
 }
 
+/* Legend behaviour, Plotly-style: click toggles one layer, double click
+   isolates it, and double-clicking the already-isolated layer restores
+   the lot. Pure functions over the hidden-key array so the reducer is
+   testable without a DOM and the caller owns persistence. */
+function layerToggle(hidden, k){
+  return hidden.indexOf(k) >= 0
+    ? hidden.filter(function(x){ return x !== k; })
+    : hidden.concat([k]);
+}
+function layerIsolate(hidden, k, visibleKinds){
+  var others = visibleKinds.filter(function(x){ return x !== k; });
+  var isolated = others.every(function(x){ return hidden.indexOf(x) >= 0; })
+              && hidden.indexOf(k) < 0;
+  if(isolated) return [];
+  var keep = hidden.filter(function(x){ return visibleKinds.indexOf(x) < 0 && x !== k; });
+  return keep.concat(others);
+}
+
 if(typeof module !== "undefined" && module.exports){
-  module.exports = {LAYERS: LAYERS, LAYER_BY_KIND: LAYER_BY_KIND, mkGlyph: mkGlyph, placeLabels: placeLabels, LABEL_DY: LABEL_DY};
+  module.exports = {LAYERS: LAYERS, LAYER_BY_KIND: LAYER_BY_KIND, mkGlyph: mkGlyph, placeLabels: placeLabels, LABEL_DY: LABEL_DY, layerToggle: layerToggle, layerIsolate: layerIsolate};
 }

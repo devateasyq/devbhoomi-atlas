@@ -89,3 +89,39 @@ test("no two surviving label boxes overlap", () => {
     }
   }
 });
+
+const KINDS4 = ["peak","pass","lake","glacier"];
+
+test("layerToggle hides then restores one kind", () => {
+  let hidden = [];
+  hidden = kit.layerToggle(hidden, "peak");
+  assert.deepEqual(hidden, ["peak"]);
+  hidden = kit.layerToggle(hidden, "peak");
+  assert.deepEqual(hidden, []);
+});
+
+test("layerToggle never mutates its input", () => {
+  const before = [];
+  const after = kit.layerToggle(before, "lake");
+  assert.deepEqual(before, [], "input array was mutated");
+  assert.deepEqual(after, ["lake"]);
+});
+
+test("layerIsolate hides everything except the clicked kind", () => {
+  const hidden = kit.layerIsolate([], "pass", KINDS4);
+  assert.ok(!hidden.includes("pass"));
+  assert.ok(hidden.includes("peak") && hidden.includes("lake") && hidden.includes("glacier"));
+});
+
+test("isolating the already-isolated kind restores everything", () => {
+  let hidden = kit.layerIsolate([], "pass", KINDS4);
+  hidden = kit.layerIsolate(hidden, "pass", KINDS4);
+  assert.deepEqual(hidden, [], "second isolate must restore all layers");
+});
+
+test("isolating a different kind switches the isolation", () => {
+  let hidden = kit.layerIsolate([], "pass", KINDS4);
+  hidden = kit.layerIsolate(hidden, "lake", KINDS4);
+  assert.ok(!hidden.includes("lake"));
+  assert.ok(hidden.includes("pass"));
+});
