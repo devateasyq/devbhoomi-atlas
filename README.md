@@ -1,0 +1,130 @@
+# Devbhoomi Atlas
+
+An interactive revision atlas for the **Himachal Pradesh** portion of the **HPPSC HPAS** syllabus —
+a clickable map of the 12 districts and the princely hill states, a timeline from prehistory to
+statehood, battles and treaties, topic notes, generated flashcards and a question bank.
+
+Plain static files. No build step, no framework, no backend.
+
+---
+
+## Run it locally
+
+Any static server will do:
+
+```sh
+python3 -m http.server 8000     # then open http://localhost:8000
+```
+
+Opening `index.html` straight from the filesystem also works, except for the service worker
+(offline caching), which browsers only enable over `http(s)` or `localhost`.
+
+## Host it
+
+The whole directory is static, so it deploys as-is to any static host:
+
+| Host | How |
+|---|---|
+| **Vercel** | `npx vercel --prod` in this directory |
+| **Netlify** | drag this folder onto app.netlify.com, or `npx netlify deploy --prod --dir=.` |
+| **GitHub Pages** | push this directory to a repo, then Settings → Pages → deploy from branch |
+| **Cloudflare Pages** | connect the repo, leave the build command empty, output directory `/` |
+| **Any web server** | copy the directory into the document root |
+
+Nothing is origin-specific — relative paths throughout, so it works from a subdirectory
+(`example.com/atlas/`) as well as from a domain root.
+
+## What it does
+
+- **Deep links.** The URL tracks what you are reading: `#/map/d-kangra`, `#/topics/t-gorkha`.
+  The link button in the detail panel copies a direct URL to that record, so a single fact
+  can be sent to a study group.
+- **Installable and offline.** A web app manifest plus `sw.js` cache every asset on first visit,
+  so it works on a phone with no signal. "Add to Home Screen" gives it an icon and no browser chrome.
+- **Progress is local.** Quiz results live in `localStorage` under the `hpatlas:` prefix.
+  Nothing is uploaded, and there is no analytics or tracking of any kind.
+
+## Structure
+
+```
+index.html                 markup shell and asset links
+app/tokens.css             colour, type and spacing tokens, both themes
+app/layout.css             app shell and responsive rules
+app/components.css         map, timeline, cards, panel, revise, search
+app/app.js                 the entire application
+data/geo.js                map geometry: district paths, centroids, 107 place markers
+data/places.js             D.eras, D.districts, D.states
+data/history.js            D.events, D.battles, D.people
+data/topics.js             D.topics
+data/quiz.js               D.quiz
+sw.js                      offline cache
+manifest.webmanifest       PWA manifest
+```
+
+Load order matters: `data/places.js` creates the `D` object, so it must come before the
+other data files. `app/app.js` must come last.
+
+## Editing the content
+
+Everything is one object. A record looks like this:
+
+```js
+{
+  id: "s-chamba",            // unique; prefix by type: d- s- ev- b- p- t-
+  name: "Chamba",
+  founded: "c. 550 CE",
+  blocks: [                  // rendered in order
+    ["p", "Paragraph with <b>markup</b>."],
+    ["h", "A sub-heading"],
+    ["ul", ["List item", "Another"]],
+    ["note", "Exam hook", "The line worth memorising."],
+    ["note", "Disputed", "Sources disagree; here is why."]
+  ],
+  rel: ["d-chamba", "t-temples", "ev-chamba-founded"]
+}
+```
+
+Add a record to the right array and it appears automatically in its view, in search, in the
+flashcard deck and in the "Connected to" panel of anything that links to it. **Wire `rel` in both
+directions** — the link is not inferred.
+
+A `["note", ...]` whose label contains *disputed*, *correction* or *check* renders in the
+vermilion "disputed" style rather than the gold "exam hook" style.
+
+### After editing
+
+- Bump `CACHE` in `sw.js` (e.g. `-v2`), or returning visitors keep the cached old version.
+- Check for broken links — every `rel` entry must name a real `id`:
+
+```sh
+node -e '
+  const fs=require("fs"),vm=require("vm"),ctx={};
+  ["geo","places","history","topics","quiz"].forEach(f=>
+    vm.runInNewContext(fs.readFileSync("data/"+f+".js","utf8"),ctx));
+  const ids=new Set();
+  ["districts","states","events","battles","people","topics"].forEach(k=>ctx.D[k].forEach(r=>ids.add(r.id)));
+  let bad=0;
+  ["districts","states","events","battles","people","topics"].forEach(k=>ctx.D[k].forEach(r=>
+    (r.rel||[]).forEach(x=>{ if(!ids.has(x)){ console.log("dangling:",r.id,"->",x); bad++; } })));
+  console.log(ids.size,"records,",bad,"dangling links");
+'
+```
+
+## On accuracy
+
+Compiled from the HPPSC syllabus, Himachal government portals, Census 2011 and the HP Economic
+Survey. High-frequency exam facts were cross-checked against more than one source.
+
+Where sources genuinely disagree — the number of princely states merged in 1948, the count of
+wildlife sanctuaries, several Praja Mandal founding years — the record says so instead of quietly
+picking a value. Economy figures change every year, so those pages teach the structure and tell you
+to take current numbers from the latest Economic Survey.
+
+Map geometry is real: GADM district boundaries for Himachal Pradesh, equirectangular-projected at
+the state's mid-latitude and Douglas–Peucker simplified. Place markers are lat/long run through the
+same transform.
+
+## Licence
+
+Content is compiled from public sources for personal exam preparation. Reuse freely; verify before
+you rely on any single figure in an examination.

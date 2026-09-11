@@ -1,0 +1,9 @@
+# Netlify / Cloudflare Pages
+/sw.js
+  Cache-Control: public, max-age=0, must-revalidate
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+/app/*
+  Cache-Control: public, max-age=3600
+/data/*
+  Cache-Control: public, max-age=3600

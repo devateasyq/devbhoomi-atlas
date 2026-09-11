@@ -1,0 +1,71 @@
+/* ============================================================
+   Devbhoomi Atlas — design tokens
+   Palette drawn from Pahari miniature pigments: malachite green,
+   indigo, gamboge yellow and sindoor vermilion, on a wasli-paper
+   neutral biased toward the green accent.
+   ============================================================ */
+:root{
+  --ground:#EDEEE9; --surface:#F8F9F5; --surface-2:#E4E7DF; --surface-3:#DADED2;
+  --line:#CDD3C7; --line-soft:#E0E4DA;
+  --ink:#17201D; --ink-2:#4B5650; --ink-3:#78847C;
+  --accent:#1F5048; --accent-2:#2E7D6E; --accent-soft:#D9E5E0; --accent-line:#A8C4BB;
+  --on-accent:#FFFFFF;
+  --vermilion:#A8402C; --gold:#9C6F18; --indigo:#2E3F63;
+  --good:#2F6B45; --warn:#96731F; --crit:#A8402C;
+  --shadow:0 1px 2px rgba(23,32,29,.06), 0 8px 24px -12px rgba(23,32,29,.18);
+  --shadow-lg:0 2px 4px rgba(23,32,29,.07), 0 24px 48px -20px rgba(23,32,29,.28);
+  --map-land:#E2E7DB; --map-line:#B9C2B4; --map-sel:#C7DCD4;
+  --rail:236px; --panel:400px;
+  --f-display:"Petrona",ui-serif,Georgia,"Times New Roman",serif;
+  --f-body:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  /* era ramp — chronological order made visible */
+  --e1:#3B4A6B; --e2:#35607A; --e3:#2E6E6B; --e4:#2F7A56; --e5:#6B7A2E;
+  --e6:#8A6A1C; --e7:#A8552C; --e8:#8C3B33; --e9:#7A2F4A; --e10:#4A3070;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#111614; --surface:#1A211E; --surface-2:#232C28; --surface-3:#2C3631;
+    --line:#333D38; --line-soft:#262F2B;
+    --ink:#E9ECE5; --ink-2:#AFB9B2; --ink-3:#7F8B84;
+    --accent:#6BB3A2; --accent-2:#8FCBBC; --accent-soft:#1C2E29; --accent-line:#2F4A44;
+    --on-accent:#0F1614;
+    --vermilion:#E08872; --gold:#D9AC4F; --indigo:#8FA6D0;
+    --good:#69B487; --warn:#D9AC4F; --crit:#E08872;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+    --shadow-lg:0 2px 4px rgba(0,0,0,.5), 0 24px 48px -20px rgba(0,0,0,.75);
+    --map-land:#212A26; --map-line:#3D4A44; --map-sel:#28453D;
+    --e1:#7A8BB5; --e2:#6FA0BE; --e3:#5FAFAA; --e4:#63BC90; --e5:#A5B663;
+    --e6:#C9A445; --e7:#DE8B5E; --e8:#D97068; --e9:#C46C8B; --e10:#9A7ED0;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#111614; --surface:#1A211E; --surface-2:#232C28; --surface-3:#2C3631;
+  --line:#333D38; --line-soft:#262F2B;
+  --ink:#E9ECE5; --ink-2:#AFB9B2; --ink-3:#7F8B84;
+  --accent:#6BB3A2; --accent-2:#8FCBBC; --accent-soft:#1C2E29; --accent-line:#2F4A44;
+  --on-accent:#0F1614;
+  --vermilion:#E08872; --gold:#D9AC4F; --indigo:#8FA6D0;
+  --good:#69B487; --warn:#D9AC4F; --crit:#E08872;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  --shadow-lg:0 2px 4px rgba(0,0,0,.5), 0 24px 48px -20px rgba(0,0,0,.75);
+  --map-land:#212A26; --map-line:#3D4A44; --map-sel:#28453D;
+  --e1:#7A8BB5; --e2:#6FA0BE; --e3:#5FAFAA; --e4:#63BC90; --e5:#A5B663;
+  --e6:#C9A445; --e7:#DE8B5E; --e8:#D97068; --e9:#C46C8B; --e10:#9A7ED0;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--f-body);
+  font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow:hidden;
+  -webkit-tap-highlight-color:transparent}
+h1,h2,h3,h4{font-family:var(--f-display);margin:0;text-wrap:balance;line-height:1.18;font-weight:600}
+p{margin:0}
+a{color:var(--accent);text-underline-offset:2px}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+img{max-width:100%}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--accent-2);outline-offset:2px;border-radius:3px}
+::selection{background:var(--accent-soft);color:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}

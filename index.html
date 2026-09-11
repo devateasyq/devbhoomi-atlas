@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Devbhoomi Atlas — Himachal Pradesh revision for HPAS</title>
+<meta name="description" content="An interactive revision atlas for the Himachal Pradesh section of the HPPSC HPAS syllabus: a clickable map of the 12 districts and the princely hill states, a timeline from prehistory to statehood, battles and treaties, topic notes, flashcards and a question bank.">
+<meta name="theme-color" content="#EDEEE9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111614" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Devbhoomi Atlas">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Devbhoomi Atlas — Himachal Pradesh revision for HPAS">
+<meta property="og:description" content="The HP-specific HPAS syllabus as one linked object: clickable map, timeline, battles, topic notes, flashcards and 151 practice questions.">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="app/tokens.css">
+<link rel="stylesheet" href="app/layout.css">
+<link rel="stylesheet" href="app/components.css">
+</head>
+<body>
+<div id="shell">
+  <aside id="rail">
+    <div class="brand">
+      <span class="mark">Devbhoomi Atlas</span>
+      <span class="sub">HPAS &middot; Himachal Pradesh</span>
+    </div>
+    <nav class="rail-nav" id="railnav" aria-label="Sections"></nav>
+    <div class="rail-foot">
+      <button class="ghost" id="randbtn" type="button" title="Open a random record">Surprise me</button>
+      <button class="ghost" id="themebtn" type="button" title="Switch theme">Theme</button>
+      <button class="ghost" id="resetbtn" type="button" title="Clear saved quiz progress">Reset progress</button>
+    </div>
+  </aside>
+
+  <div id="main">
+    <header id="topbar">
+      <div class="crumb"><span id="crumbtitle">Overview</span><small id="crumbsub">Start here</small></div>
+      <div class="bartools">
+        <div class="searchwrap">
+          <svg class="si" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
+          <input id="search" type="search" placeholder="Search everything&hellip;" autocomplete="off" spellcheck="false" aria-label="Search all records">
+          <span class="kbd">/</span>
+        </div>
+      </div>
+      <div id="results" hidden role="listbox" aria-label="Search results"></div>
+    </header>
+
+    <div id="viewport">
+      <main id="stage" tabindex="-1"></main>
+      <aside id="panel" hidden aria-label="Record detail">
+        <div class="ph">
+          <div style="min-width:0">
+            <div class="kind" id="pkind"></div>
+            <h2 id="ptitle"></h2>
+          </div>
+          <div class="phbtns">
+            <button id="pshare" type="button" title="Copy a link to this record" aria-label="Copy a link to this record">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.8 1.7"/><path d="M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7l1.8-1.7"/></svg>
+            </button>
+            <button id="pclose" type="button" title="Close" aria-label="Close record detail">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="trail" id="trail" hidden aria-label="Path you followed"></div>
+        <div class="pb" id="pbody"></div>
+      </aside>
+    </div>
+
+    <nav id="mtabs" aria-label="Sections"></nav>
+  </div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="data/geo.js"></script>
+<script src="data/places.js"></script>
+<script src="data/history.js"></script>
+<script src="data/topics.js"></script>
+<script src="data/quiz.js"></script>
+<script src="app/app.js"></script>
+</body>
+</html>
