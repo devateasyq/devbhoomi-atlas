@@ -78,3 +78,47 @@ test("the Hamirpur hook is split rather than left as one multi-district run", ()
   const h = FACTS.filter(f => f.srcId === "d-hamirpur");
   assert.ok(h.length >= 2, "expected the long Hamirpur hook to be sentence-split");
 });
+
+test("orderFacts returns every fact exactly once", () => {
+  const out = rounds.orderFacts(FACTS, []);
+  assert.equal(out.length, FACTS.length);
+  assert.equal(new Set(out.map(f => f.id)).size, FACTS.length);
+});
+
+test("no seen fact comes before an unseen one", () => {
+  const seen = FACTS.slice(0, 40).map(f => f.id);
+  const out = rounds.orderFacts(FACTS, seen);
+  const seenSet = new Set(seen);
+  let hitSeen = false;
+  for(const f of out){
+    if(seenSet.has(f.id)) hitSeen = true;
+    else assert.ok(!hitSeen, "unseen fact " + f.id + " came after a seen one");
+  }
+});
+
+test("seen facts come back oldest-seen first, so a full cycle spaces repetition", () => {
+  const seen = FACTS.slice(0, 5).map(f => f.id);          // index 0 seen longest ago
+  const out = rounds.orderFacts(FACTS, seen).filter(f => seen.includes(f.id));
+  assert.deepEqual(out.map(f => f.id), seen);
+});
+
+test("orderFacts never mutates the seen array it is given", () => {
+  const seen = FACTS.slice(0, 3).map(f => f.id);
+  const copy = seen.slice();
+  rounds.orderFacts(FACTS, seen);
+  assert.deepEqual(seen, copy);
+});
+
+test("orderFacts copes with a seen id that no longer exists", () => {
+  /* exam hooks get edited, which shifts atom indices and orphans an id */
+  const out = rounds.orderFacts(FACTS, ["ps-shipkila#99", "no-such-record#0"]);
+  assert.equal(out.length, FACTS.length);
+});
+
+test("orderFacts shuffles rather than returning source order", () => {
+  /* 265 facts: identical order twice running is effectively impossible
+     unless nothing is shuffling at all */
+  const a = rounds.orderFacts(FACTS, []).map(f => f.id).join();
+  const b = rounds.orderFacts(FACTS, []).map(f => f.id).join();
+  assert.notEqual(a, b);
+});

@@ -74,7 +74,30 @@ function buildFacts(D){
   return out;
 }
 
+function shuffle(a){
+  for(var i = a.length - 1; i > 0; i--){
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+/* Unseen facts first, shuffled. Seen facts follow oldest-first, so when
+   the pool is exhausted the feed cycles into what you saw longest ago —
+   spaced repetition for free, and no "you're done" wall. */
+function orderFacts(facts, seen){
+  var at = {}, list = seen || [];
+  for(var i = 0; i < list.length; i++) if(!(list[i] in at)) at[list[i]] = i;
+  var fresh = [], stale = [];
+  for(var j = 0; j < facts.length; j++){
+    if(facts[j].id in at) stale.push(facts[j]); else fresh.push(facts[j]);
+  }
+  shuffle(fresh);
+  stale.sort(function(x, y){ return at[x.id] - at[y.id]; });
+  return fresh.concat(stale);
+}
+
 if(typeof module !== "undefined" && module.exports){
-  module.exports = {buildFacts: buildFacts, splitHook: splitHook,
+  module.exports = {buildFacts: buildFacts, orderFacts: orderFacts, splitHook: splitHook,
                     keepFact: keepFact, MIN_FACT: MIN_FACT, MAX_FACT: MAX_FACT};
 }
