@@ -292,6 +292,13 @@ window.addEventListener("load", async () => {
       "focus=" + ev("S.focus"));
   }
 
+  const brand = doc.querySelector("#topbar .brandm");
+  check("the wordmark is in the header", brand && /Parikrama Path/.test(brand.textContent),
+    brand ? brand.textContent : "absent");
+  const si = doc.getElementById("search");
+  check("the search label is just Search", si && si.placeholder === "Search",
+    si ? si.placeholder : "no input");
+
   out.innerHTML += "\n" + pass + " passed, " + fail + " failed";
   document.title = fail ? "FAIL (" + fail + ")" : "PASS";
 });
