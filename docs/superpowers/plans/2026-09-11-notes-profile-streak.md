@@ -411,7 +411,7 @@ Add `NOTE_MAX: NOTE_MAX, normaliseNotes: normaliseNotes, mergeNotes: mergeNotes,
 - [ ] **Step 4: Verify**
 
 Run: `node --test`
-Expected: **101 pass, 0 fail**.
+Expected: **102 pass, 0 fail** (the block below contains 11 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -694,7 +694,7 @@ Add `DAY_GOAL: DAY_GOAL, emptyStreak: emptyStreak, dayKey: dayKey, daysApart: da
 - [ ] **Step 4: Verify**
 
 Run: `node --test`
-Expected: **117 pass, 0 fail**.
+Expected: **125 pass, 0 fail**.
 
 - [ ] **Step 5: Commit**
 
@@ -804,7 +804,7 @@ Append inside the harness's load handler, before the summary line:
 - [ ] **Step 4: Verify**
 
 Run: `node --check app/app.js && node --test`
-Expected: **117 pass, 0 fail** — this task adds no Node tests; its logic was tested in Task 2.
+Expected: **125 pass, 0 fail** — this task adds no Node tests; its logic was tested in Task 2.
 
 Confirm the CSS braces balance:
 
@@ -871,7 +871,7 @@ function noteActivity(kind, id){
 - [ ] **Step 3: Verify**
 
 Run: `node --check app/app.js && node --test`
-Expected: **117 pass, 0 fail**.
+Expected: **125 pass, 0 fail**.
 
 Then confirm every route is wired:
 
@@ -1060,7 +1060,7 @@ click, so this check does not depend on a live Firebase project.
 - [ ] **Step 6: Verify**
 
 Run: `node --check app/app.js && node --test`
-Expected: **117 pass, 0 fail**.
+Expected: **125 pass, 0 fail**.
 
 Confirm the route is legal and the view renders:
 
@@ -1157,7 +1157,7 @@ In `mountProfile()`, add:
 - [ ] **Step 4: Verify**
 
 Run: `node --check app/app.js && node --test`
-Expected: **117 pass, 0 fail**.
+Expected: **125 pass, 0 fail**.
 
 Confirm export covers every synced key by reading `exportData` — it must iterate `SYNC_KEYS` rather than naming keys, so a key added later is included automatically. State in your report that **deletion cannot be tested here**: it needs a live Firebase project and a real account, and running it would destroy that account. Do not attempt it.
 
@@ -1199,7 +1199,7 @@ Add a section covering: one note per record, capped at 1,000 characters and why 
 ```bash
 cd /Users/avinashnegi/Downloads/prep/hp-atlas && node --test
 ```
-Expected: **117 pass, 0 fail**.
+Expected: **125 pass, 0 fail**.
 
 Then the repo owner runs `http://localhost:8765/test/harness.html` and confirms `PASS`, and walks it by hand:
 
