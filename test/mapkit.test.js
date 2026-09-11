@@ -186,3 +186,37 @@ test("only border markers fail to resolve, and nearestDistrict catches them", ()
 test("a point far outside the state belongs to no district", () => {
   assert.equal(kit.districtAt(5, 5, MAP.paths), null);
 });
+
+test("pathBBox bounds a district inside the map", () => {
+  for(const [name, d] of Object.entries(MAP.paths)){
+    const b = kit.pathBBox(d);
+    assert.ok(b, name + " produced no bounding box");
+    assert.ok(b.w > 0 && b.h > 0, name + " has a degenerate box");
+    assert.ok(b.x >= -1 && b.y >= -1 && b.x + b.w <= MAP.w + 1 && b.y + b.h <= MAP.h + 1,
+      name + " box escapes the map");
+  }
+});
+
+test("fitBox centres a district and never zooms out past the full map", () => {
+  for(const [name, d] of Object.entries(MAP.paths)){
+    const b = kit.pathBBox(d);
+    const f = kit.fitBox(b, MAP.w, MAP.h, 0.8, 9);
+    assert.ok(f.k >= 1 && f.k <= 9, name + " asked for k=" + f.k);
+    /* the box centre must land on the viewBox centre */
+    const cx = f.x + f.k * (b.x + b.w / 2);
+    const cy = f.y + f.k * (b.y + b.h / 2);
+    assert.ok(Math.abs(cx - MAP.w / 2) < 0.01, name + " is not centred in x");
+    assert.ok(Math.abs(cy - MAP.h / 2) < 0.01, name + " is not centred in y");
+  }
+});
+
+test("a small district zooms in further than a large one", () => {
+  const small = kit.fitBox(kit.pathBBox(MAP.paths["Hamirpur"]), MAP.w, MAP.h, 0.8, 9);
+  const big   = kit.fitBox(kit.pathBBox(MAP.paths["Lahaul and Spiti"]), MAP.w, MAP.h, 0.8, 9);
+  assert.ok(small.k > big.k, "Hamirpur k=" + small.k + " vs Lahaul k=" + big.k);
+});
+
+test("fitBox refuses a degenerate box rather than returning Infinity", () => {
+  assert.equal(kit.fitBox(null, 1000, 988, 0.8, 9), null);
+  assert.equal(kit.fitBox({x:0,y:0,w:0,h:0}, 1000, 988, 0.8, 9), null);
+});

@@ -97,7 +97,7 @@ function factsList(pairs){
 
 /* ---------- app state ---------- */
 const S = {
-  view:"home", sel:null, trail:[], seen:[], legendOpen:true, focus:"",
+  view:"home", sel:null, trail:[], seen:[], legendOpen:false, focus:"",
   era:"all", battleFilter:"all", topicSec:"all",
   revMode:"papers",
   qIdx:0, qSec:"all", qAnswered:null,
@@ -483,8 +483,11 @@ function viewMap(){
       '<option value="'+d.id+'"'+(S.focus === d.id ? ' selected' : '')+'>'+d.name+'</option>').join('')+
     '</select></div>';
   const legend = '<div class="maplegend'+(S.legendOpen ? '' : ' shut')+'">'+
-    '<button class="lgtoggle" type="button" id="lgtoggle" aria-expanded="'+S.legendOpen+'">'+
-      '<span class="lt">Layers</span><span class="chev" aria-hidden="true"></span></button>'+
+    '<button class="lgtoggle" type="button" id="lgtoggle" aria-expanded="'+S.legendOpen+'" '+
+      'title="Layers and district focus" aria-label="Layers and district focus">'+
+      '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+
+        '<path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg>'+
+      '<span class="lt">Layers</span></button>'+
     '<div class="lgbody"><ul>'+
     shownKinds.map(k => {
       const l = LAYER_BY_KIND[k], off = S.mapOff.includes(k);
@@ -561,6 +564,23 @@ function relabel(){
 /* Focus mode: one district stays lit, everything else recedes. Markers and
    rivers outside it are dimmed rather than removed, so the district keeps
    its place in the state rather than floating alone. */
+/* Focusing a district moves the map to it. Dimming alone left the whole
+   state on screen, which is not what "show me this district" means. */
+function zoomToFocus(){
+  const g = document.getElementById("mapg"); if(!g) return;
+  let t;
+  if(S.focus){
+    const rec = IDX.has(S.focus) ? IDX.get(S.focus).r : null;
+    const d = rec && rec.map && MAP.paths[rec.map];
+    t = d ? fitBox(pathBBox(d), MAP.w, MAP.h, 0.78, 9) : null;
+  }
+  if(!t) t = {k:1, x:0, y:0};                 // no focus: back to the whole state
+  /* transition only for this move, or every drag frame would ease */
+  g.classList.add("gliding");
+  clearTimeout(zoomToFocus._t);
+  zoomToFocus._t = setTimeout(() => g.classList.remove("gliding"), 480);
+  ZT = t; applyZoom();
+}
 function applyFocus(){
   const g = document.getElementById("mapg"); if(!g) return;
   const on = !!S.focus;
@@ -778,6 +798,7 @@ function mountMap(){
   if(fsel) fsel.addEventListener("change", () => {
     S.focus = fsel.value;
     applyFocus();
+    zoomToFocus();
     if(S.focus && IDX.has(S.focus)) openRec(S.focus);
   });
 
@@ -1387,7 +1408,7 @@ applyTheme();
 /* The old boolean rivers toggle is now two legend layers. Migrate it so
    a returning visitor who had rivers off does not see them reappear. */
 S.seen   = store.get("seen", []);
-S.legendOpen = store.get("legendopen", true);
+S.legendOpen = store.get("legendopen", false);
 S.mapOff = store.get("mapoff", null) ||
   (store.get("rivers", true) ? [] : ["river1","river2"]);
 store.del("rivers");

@@ -139,7 +139,33 @@ function nearestDistrict(x, y, centroids){
   return best;
 }
 
+/* The bounding box of a district outline, so focusing one can move the map
+   to it rather than leaving the whole state on screen. */
+function pathBBox(d){
+  var rings = parseRings(d);
+  var x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+  for(var r = 0; r < rings.length; r++)
+    for(var i = 0; i < rings[r].length; i++){
+      var p = rings[r][i];
+      if(p[0] < x1) x1 = p[0];
+      if(p[0] > x2) x2 = p[0];
+      if(p[1] < y1) y1 = p[1];
+      if(p[1] > y2) y2 = p[1];
+    }
+  if(!isFinite(x1)) return null;
+  return {x:x1, y:y1, w:x2 - x1, h:y2 - y1};
+}
+/* The zoom and offset that centre a box in a viewBox of w x h. `pad` leaves
+   room around it so the district is not flush against the edges. */
+function fitBox(box, w, h, pad, maxK){
+  if(!box || !box.w || !box.h) return null;
+  var k = Math.min(w / box.w, h / box.h) * (pad || 0.8);
+  k = Math.min(maxK || 9, Math.max(1, k));
+  return {k:k, x:w / 2 - k * (box.x + box.w / 2), y:h / 2 - k * (box.y + box.h / 2)};
+}
+
 if(typeof module !== "undefined" && module.exports){
   module.exports = {LAYERS: LAYERS, parseRings: parseRings,
-                  pointInRings: pointInRings, districtAt: districtAt, nearestDistrict: nearestDistrict, LAYER_BY_KIND: LAYER_BY_KIND, mkGlyph: mkGlyph, placeLabels: placeLabels, LABEL_DY: LABEL_DY, layerToggle: layerToggle, layerIsolate: layerIsolate};
+                  pointInRings: pointInRings, districtAt: districtAt, nearestDistrict: nearestDistrict,
+                  pathBBox: pathBBox, fitBox: fitBox, LAYER_BY_KIND: LAYER_BY_KIND, mkGlyph: mkGlyph, placeLabels: placeLabels, LABEL_DY: LABEL_DY, layerToggle: layerToggle, layerIsolate: layerIsolate};
 }

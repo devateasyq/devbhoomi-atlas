@@ -223,18 +223,22 @@ window.addEventListener("load", async () => {
   ev('S.view="map"; render();');
   await wait(350);
   const lg = doc.querySelector(".maplegend");
-  check("the legend has a collapse toggle", !!doc.getElementById("lgtoggle"));
+  check("the legend has a toggle", !!doc.getElementById("lgtoggle"));
   if(lg){
     const body = lg.querySelector(".lgbody");
-    const openH = body.getBoundingClientRect().height;
+    const box = () => lg.getBoundingClientRect();
+    check("the legend starts collapsed to an icon",
+      lg.classList.contains("shut") && box().width < 60, box().width + "px wide");
+    const shutW = box().width;
     doc.getElementById("lgtoggle").click();
-    await wait(120);
-    check("collapsing the legend hides its body",
-      body.getBoundingClientRect().height < openH);
+    await wait(150);
+    check("tapping the icon opens the panel",
+      body.getBoundingClientRect().height > 0 && box().width > shutW);
     doc.getElementById("lgtoggle").click();
-    await wait(120);
-    check("expanding it brings the body back",
-      body.getBoundingClientRect().height > 0);
+    await wait(150);
+    check("tapping again collapses it back to the icon", lg.classList.contains("shut"));
+    doc.getElementById("lgtoggle").click();
+    await wait(150);
   }
 
   const fsel = doc.getElementById("focusd");
@@ -244,17 +248,24 @@ window.addEventListener("load", async () => {
       fsel.options.length === 13, fsel.options.length + " options");
     const shown = () => doc.querySelectorAll("#mapg .mk:not(.dim):not(.hid)").length;
     const all = shown();
+    const zoom = () => Number(ev("ZT.k"));
+    check("the map starts unzoomed", Math.abs(zoom() - 1) < 0.01, "k=" + zoom());
+
     fsel.value = "d-kinnaur";
     fsel.dispatchEvent(new win.Event("change"));
-    await wait(200);
+    await wait(600);
     const focused = shown();
     check("focusing a district dims markers outside it", focused < all,
       focused + " of " + all + " markers remain");
     check("focusing leaves that district's own markers lit", focused > 0);
+    check("focusing moves the map to that district", zoom() > 1.2, "k=" + zoom());
+
     fsel.value = "";
     fsel.dispatchEvent(new win.Event("change"));
-    await wait(200);
+    await wait(600);
     check("clearing focus restores every marker", shown() === all);
+    check("clearing focus returns to the whole state",
+      Math.abs(zoom() - 1) < 0.01, "k=" + zoom());
   }
 
   out.innerHTML += "\n" + pass + " passed, " + fail + " failed";

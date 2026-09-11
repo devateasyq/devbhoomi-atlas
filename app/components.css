@@ -421,15 +421,23 @@ button.brow:hover .blab{color:var(--accent)}
 /* ---------- map: collapsible legend, focus, pinch ---------- */
 /* .mapcanvas svg already sets touch-action:none, which a pinch needs */
 .maplegend{max-width:230px}
-.lgtoggle{display:flex;align-items:center;justify-content:space-between;gap:10px;
-  width:100%;padding:0 0 5px;border:0;background:none;cursor:pointer;font:inherit}
+.lgtoggle{display:flex;align-items:center;gap:8px;width:100%;padding:0 0 6px;
+  border:0;background:none;cursor:pointer;font:inherit;color:var(--ink-2)}
+.lgtoggle .ic{width:16px;height:16px;flex:0 0 16px;stroke:var(--accent);fill:none;
+  stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .lgtoggle .lt{margin:0}
-.lgtoggle .chev{width:8px;height:8px;border-right:1.6px solid var(--ink-3);
-  border-bottom:1.6px solid var(--ink-3);transform:rotate(45deg);
-  transition:transform .16s;margin-bottom:3px}
-.maplegend.shut .lgtoggle .chev{transform:rotate(-135deg);margin-bottom:0}
+.lgtoggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:5px}
 .maplegend.shut .lgbody{display:none}
-.maplegend.shut{padding-bottom:7px}
+/* closed, it is just the icon: the open panel took a third of a phone screen */
+.maplegend.shut{padding:9px;border-radius:50%;max-width:none;width:38px;height:38px;
+  display:grid;place-items:center}
+.maplegend.shut .lgtoggle{padding:0;width:auto}
+.maplegend.shut .lgtoggle .lt{display:none}
+.maplegend.shut .lgtoggle .ic{width:18px;height:18px;flex:0 0 18px}
+
+/* the map eases only while focus moves it, never while dragging */
+#mapg.gliding{transition:transform .42s cubic-bezier(.35,.85,.35,1)}
+@media (prefers-reduced-motion:reduce){ #mapg.gliding{transition:none} }
 
 .mapfocus{margin-top:8px}
 .mapfocus select{width:100%;font:inherit;font-size:11.5px;color:var(--ink);
@@ -446,7 +454,8 @@ button.brow:hover .blab{color:var(--accent)}
 #mapg.focusing .dl.dim{opacity:.3}
 
 @media (max-width:860px){
-  .maplegend{max-width:none;left:10px;right:10px;bottom:10px}
+  .maplegend{left:10px;right:10px;bottom:10px;max-width:none}
+  .maplegend.shut{right:auto;width:38px}
 }
 
 /* ---------- Rounds: one fact per screen, native scroll-snap ---------- */
