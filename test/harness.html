@@ -82,6 +82,17 @@ window.addEventListener("load", async () => {
   check("a drag across a marker does NOT open the panel",
     doc.getElementById("panel").hidden);
 
+  const boxes = [...doc.querySelectorAll(".mk:not(.nolabel):not(.hid) text")]
+    .map(t => t.getBoundingClientRect());
+  let overlaps = 0;
+  for(let i = 0; i < boxes.length; i++)
+    for(let j = i+1; j < boxes.length; j++){
+      const a = boxes[i], b = boxes[j];
+      if(!(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom)) overlaps++;
+    }
+  check("no two visible labels overlap at zoom 1", overlaps === 0, overlaps + " overlapping pairs");
+  check("some labels are drawn", boxes.length > 3, boxes.length + " labels");
+
   out.innerHTML += "\n" + pass + " passed, " + fail + " failed";
   document.title = fail ? "FAIL (" + fail + ")" : "PASS";
 });

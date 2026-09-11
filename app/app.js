@@ -352,14 +352,10 @@ function paintSelection(){
 const MAP_MODES = [
   {id:"districts", lb:"Districts",              kinds:[]},
   {id:"states",    lb:"Hill States",            kinds:["state"]},
-  {id:"geo",       lb:"Peaks · Passes · Lakes", kinds:["peak","pass","lake"]},
+  {id:"geo",       lb:"Peaks · Passes · Lakes", kinds:["peak","pass","lake","glacier"]},
   {id:"heritage",  lb:"Temples & Monasteries",  kinds:["temple"]},
   {id:"sites",     lb:"Battle & Movement Sites",kinds:["battle"]}
 ];
-const MK_COLOR = {state:"var(--e6)", peak:"var(--ink-2)", pass:"var(--e2)",
-                  lake:"var(--indigo)", temple:"var(--gold)", battle:"var(--vermilion)"};
-const MK_LABEL = {state:"Seat of a hill state", peak:"Peak", pass:"Pass",
-                  lake:"Lake / reservoir", temple:"Temple / monastery", battle:"Battle or movement site"};
 const MONASTERIES = new Set(["tabo","key","dhankar","trilokinath","gurughantal","mcleodganj"]);
 const PLACE_LINK = {
   subathu:"ev-subathu", kotgarh:"p-stokes", sanjauli:"ev-hhsrc", pajhota:"ev-pajhota",
@@ -409,9 +405,11 @@ function viewMap(){
     rPaths+'<g class="rlabels">'+rLabels+'</g></g>';
   const marks = Object.entries(MAP.places)
     .filter(([,p]) => mode.kinds.includes(p.k))
-    .map(([id,p]) => '<g class="mk" data-p="'+id+'" data-rec="'+(placeTarget(id)||"")+'" data-k="'+p.k+'" '+
+    .map(([id,p]) => '<g class="mk" data-k="'+p.k+'" data-p="'+id+'" '+
+      'data-rec="'+(placeTarget(id)||"")+'" data-n="'+p.n+'" '+
       'transform="translate('+p.x+','+p.y+')">'+
-      '<circle r="5.5" fill="'+MK_COLOR[p.k]+'"/><text y="-10">'+p.n+'</text></g>').join('');
+      '<g class="gly" style="fill:'+LAYER_BY_KIND[p.k].c+'">'+mkGlyph(LAYER_BY_KIND[p.k].glyph)+'</g>'+
+      '<text y="-9">'+p.n+'</text></g>').join('');
   const riverKey = S.rivers
     ? '<li><i style="background:var(--water)"></i>Major river</li>'+
       '<li><i style="background:var(--water-soft)"></i>Tributary</li>'
@@ -419,7 +417,7 @@ function viewMap(){
   const legend = mode.kinds.length
     ? '<div class="maplegend"><div class="lt">'+
       (mode.id==="states" ? "Seats of the hill states, c. 1815" : "Showing")+'</div><ul>'+
-      mode.kinds.map(k => '<li><i style="background:'+MK_COLOR[k]+'"></i>'+MK_LABEL[k]+'</li>').join('')+
+      mode.kinds.map(k => '<li><i style="background:'+LAYER_BY_KIND[k].c+'"></i>'+LAYER_BY_KIND[k].lb+'</li>').join('')+
       riverKey+'</ul></div>'
     : '<div class="maplegend"><div class="lt">Base map</div><ul>'+
       '<li>Click a district to open its record</li>'+
@@ -452,6 +450,26 @@ function applyZoom(){
     const t = m.dataset.at || (m.dataset.at = m.getAttribute("transform").match(/translate\(([^)]+)\)/)[1]);
     m.setAttribute("transform", "translate("+t+") scale("+inv+")");
   });
+  relabel();
+}
+/* Labels are laid out after every zoom: their boxes are constant in
+   screen pixels, so in SVG units they shrink as you zoom in and more of
+   them fit. Markers are never hidden — only their labels. */
+const LABEL_PRI = {peak:4, pass:3, glacier:2, lake:1, state:3, temple:2, battle:2};
+function relabel(){
+  const g = document.getElementById("mapg"); if(!g) return;
+  const marks = [...g.querySelectorAll(".mk:not(.hid)")];
+  if(!marks.length) return;
+  const inv = 1/ZT.k;
+  const items = marks.map((m,i) => {
+    const t = (m.dataset.at || m.getAttribute("transform")).match(/translate\(([-\d.]+)[, ]+([-\d.]+)\)/);
+    const n = m.dataset.n || "";
+    return {id:i, x:+t[1], y:+t[2],
+            w:(n.length*5.6+6)*inv, h:13*inv,
+            pri:(LABEL_PRI[m.dataset.k] || 1)*1000 - n.length};
+  });
+  const keep = placeLabels(items);
+  marks.forEach((m,i) => m.classList.toggle("nolabel", !keep.has(i)));
 }
 function zoomBy(dir){
   if(dir === 0){ ZT = {k:1,x:0,y:0}; applyZoom(); return; }
@@ -496,7 +514,7 @@ function mountMap(){
       const rect = canvas.getBoundingClientRect();
       let title, sub;
       if(hit.classList.contains("mk")){
-        const p = MAP.places[hit.dataset.p]; title = p.n; sub = MK_LABEL[p.k];
+        const p = MAP.places[hit.dataset.p]; title = p.n; sub = LAYER_BY_KIND[p.k].lb;
       } else if(hit.classList.contains("river")){
         title = hit.dataset.river; sub = MAP.rivers[hit.dataset.river].t === 1 ? "Major river" : "Tributary";
       } else {
@@ -540,6 +558,7 @@ function mountMap(){
     if(ZT.k === 1){ ZT.x = 0; ZT.y = 0; }
     applyZoom();
   }, {passive:false});
+  relabel();
 }
 
 /* ============================================================

@@ -22,11 +22,14 @@
 .distlabel{font-family:var(--f-body);font-size:13px;font-weight:600;fill:var(--ink-2);text-anchor:middle;
   pointer-events:none;paint-order:stroke;stroke:var(--ground);stroke-width:3px;stroke-linejoin:round}
 .mk{cursor:pointer}
-.mk circle{stroke:var(--surface);stroke-width:1.4;transition:r .12s}
-.mk:hover circle{r:7.5}
-.mk.sel circle{r:8;stroke:var(--accent);stroke-width:2.5}
+.mk .gly{stroke:var(--surface);stroke-width:1.4;transition:transform .12s}
+.mk:hover .gly{transform:scale(1.35)}
+.mk.sel .gly{stroke:var(--accent);stroke-width:2.2;transform:scale(1.35)}
 .mk text{font-family:var(--f-body);font-size:10.5px;font-weight:600;fill:var(--ink-2);
-  paint-order:stroke;stroke:var(--ground);stroke-width:2.6px;stroke-linejoin:round;pointer-events:none}
+  text-anchor:middle;paint-order:stroke;stroke:var(--surface);stroke-width:3px;
+  stroke-linejoin:round;pointer-events:none}
+.mk.nolabel text{display:none}
+.mk.hid{display:none}
 #maptip{position:absolute;pointer-events:none;background:var(--ink);color:var(--ground);
   font-size:12px;font-weight:600;padding:5px 9px;border-radius:6px;white-space:nowrap;
   transform:translate(-50%,-150%);z-index:8;box-shadow:var(--shadow);opacity:0;transition:opacity .1s}
