@@ -540,7 +540,120 @@ D.features = [
   ["p","Kol Dam, on the <b>Sutlej</b> across the Bilaspur–Mandi border, is an <b>800 MW</b> project operated by <b>NTPC</b>, one of the four major Sutlej hydel projects named together in this roster — Bhakra, Nathpa Jhakri, Karcham Wangtoo and Kol Dam."],
   ["p","With Gobind Sagar, it is one of only two named lakes on the Sutlej within Himachal Pradesh in this roster."],
   ["note","Exam hook","Sutlej · Bilaspur/Mandi · 800 MW · NTPC."]],
- rel:["t-lakes","t-hydel","Sutlej","d-bilaspur","d-mandi"]}
+ rel:["t-lakes","t-hydel","Sutlej","d-bilaspur","d-mandi"]},
+
+/* ---------- GLACIERS ---------- */
+{id:"gl-barashigri", k:"glacier", pid:"barashigri", name:"Bara Shigri",
+ size:"About 28 km long", valley:"Chandra valley, Lahaul",
+ feeds:"Chandra, which becomes the Chenab at Tandi",
+ retreat:"In the Chandra basin, the belt this roster's standard retreat question is built around",
+ districts:["d-lahaul"],
+ blocks:[
+  ["p","Bara Shigri, in the <b>Chandra valley</b> of Lahaul, is <b>the largest glacier in Himachal Pradesh</b> — about 28 km long, feeding the <b>Chandra</b> for much of its run down the valley. <b>Shigri Parbat</b> rises directly above it, the peak this roster already names for standing over it."],
+  ["p","Its scale makes it the reference glacier for the whole Chandra–Spiti system: whenever a question asks which basin's retreat matters most for Himachal's hydel planning and for glacial-lake outburst flood risk, Bara Shigri and its Lahaul neighbours are the standard answer."],
+  ["note","Exam hook","Chandra valley, Lahaul · about 28 km · <b>largest glacier in Himachal Pradesh</b> · feeds the Chandra → Chenab · below Shigri Parbat · the reference glacier for Chandra–Spiti retreat."]],
+ rel:["t-peaks","d-lahaul","Chandra","pk-shigriparbat","t-disaster"]},
+
+{id:"gl-chandranahan", k:"glacier", pid:"chandranahan", name:"Chandra Nahan",
+ valley:"Above Rohru, Shimla district", feeds:"Pabbar",
+ districts:["d-shimla"],
+ blocks:[
+  ["p","Chandra Nahan, above <b>Rohru</b> in Shimla district, is the <b>source of the Pabbar</b> — the river of the Rohru–Pabbar valley that runs through the upper-Shimla apple belt. The glacial <b>Chandra Nahan lake</b> sits at its foot."],
+  ["p","It lies outside the Chandra–Spiti belt that usually anchors questions on glacier retreat, but its recession matters just as much: the Pabbar's flow, and the apple-belt life that depends on it, trace back to this one glacier the way the bigger Lahaul rivers trace back to theirs."],
+  ["note","Exam hook","Above Rohru, Shimla · source of the <b>Pabbar</b> · Chandra Nahan lake below it."]],
+ rel:["t-peaks","d-shimla","Pabbar","t-disaster"]},
+
+{id:"gl-beaskund", k:"glacier", pid:"beaskund", name:"Beas Kund",
+ valley:"Solang, Kullu, below Rohtang La", feeds:"Beas",
+ districts:["d-kullu"],
+ blocks:[
+  ["p","Beas Kund, in the Solang side valley of Kullu just below <b>Rohtang La</b>, is the <b>source of the Beas</b> — the one of Himachal's five major rivers that both rises and runs almost entirely inside the state."],
+  ["p","Every account of the Beas begins here, the way the Chandra and the Bhaga both begin at Baralacha La — the pass above it is remembered for the road into Lahaul, but for the river system what starts at this glacier is the more important fact."],
+  ["note","Exam hook","Solang, Kullu, below Rohtang La · <b>source of the Beas</b>."]],
+ rel:["t-peaks","d-kullu","Beas","ps-rohtang","t-disaster"]},
+
+{id:"gl-parvatigl", k:"glacier", pid:"parvatigl", name:"Parvati Glacier",
+ valley:"Parvati valley, Kullu", feeds:"Parvati, which joins the Beas at Bhuntar",
+ districts:["d-kullu"],
+ blocks:[
+  ["p","Parvati Glacier lies at the head of the <b>Parvati valley</b> in Kullu, one of the glaciers whose melt feeds the <b>Parvati</b> on its way down to join the <b>Beas at Bhuntar</b>."],
+  ["p","It sits in the same upper basin as the <b>Mantalai glacier</b>, from which the Pin Parvati Pass record already traces the river's rise — together they are the ice at the head of the valley that keeps the Parvati flowing."],
+  ["note","Exam hook","Parvati valley, Kullu · feeds the <b>Parvati</b>, which joins the Beas at Bhuntar."]],
+ rel:["t-peaks","d-kullu","Parvati","Beas","ps-pinparvati","t-disaster"]},
+
+{id:"gl-sonapani", k:"glacier", pid:"sonapani", name:"Sonapani",
+ valley:"Chandra basin, Lahaul", feeds:"Chandra, which becomes the Chenab at Tandi",
+ retreat:"One of the more closely studied glaciers of the Chandra basin for retreat",
+ districts:["d-lahaul"],
+ blocks:[
+  ["p","Sonapani, in the <b>Chandra basin</b> of Lahaul, is one of the glaciers that feed the <b>Chandra</b> on its run down to Tandi, where it becomes the <b>Chenab</b>."],
+  ["p","It is among the more closely studied glaciers of the basin for its retreat — the Chandra–Spiti belt is the state's standard case for glacier recession, tied both to the region's hydel potential and to the risk of glacial-lake outburst floods further downstream."],
+  ["note","Exam hook","Chandra basin, Lahaul · feeds the Chandra → Chenab · closely studied for retreat."]],
+ rel:["t-peaks","d-lahaul","Chandra","t-disaster"]},
+
+{id:"gl-gangstang", k:"glacier", pid:"gangstang", name:"Gangstang",
+ valley:"Bhaga basin, Lahaul", feeds:"Bhaga, which becomes the Chenab at Tandi",
+ districts:["d-lahaul"],
+ blocks:[
+  ["p","Gangstang, in the <b>Bhaga basin</b> of Lahaul, lies below <b>Gangstang peak</b> and feeds the <b>Bhaga</b> on its way to Tandi, where the river becomes the <b>Chenab</b>."],
+  ["p","It is the Bhaga-side counterpart to the Chandra basin's glaciers further south — the same retreat concerns that apply to Bara Shigri and Sonapani apply here too, since both headwaters feed the state's largest untapped hydel basin."],
+  ["note","Exam hook","Bhaga basin, Lahaul · below Gangstang peak · feeds the Bhaga → Chenab."]],
+ rel:["t-peaks","d-lahaul","Bhaga","t-disaster"]},
+
+{id:"gl-perad", k:"glacier", pid:"perad", name:"Perad",
+ valley:"Lahaul–Chamba divide", feeds:"Chenab",
+ districts:["d-lahaul","d-chamba"],
+ blocks:[
+  ["p","Perad sits on the <b>Lahaul–Chamba divide</b>, one of the less-documented glaciers in this roster, its meltwater draining eventually into the <b>Chenab</b> system that the Chandra and Bhaga both feed."],
+  ["p","Its position on the district boundary places it among the glaciers of upper Chamba and Lahaul whose retreat is watched for the same reasons as the better-studied ice of the Chandra valley — the bearing on downstream hydel generation and on glacial-lake outburst flood risk."],
+  ["note","Exam hook","Lahaul–Chamba divide · feeds the Chenab system."]],
+ rel:["t-peaks","d-lahaul","d-chamba","Chenab","t-disaster"]},
+
+{id:"gl-dudhon", k:"glacier", pid:"dudhon", name:"Dudhon",
+ valley:"Parvati basin, Kullu", feeds:"Parvati, which joins the Beas at Bhuntar",
+ districts:["d-kullu"],
+ blocks:[
+  ["p","Dudhon, in the <b>Parvati basin</b> of Kullu, is counted among the <b>largest glaciers of the Beas basin</b>, feeding the <b>Parvati</b> on its way to join the <b>Beas at Bhuntar</b>."],
+  ["p","It sits alongside Parvati Glacier at the head of the same valley, part of the glacier field that keeps the Parvati flowing through the dry months — and, like the rest of Kullu and Lahaul's glaciers, one whose retreat is tracked for what it means downstream."],
+  ["note","Exam hook","Parvati basin, Kullu · among the largest glaciers of the Beas basin · feeds the Parvati → Beas."]],
+ rel:["t-peaks","d-kullu","Parvati","Beas","t-disaster"]},
+
+{id:"gl-bhadal", k:"glacier", pid:"bhadal", name:"Bhadal",
+ valley:"Bara Bangahal, Kangra", feeds:"Ravi",
+ districts:["d-kangra"],
+ blocks:[
+  ["p","Bhadal, above <b>Bara Bangahal</b> in Kangra, feeds the stream that is one of the <b>Ravi's two parent streams</b> — the <b>Bhadal</b> and the <b>Tantgari</b> — which meet at Bara Bangahal to form the Ravi itself."],
+  ["p","It is reached the same way the Ravi's headwaters are, over the <b>Thamsar Pass</b> from Bara Bhangal, and is worth pairing with that pass and with the Tantgari in any question on where the Ravi begins."],
+  ["note","Exam hook","Bara Bangahal, Kangra · feeds the <b>Ravi</b> — one of its two parent streams, with the Tantgari, at Bara Bangahal."]],
+ rel:["t-peaks","d-kangra","Ravi","ps-thamsar","t-disaster"]},
+
+{id:"gl-ladyofkeylong", k:"glacier", pid:"ladyofkeylong", name:"Lady of Keylong",
+ valley:"Above Keylong, Lahaul", feeds:"Bhaga, which becomes the Chenab at Tandi",
+ districts:["d-lahaul"],
+ blocks:[
+  ["p","Lady of Keylong takes its name from the figure its <b>snow shape is said to trace</b> on the mountainside above <b>Keylong</b>, the headquarters of Lahaul & Spiti — a local landmark rather than a peak or a pass."],
+  ["p","It feeds the <b>Bhaga</b>, which flows past Keylong on its way to Tandi and the Chenab, so the glacier that gives the town its skyline sits above the same river that gives the district its headwaters."],
+  ["note","Exam hook","Above Keylong, Lahaul · named for the figure its snow shape traces · feeds the Bhaga → Chenab."]],
+ rel:["t-peaks","d-lahaul","Bhaga","t-disaster"]},
+
+{id:"gl-miyar", k:"glacier", pid:"miyar", name:"Miyar",
+ valley:"Miyar valley, Lahaul", feeds:"Miyar Nala, which joins the Chenab",
+ districts:["d-lahaul"],
+ blocks:[
+  ["p","Miyar Glacier sits at the head of the long <b>Miyar valley</b> in Lahaul — the long valley approach that gives this glacier its character in the roster, distinct from the shorter, road-served approaches to the Chandra basin's glaciers."],
+  ["p","Its meltwater drains through the <b>Miyar Nala</b> to the <b>Chenab</b>, named among the Chenab's own tributaries below the Chandra–Bhaga confluence at Tandi; <b>Mulkila</b>, on the Miyar–Chandra divide, stands above the same valley."],
+  ["note","Exam hook","Miyar valley, Lahaul · the long Miyar valley approach · feeds the Miyar Nala → Chenab."]],
+ rel:["t-peaks","d-lahaul","Chenab","pk-mulkila","t-disaster"]},
+
+{id:"gl-pingl", k:"glacier", pid:"pingl", name:"Pin Glacier",
+ valley:"Pin valley, Spiti", feeds:"Pin, which joins the Spiti, which joins the Sutlej at Khab",
+ retreat:"In the Chandra–Spiti belt, the standard retreat question, tied to hydel and GLOF risk",
+ districts:["d-lahaul"],
+ blocks:[
+  ["p","Pin Glacier lies in the <b>Pin valley</b> of Spiti, inside the <b>Pin Valley National Park</b>, and feeds the <b>Pin</b> river — which joins the <b>Spiti</b>, and the Spiti in turn joins the <b>Sutlej at Khab</b>."],
+  ["p","The Pin valley is cold-desert country, one of the driest tracts in the state, and its glacier sits squarely in the <b>Chandra and Spiti belt</b> that this roster's standard retreat question is built around — recession here is watched for its bearing on the Sutlej's hydel schemes downstream and on glacial-lake outburst flood risk."],
+  ["note","Exam hook","Pin valley, Spiti · in the Pin Valley National Park · feeds Pin → Spiti → Sutlej, at Khab · in the Chandra–Spiti retreat belt."]],
+ rel:["t-peaks","d-lahaul","Spiti","Sutlej","t-nationalparks","t-disaster"]}
 
 ];
 

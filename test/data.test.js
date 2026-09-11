@@ -158,3 +158,25 @@ test("exactly three lakes are Ramsar sites, with the right years", () => {
   assert.match(byId["lk-renuka"] || "", /2005/);
   assert.match(byId["lk-chandratal"] || "", /2005/);
 });
+
+test("all 12 glaciers are recorded and say what they feed", () => {
+  const gl = (D.features || []).filter(f => f.k === "glacier");
+  assert.equal(gl.length, 12);
+  for(const g of gl){
+    assert.ok(g.feeds, g.id + " does not say which river it feeds");
+    assert.ok(g.valley, g.id + " does not name its valley");
+  }
+});
+
+test("every glacier marker has a record", () => {
+  const have = new Set((D.features || []).filter(f => f.k === "glacier").map(f => f.pid));
+  for(const [pid, p] of Object.entries(MAP.places)){
+    if(p.k === "glacier") assert.ok(have.has(pid), "glacier marker " + pid + " has no record");
+  }
+});
+
+test("Bara Shigri is recorded as the largest glacier in the state", () => {
+  const g = (D.features || []).find(f => f.id === "gl-barashigri");
+  assert.ok(g, "gl-barashigri missing");
+  assert.match(JSON.stringify(g), /largest/i);
+});
