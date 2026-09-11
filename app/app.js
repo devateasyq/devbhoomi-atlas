@@ -687,70 +687,87 @@ function mountMap(){
 /* ============================================================
    OTHER VIEWS
    ============================================================ */
+/* A section shows a photograph where one is genuinely apt; the rest get a
+   tinted panel carrying their own icon, rather than a decorative photo of
+   something unrelated. */
+const SECT_PIC = {map:"district", timeline:"event", battles:"state",
+                  topics:"topic", rounds:"peak"};
+/* the cover changes between visits, so the app does not look identical
+   every time it is opened */
+const COVERS = ["district","lake","peak","river","pass"];
+
 function viewHome(){
   const syl = [
-    ["01","Ancient Himachal","Pre-history, Vedic references and the janapadas — Audumbara, Trigarta, Kuluta, Kulinda","t-janapadas"],
-    ["02","Early medieval states","Emergence and growth of Kangra, Kullu and Chamba","s-chamba"],
-    ["03","Mughals and Sikhs","The hill states and their relations with the Mughals and the Sikhs","t-mughal-relations"],
-    ["04","The Gorkha invasion","Its nature and consequences; the Treaty of Segauli","t-gorkha"],
-    ["05","Under colonial power","Sanads, grants, agency administration and territorial change","t-colonial-admin"],
-    ["06","Praja Mandal, 1848–1948","The national movement with special reference to the Praja Mandal movements","t-freedom"],
-    ["07","Making Himachal","Formation in 1948, the 1966 transfer, statehood in 1971","t-statehood"],
-    ["08","Artistic and cultural heritage","Temples, Buddhist monasteries and Pahari painting","t-pahari-painting"],
-    ["09","Geography of Himachal","Physiography, rivers, passes, peaks, lakes and protected areas","t-physio"],
-    ["10","Polity and governance","Constitutional evolution, the Assembly, panchayati raj, state legislation","t-polity"],
+    ["01","Ancient Himachal","Pre-history, Vedic references and the janapadas","t-janapadas"],
+    ["02","Early medieval states","Kangra, Kullu and Chamba emerge","s-chamba"],
+    ["03","Mughals and Sikhs","The hill states and their neighbours","t-mughal-relations"],
+    ["04","The Gorkha invasion","Its nature, and the Treaty of Segauli","t-gorkha"],
+    ["05","Under colonial power","Sanads, grants, agency administration","t-colonial-admin"],
+    ["06","Praja Mandal, 1848–1948","The national movement in the hill states","t-freedom"],
+    ["07","Making Himachal","1948, the 1966 transfer, statehood in 1971","t-statehood"],
+    ["08","Art and culture","Temples, monasteries and Pahari painting","t-pahari-painting"],
+    ["09","Geography","Physiography, rivers, passes, peaks, lakes","t-physio"],
+    ["10","Polity and governance","Constitutional evolution and panchayati raj","t-polity"],
     ["11","Economy","Horticulture, hydropower, industry and tourism","t-economy"]
   ];
-  const prog = store.get("quiz",{});
-  const done = Object.keys(prog).length, right = Object.values(prog).filter(Boolean).length;
-  const tile = (v,l,s,view) => '<button class="tile" type="button" data-view="'+view+'">'+
-    '<div class="v">'+v+'</div><div class="l">'+l+'</div><div class="s">'+s+'</div></button>';
-  return '<div class="home">'+
-  '<div class="hero">'+
-    '<div class="kicker">HPPSC · HPAS 2026 · Himachal Pradesh</div>'+
-    '<h1>Everything Himachal, connected.</h1>'+
-    '<p class="pitch">Revision, not repetition.</p>'+
-    '<p>The HP-specific syllabus as one linked object. Click a district on the map and you get its dynasty, '+
-    'its rulers, the battles fought on it and the modern statistics. Click a battle and you get the state that '+
-    'lost it. Nothing here is a separate page — it is one set of '+IDX.size+' records seen from six angles.</p>'+
-  '</div>'+
-  '<div class="sections">'+
-    NAV.filter(n => n.id !== "home").map(n =>
-      '<button class="sect" type="button" data-view="'+n.id+'">'+
+  const prog  = store.get("quiz",{});
+  const done  = Object.keys(prog).length;
+  const right = Object.values(prog).filter(Boolean).length;
+  const seen  = (S.seen || []).length;
+
+  const cover = COVERS[Math.floor(Math.random()*COVERS.length)];
+  const cpic  = PICS[cover];
+  const fact  = FACTS.length ? FACTS[Math.floor(Math.random()*FACTS.length)] : null;
+
+  /* a live fact on the cover, as the invitation in */
+  const teaser = fact
+    ? '<button class="covfact" type="button" data-view="rounds">'+
+        '<span class="cfk">'+(KINDS[fact.kind] ? KINDS[fact.kind].lb : "Fact")+'</span>'+
+        '<span class="cfn">'+fact.name+'</span>'+
+        '<span class="cft">'+fact.text+'</span>'+
+        '<span class="cfg">Start scrolling &rarr;</span></button>'
+    : '';
+
+  const stat = (v,l) => '<span class="stat"><b>'+v+'</b>'+l+'</span>';
+  const strip = '<div class="hstrip">'+
+    stat(num(FACTS.length), "facts") +
+    stat(num(IDX.size), "linked records") +
+    stat(num(D.pyq.length), "past questions") +
+    (seen ? stat(num(seen), "facts seen") : "") +
+    (done ? stat(right+"/"+done, "quiz correct") : "") +
+    '</div>';
+
+  const sections = NAV.filter(n => n.id !== "home").map(n => {
+    const pk = SECT_PIC[n.id] ? PICS[SECT_PIC[n.id]] : null;
+    return '<button class="sect'+(pk ? " haspic" : "")+'" type="button" data-view="'+n.id+'">'+
+      (pk ? '<img class="sectpic" src="'+pk.s+'" alt="" loading="lazy" decoding="async">' : '')+
       '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+n.ic+'</svg>'+
       '<span class="st">'+TITLE[n.id]+'</span>'+
       '<span class="sd">'+SUB[n.id]+'</span>'+
       (COUNTS[n.id] ? '<span class="sc">'+num(COUNTS[n.id])+'</span>' : '')+
-      '</button>').join('')+
+      '</button>';
+  }).join('');
+
+  return '<div class="home">'+
+  '<div class="cover">'+
+    '<img class="covpic" src="'+cpic.s+'" alt="" decoding="async">'+
+    '<div class="covbody">'+
+      '<div class="kicker">HPPSC · HPAS 2026 · Himachal Pradesh</div>'+
+      '<h1>Everything Himachal, connected.</h1>'+
+      '<p class="pitch">Revision, not repetition.</p>'+
+      teaser+
+    '</div>'+
+    '<span class="covcred">'+cpic.t+' &middot; '+cpic.a+' / '+cpic.l+'</span>'+
   '</div>'+
-  '<div class="tiles">'+
-    tile(D.quiz.length,"practice questions",(done ? right+"/"+done+" correct so far" : "not started"),"revise")+
-    tile(D.pyq.length,"past paper questions",PY_YEARS.length+" prelims papers","revise")+
-    tile(FACTS.length,"facts in Rounds","one per screen","rounds")+
-  '</div>'+
+  strip+
+  '<div class="sections">'+sections+'</div>'+
   '<div class="syllabus">'+
     '<div class="secthead"><h3>The syllabus, as eleven blocks</h3><span class="n">tap any row</span></div>'+
-    syl.map(s => '<button class="sylrow" type="button" data-go="'+s[3]+'">'+
-      '<span class="sn">'+s[0]+'</span><span><span class="st">'+s[1]+'</span>'+
-      '<span class="sd">'+s[2]+'</span></span></button>').join('')+
+    syl.map(x => '<button class="sylrow" type="button" data-go="'+x[3]+'">'+
+      '<span class="sn">'+x[0]+'</span><span><span class="st">'+x[1]+'</span>'+
+      '<span class="sd">'+x[2]+'</span></span></button>').join('')+
   '</div>'+
-  '<div class="syllabus" style="margin-top:30px">'+
-    '<div class="secthead"><h3>How to use it</h3></div>'+
-    '<div class="blk" style="max-width:66ch">'+
-    '<p><b>Follow the links.</b> Every record lists what it connects to, grouped by type. The panel keeps a '+
-    '<b>Path</b> trail of what you clicked through, so a chain like Kangra → Sansar Chand → Mahal Morian stays visible.</p>'+
-    '<p><b>Share any note.</b> The link button in the panel copies a direct URL to that record — '+
-    'useful for sending a specific fact to a study group.</p>'+
-    '<p><b>Press <kbd>/</kbd></b> to search everything, or use <b>Surprise me</b> for a random record when you want '+
-    'cold recall rather than a planned pass.</p>'+
-    '<p><b>Past papers.</b> Revise &rarr; Past papers holds '+D.pyq.length+' questions from the HPAS prelims papers of '+
-    PY_YEARS.slice().reverse().join(', ')+', filterable by year, with a <b>Himachal only</b> toggle that narrows them to the '+
-    D.pyq.filter(q=>q.hp).length+' state-specific ones. Where a question maps to a note here, the explanation links straight to it.</p>'+
-    '<p>Where sources genuinely disagree — the number of states merged in 1948, the wildlife-sanctuary count, '+
-    'several Praja Mandal founding years — the note says so rather than picking one silently. Those are marked '+
-    '<b>Disputed</b>.</p>'+
-    '</div>'+
-  '</div></div>';
+  '</div>';
 }
 
 function viewTimeline(){

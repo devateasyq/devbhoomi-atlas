@@ -233,12 +233,64 @@ button.card:hover{border-color:var(--accent-line);transform:translateY(-1px)}
 
 /* ---------- home ---------- */
 .home{padding:30px 18px 64px;max-width:940px}
-.hero h1{font-size:clamp(30px,5vw,44px);letter-spacing:-.028em;font-weight:700}
-.hero .kicker{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
-  color:var(--accent);font-weight:600;margin-bottom:9px}
-.hero .pitch{font-family:var(--f-display);font-style:italic;font-size:19px;color:var(--accent-2);
-  margin-top:10px;max-width:62ch;line-height:1.4}
-.hero p{font-size:15.5px;color:var(--ink-2);max-width:62ch;margin-top:11px;line-height:1.62}
+/* the Trends view still builds its stat tiles from these */
+.tiles{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(136px,1fr));margin:26px 0 8px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:13px 14px;
+  text-align:left;transition:border-color .13s}
+.tile .v{font-family:var(--f-mono);font-size:25px;font-weight:600;letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums;line-height:1.1}
+.tile .l{font-size:12.5px;color:var(--ink-2);margin-top:2px;font-weight:500}
+.tile .s{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);margin-top:5px}
+
+/* ---------- Overview: a photographic cover ---------- */
+.cover{position:relative;overflow:hidden;border-radius:14px;isolation:isolate;
+  min-height:clamp(320px,52vh,470px);display:flex;align-items:flex-end;
+  padding:26px 26px 22px;margin-bottom:14px;background:var(--surface-2)}
+.covpic{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
+/* the scrim carries the text: without it the headline sits on whatever the
+   photograph happens to be doing that visit */
+.cover::after{content:"";position:absolute;inset:0;z-index:-1;
+  background:linear-gradient(to top, rgba(8,16,13,.93) 0%, rgba(8,16,13,.74) 42%,
+    rgba(8,16,13,.36) 74%, rgba(8,16,13,.28) 100%)}
+.covbody{position:relative;width:100%;max-width:62ch}
+.cover .kicker{font-family:var(--f-mono);font-size:10px;letter-spacing:.17em;
+  text-transform:uppercase;color:#A8C4BB}
+.cover h1{font-family:var(--f-display);font-size:clamp(28px,5.4vw,44px);font-weight:700;
+  letter-spacing:-.028em;line-height:1.06;color:#F2F5F0;margin:9px 0 0;text-wrap:balance}
+.cover .pitch{font-family:var(--f-display);font-style:italic;font-size:18px;
+  color:#9FC6BA;margin:7px 0 0}
+
+.covfact{display:block;width:100%;text-align:left;margin-top:18px;cursor:pointer;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);
+  border-radius:11px;padding:13px 15px;font:inherit;
+  backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+  transition:background .14s,border-color .14s}
+.covfact:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3)}
+.covfact:focus-visible{outline:2px solid #A8C4BB;outline-offset:2px}
+.covfact .cfk{display:block;font-family:var(--f-mono);font-size:9px;letter-spacing:.15em;
+  text-transform:uppercase;color:#8FB3A8}
+.covfact .cfn{display:block;font-family:var(--f-display);font-size:14.5px;font-weight:600;
+  color:#CBDDD5;margin-top:3px}
+.covfact .cft{display:block;font-family:var(--f-display);font-size:19px;font-weight:600;
+  line-height:1.28;color:#F2F5F0;margin-top:2px;text-wrap:balance}
+.covfact .cfg{display:block;font-size:11.5px;color:#9FC6BA;margin-top:9px}
+.covcred{position:absolute;right:14px;bottom:10px;font-family:var(--f-mono);
+  font-size:8.5px;letter-spacing:.05em;color:rgba(255,255,255,.45);max-width:48%;
+  text-align:right;line-height:1.3}
+
+.hstrip{display:flex;flex-wrap:wrap;gap:8px 22px;padding:2px 4px 16px}
+.hstrip .stat{font-size:12px;color:var(--ink-3)}
+.hstrip .stat b{font-family:var(--f-mono);font-size:15px;font-weight:600;
+  color:var(--ink);margin-right:5px;letter-spacing:-.02em}
+
+.sect.haspic{min-height:112px;justify-content:flex-end;isolation:isolate;overflow:hidden}
+.sectpic{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  z-index:-2;opacity:.30}
+.sect.haspic::after{content:"";position:absolute;inset:0;z-index:-1;
+  background:linear-gradient(to top,var(--surface) 26%,transparent 96%)}
+.sect.haspic .ic{position:absolute;top:12px;left:13px;margin:0}
+
 /* Overview is the hub: on a phone it is the only route to the five views
    the tab bar no longer carries. */
 .sections{display:grid;gap:10px;margin:26px 0 8px;
@@ -256,15 +308,7 @@ button.card:hover{border-color:var(--accent-line);transform:translateY(-1px)}
 .sect .sc{position:absolute;top:12px;right:13px;font-family:var(--f-mono);
   font-size:11px;color:var(--ink-3)}
 
-.tiles{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(136px,1fr));margin:26px 0 8px}
-.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:13px 14px;
-  text-align:left;transition:border-color .13s}
 button.tile:hover{border-color:var(--accent-line)}
-.tile .v{font-family:var(--f-mono);font-size:25px;font-weight:600;letter-spacing:-.03em;
-  font-variant-numeric:tabular-nums;line-height:1.1}
-.tile .l{font-size:12.5px;color:var(--ink-2);margin-top:2px;font-weight:500}
-.tile .s{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--ink-3);margin-top:5px}
 .syllabus{margin-top:34px}
 .sylrow{display:grid;grid-template-columns:26px 1fr;gap:12px;padding:11px 0;
   border-bottom:1px solid var(--line-soft);align-items:start;text-align:left;width:100%;cursor:pointer}
