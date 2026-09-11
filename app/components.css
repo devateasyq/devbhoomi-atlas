@@ -259,3 +259,71 @@ button.tile:hover{border-color:var(--accent-line)}
   color:var(--ground);font-size:13px;font-weight:500;padding:9px 16px;border-radius:9px;
   box-shadow:var(--shadow-lg);z-index:90;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s}
 #toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- trends / charts ---------- */
+.trends .tiles{margin:0 0 8px}
+.cnote{font-size:13.5px;color:var(--ink-2);max-width:68ch;margin:-4px 0 14px;line-height:1.6}
+.cnote b{color:var(--ink);font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin:0 0 12px}
+.lg{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);font-weight:500}
+.lg i{width:9px;height:9px;border-radius:2.5px;flex:0 0 9px}
+
+/* horizontal bars */
+.bars{display:flex;flex-direction:column;gap:2px;margin-bottom:14px;max-width:640px}
+.bars.wide{max-width:720px}
+.bars.wide .brow{grid-template-columns:250px 1fr 34px}
+.bars.wide .blab{white-space:normal;overflow:visible;line-height:1.3;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.brow{display:grid;grid-template-columns:170px 1fr 34px;align-items:center;gap:11px;
+  padding:3px 0;width:100%;text-align:left;background:none;border:none}
+.brow .blab{font-size:13px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brow .btrack{height:16px;background:var(--surface-2);border-radius:4px;overflow:hidden}
+.brow .bfill{display:block;height:100%;border-radius:0 4px 4px 0;min-width:3px;
+  transition:width .35s cubic-bezier(.3,.8,.4,1)}
+.brow .bval{font-family:var(--f-mono);font-size:12px;font-weight:600;color:var(--ink);
+  text-align:right;font-variant-numeric:tabular-nums}
+button.brow{cursor:pointer;border-radius:6px}
+button.brow:hover{background:var(--surface)}
+button.brow:hover .blab{color:var(--accent)}
+
+/* columns */
+.cols{display:flex;gap:2px;align-items:flex-end;height:150px;margin-bottom:14px;max-width:460px}
+.col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%}
+.col .cval{font-family:var(--f-mono);font-size:12.5px;font-weight:600;color:var(--ink);
+  font-variant-numeric:tabular-nums}
+.col .ctrack{flex:1;width:100%;display:flex;align-items:flex-end}
+.col .cfill{width:100%;background:var(--s1);border-radius:4px 4px 0 0;
+  transition:height .35s cubic-bezier(.3,.8,.4,1)}
+.col.partial .cfill{background:repeating-linear-gradient(135deg,var(--s1) 0 6px,transparent 6px 9px),var(--s1);
+  opacity:.82}
+.col .clab{font-family:var(--f-mono);font-size:10.5px;color:var(--ink-3);letter-spacing:.03em}
+
+/* small multiples */
+.smalls{display:grid;gap:10px;grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:14px;max-width:760px}
+@media (max-width:900px){ .smalls{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:520px){ .smalls{grid-template-columns:1fr} }
+.sm{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 11px 8px}
+.sm figcaption{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;
+  color:var(--ink-2);margin-bottom:4px}
+.sm figcaption i{width:9px;height:9px;border-radius:2.5px;flex:0 0 9px}
+.sm figcaption b{margin-left:auto;font-family:var(--f-mono);font-size:13px;color:var(--ink);
+  font-variant-numeric:tabular-nums}
+.spark{width:100%;height:46px;display:block;overflow:visible}
+.smx{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:9.5px;
+  color:var(--ink-3);margin-top:2px}
+
+/* data table */
+.dtable{border-collapse:collapse;font-size:13px;min-width:420px}
+.dtable th,.dtable td{padding:6px 12px 6px 0;text-align:right;
+  border-bottom:1px solid var(--line-soft);font-variant-numeric:tabular-nums}
+.dtable thead th{font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600}
+.dtable tbody th{text-align:left;font-weight:500;color:var(--ink-2);display:flex;align-items:center;gap:7px}
+.dtable tbody th i{width:9px;height:9px;border-radius:2.5px;flex:0 0 9px}
+.dtable td{color:var(--ink-2)}
+.dtable .tot{color:var(--ink);font-weight:600}
+.dtable tr.sum th,.dtable tr.sum td{color:var(--ink);font-weight:600;border-top:1px solid var(--line)}
+@media (max-width:600px){
+  .brow,.bars.wide .brow{grid-template-columns:128px 1fr 30px;gap:8px}
+  .cols{height:126px}
+}

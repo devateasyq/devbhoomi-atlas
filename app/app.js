@@ -75,16 +75,18 @@ const NAV = [
   {id:"battles",  lb:"Battles",  ic:'<path d="M14.5 14.5L21 21M9.5 14.5L3 21"/><path d="M18 3l-9 9M6 3l9 9"/>'},
   {id:"topics",   lb:"Topics",   ic:'<path d="M4 5h16M4 12h16M4 19h10"/>'},
   {id:"people",   lb:"People",   ic:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-6 7-6s7 2.1 7 6"/>'},
+  {id:"trends",   lb:"Trends",   ic:'<path d="M4 19V5"/><path d="M4 15l5-5 4 4 7-7"/><path d="M20 11V7h-4"/>'},
   {id:"revise",   lb:"Revise",   ic:'<path d="M4 5.5A2.5 2.5 0 016.5 3H19v15H6.5A2.5 2.5 0 004 20.5z"/><path d="M9 8h6"/>'}
 ];
 const COUNTS = {map:D.districts.length, timeline:D.events.length, battles:D.battles.length,
-                topics:D.topics.length, people:D.people.length,
+                topics:D.topics.length, people:D.people.length, trends:D.pyq.length,
                 revise:D.quiz.length + D.pyq.length};
 const SUB = {home:"Start here", map:"12 districts · "+D.states.length+" hill states",
              timeline:"Prehistory to 1971", battles:"Wars, sieges and treaties",
-             topics:"Notes by subject", people:"Rulers, rebels, builders", revise:"Flashcards, quiz and past papers"};
+             topics:"Notes by subject", people:"Rulers, rebels, builders",
+             trends:"What the papers actually ask", revise:"Flashcards, quiz and past papers"};
 const TITLE = {home:"Overview", map:"Atlas", timeline:"Timeline", battles:"Battles & Treaties",
-               topics:"Topics", people:"People", revise:"Revise"};
+               topics:"Topics", people:"People", trends:"Question Trends", revise:"Revise"};
 
 /* ---------- router: #/view or #/view/record-id ---------- */
 function currentHash(){ return "#/"+S.view+(S.sel ? "/"+S.sel : ""); }
@@ -901,6 +903,7 @@ function render(){
   else if(S.view === "battles") { s.innerHTML = viewBattles(); paintSelection(); }
   else if(S.view === "topics")  { s.innerHTML = viewTopics(); paintSelection(); }
   else if(S.view === "people")  { s.innerHTML = viewPeople(); paintSelection(); }
+  else if(S.view === "trends")    s.innerHTML = viewTrends();
   else if(S.view === "revise")    s.innerHTML = viewRevise();
 }
 

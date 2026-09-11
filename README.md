@@ -43,6 +43,9 @@ Nothing is origin-specific — relative paths throughout, so it works from a sub
   can be sent to a study group.
 - **Installable and offline.** A web app manifest plus `sw.js` cache every asset on first visit,
   so it works on a phone with no signal. "Add to Home Screen" gives it an icon and no browser chrome.
+- **Question trends.** A Trends view computes, from the past-paper bank itself, how many Himachal
+  questions each paper carries, which subjects they come from, how each subject moves year to year,
+  and which topic notes are examined most — every bar links back into the atlas.
 - **Past papers.** 448 questions from the HPAS prelims papers of 2020, 2021, 2022, 2023 and 2025,
   filterable by year, with a *Himachal only* toggle that narrows them to the 109 state-specific ones.
   Where a question maps to a note in the atlas, the explanation links straight to it.
@@ -56,7 +59,8 @@ index.html                 markup shell and asset links
 app/tokens.css             colour, type and spacing tokens, both themes
 app/layout.css             app shell and responsive rules
 app/components.css         map, timeline, cards, panel, revise, search
-app/app.js                 the entire application
+app/app.js                 the application
+app/trends.js              the Trends view — all figures computed from D.pyq at run time
 data/geo.js                map geometry: district paths, centroids, 107 place markers
 data/places.js             D.eras, D.districts, D.states
 data/history.js            D.events, D.battles, D.people
@@ -114,6 +118,18 @@ node -e '
   console.log(ids.size,"records,",bad,"dangling links");
 '
 ```
+
+## On the Trends view
+
+Nothing there is hardcoded: `trendStats()` recomputes every figure from `D.pyq` on each render, so
+adding or correcting questions updates the charts. The series palette (`--s1`..`--s6` in
+`tokens.css`) was validated for colourblind separation and contrast against both the light and dark
+chart surfaces; if you change those hues, re-validate rather than eyeball them, and keep the slot
+order — the ordering is what keeps adjacent pairs distinguishable.
+
+Counts are shown rather than percentages, deliberately: question recovery was incomplete for 2021,
+and the losses fell mostly on non-Himachal sections, so a percentage would overstate the Himachal
+share. Papers under 90% recovery are marked with an asterisk.
 
 ## On the previous-year questions
 

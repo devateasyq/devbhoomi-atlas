@@ -20,6 +20,11 @@
   --f-body:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
   /* era ramp — chronological order made visible */
+  /* categorical series palette — Pahari pigment hues, ordered so every adjacent
+     pair clears the CVD and normal-vision gates (validated, light surface #F8F9F5):
+     worst adjacent CVD dE 8.7 (deutan), worst normal-vision dE 24.4, all >= 3:1 contrast */
+  --s1:#009580; --s2:#ce514b; --s3:#5379df; --s4:#9f7b00; --s5:#b357ad; --s6:#3d9735;
+  --grid:#E1E4DB; --axis:#C3CABB;
   --e1:#3B4A6B; --e2:#35607A; --e3:#2E6E6B; --e4:#2F7A56; --e5:#6B7A2E;
   --e6:#8A6A1C; --e7:#A8552C; --e8:#8C3B33; --e9:#7A2F4A; --e10:#4A3070;
 }
@@ -35,7 +40,11 @@
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
     --shadow-lg:0 2px 4px rgba(0,0,0,.5), 0 24px 48px -20px rgba(0,0,0,.75);
     --map-land:#212A26; --map-line:#3D4A44; --map-sel:#28453D;
-    --e1:#7A8BB5; --e2:#6FA0BE; --e3:#5FAFAA; --e4:#63BC90; --e5:#A5B663;
+    --s1:#00a089; --s2:#d95b54; --s3:#5b83e9; --s4:#aa8300; --s5:#bd60b6; --s6:#47a03f;
+    --grid:#28312C; --axis:#3D4A44;
+    --s1:#00a089; --s2:#d95b54; --s3:#5b83e9; --s4:#aa8300; --s5:#bd60b6; --s6:#47a03f;
+  --grid:#28312C; --axis:#3D4A44;
+  --e1:#7A8BB5; --e2:#6FA0BE; --e3:#5FAFAA; --e4:#63BC90; --e5:#A5B663;
     --e6:#C9A445; --e7:#DE8B5E; --e8:#D97068; --e9:#C46C8B; --e10:#9A7ED0;
   }
 }
