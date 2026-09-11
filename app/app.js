@@ -99,6 +99,7 @@ function toast(msg){
 function renderAccount(user){
   const btn = document.getElementById("acctbtn");
   if(!btn) return;
+  btn.hidden = false;   /* markup starts hidden until the first render fills it in */
   btn.textContent = user ? (user.displayName || user.email || "Account")
                     : authAvailable() ? "Sign in" : "You";
   btn.classList.toggle("in", !!user);
