@@ -317,8 +317,11 @@ window.addEventListener("load", async () => {
      offering a sign-in that cannot work is worse than offering none. */
   const ab = doc.getElementById("acctbtn");
   check("the account control exists", !!ab);
-  check("it is hidden while Firebase is unconfigured",
-    ab && ab.hidden === true, "hidden=" + (ab && ab.hidden));
+  check("the account button's visibility tracks Firebase availability",
+    ab && ab.hidden === !ev("authAvailable()"),
+    "hidden=" + (ab && ab.hidden) + " available=" + ev("authAvailable()"));
+  check("renderAccount filled the account button's label",
+    ab && ab.textContent.trim().length > 0, "label=" + JSON.stringify(ab && ab.textContent));
   check("the app works signed out", !doc.getElementById("stage").hidden);
   check("no Firebase SDK was loaded",
     !doc.querySelector('script[src*="firebase-app-compat"]'));
