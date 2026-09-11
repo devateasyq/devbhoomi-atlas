@@ -5,10 +5,13 @@
    Left empty, the app runs exactly as it always has, with no accounts.
    Vendored SDK version: 10.12.2 (see vendor/firebase-*-compat.js). */
 var FB_CONFIG = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  appId: ""
+  apiKey: "AIzaSyCETunIOHkavBKh3JGAGHqKIn6drTF0qhQ",
+  authDomain: "parikramapath-db85a.firebaseapp.com",
+  projectId: "parikramapath-db85a",
+  storageBucket: "parikramapath-db85a.firebasestorage.app",
+  messagingSenderId: "779325809186",
+  appId: "1:779325809186:web:c5f7ee3ba787dcf6f3207b",
+  measurementId: "G-BLQR6P5KCJ"
 };
 var FB_READY = !!(FB_CONFIG.apiKey && FB_CONFIG.authDomain && FB_CONFIG.projectId && FB_CONFIG.appId);
 
