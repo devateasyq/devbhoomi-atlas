@@ -1181,7 +1181,7 @@ function roundArt(f){
 function roundCard(f){
   const k = KINDS[f.kind];
   const c = k ? k.c : "var(--accent)";
-  const p = PICS[f.kind];
+  const p = PIC_REC[f.srcId] || PICS[f.kind];
   return '<button class="short" type="button" data-fid="'+f.id+'" data-src="'+f.srcId+'" '+
       'style="--kc:'+c+'">'+
     (p ? '<img class="rpic" src="'+p.s+'" alt="" loading="lazy" decoding="async">' : '')+

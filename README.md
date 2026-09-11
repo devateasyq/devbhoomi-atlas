@@ -219,14 +219,43 @@ you rely on any single figure in an examination.
 
 ## Image credits
 
-The photographs behind the Rounds cards are all freely licensed. Sources:
+Photographs behind the Rounds cards, all freely licensed. Subject-specific
+images are used where Commons has one; the rest fall back to a per-kind image.
 
-- **Kunzum La** — Kunzum La-19a-pass height-Berge-2016-gje.jpg — Gerd Eichmann, CC BY 4.0 — <https://commons.wikimedia.org/wiki/File:Kunzum_La-19a-pass_height-Berge-2016-gje.jpg>
-- **Chandra Taal** — Chandra Taal (Lake), HP, India, D35 7333 nx01.jpg — Adarsh Patel, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Chandra_Taal_(Lake),_HP,_India,_D35_7333_nx01.jpg>
-- **Bara Shigri, 1863** — Ice Cave at the Bara Shigri Terminus, 1863.jpg — Philip Henry Egerton, CC0 — <https://commons.wikimedia.org/wiki/File:Ice_Cave_at_the_Bara_Shigri_Terminus,_1863.jpg>
-- **Kinner Kailash** — Kinner Kailash Mountain Range (edited).jpg — Anubhav Agarwal, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Kinner_Kailash_Mountain_Range_(edited).jpg>
-- **The Beas at Kullu** — Kullu Valley, Beas River near Manali, India.jpg — Vyacheslav Argenberg, CC BY 4.0 — <https://commons.wikimedia.org/wiki/File:Kullu_Valley,_Beas_River_near_Manali,_India.jpg>
-- **Kangra Fort** — Ruined fort of kangra, kangra, H.P.jpg — Monika rana, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Ruined_fort_of_kangra,_kangra,_H.P.jpg>
-- **The Dhauladhar** — Dhauladhar layers.JPG — Metanish, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Dhauladhar_layers.JPG>
-- **Bhimakali, Sarahan** — Sarahan-Bhimakali-06-gje.jpg — Gerd Eichmann, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Sarahan-Bhimakali-06-gje.jpg>
-- **Viceregal Lodge, Shimla** — Viceregal Lodge Shimla.jpg — Aloofmanish, CC0 — <https://commons.wikimedia.org/wiki/File:Viceregal_Lodge_Shimla.jpg>
+- **Rohtang La** — Timothy A. Gonsa, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Snow_Rohtang_Range_Manali_May24_A7CR_00128.jpg>
+- **Baralacha La** — Tagooty, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Baralacha_La_Lahaul_D32_13255.jpg>
+- **Jalori Pass** — Manish57335, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Camping_at_Jalori_pass.jpg>
+- **Sach Pass** — Sunilbanger, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Close_view_of_pir_panjal_from_sach_pass_chamba.jpg>
+- **Hamta Pass** — Dakshchadha1, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Hamta_pass,_Himalayas.jpg>
+- **Shipki La** — Rakeshk9548, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Shipki_la.jpg>
+- **Renuka Lake** — Pushkar Prashar, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Renuka_Lake_Sirmaur.jpg>
+- **Rewalsar (Tso Pema)** — Gannu03, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Rewalsar_lake_01.jpg>
+- **Prashar Lake** — Navneet Sharma, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Parashar_Lake_September_2020.jpg>
+- **Khajjiar Lake** — Wittystef, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Khajjiar_lake.jpg>
+- **Gobind Sagar** — Gurlal Maan, CC BY-SA 3.0 — <https://commons.wikimedia.org/wiki/File:Boats_in_Gobind_Sagar,_Himachal_Pardesh.jpg>
+- **Suraj Tal** — Timothy Gonsalves, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Suraj_Tal_Lahaul_Himachal_Jul16_D32_13220.jpg>
+- **Nako Lake** — Timothy A. Gonsa, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Nako_Lake_Kinnaur_Himachal_Jun18_D72_6798.jpg>
+- **Manimahesh Lake** — NaturenHuman, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Mt._Kailash_Manimahesh_Lake.jpg>
+- **Reo Purgyil** — Arashdeep, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Peaks_of_Mt_Leo_Purgyil_and_Reo_Purgyil.jpg>
+- **Hanuman Tibba** — Biswarup Ganguly, CC BY 3.0 — <https://commons.wikimedia.org/wiki/File:Mount_Hanuman_Tibba_-_Solang_Valley_-_Kullu_2014-05-10_2594.JPG>
+- **Churdhar** — UnpetitproleX, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Churdhar_WS,_view_towards_Tons_valley,_Himachal_Pradesh,_India.jpg>
+- **Manimahesh Kailash** — Ramkrish1in31, CC BY-SA 3.0 — <https://commons.wikimedia.org/wiki/File:ManiMahesh_Kailash.JPG>
+- **Sutlej** — Darshan Simha, CC BY 2.0 — <https://commons.wikimedia.org/wiki/File:A_view_of_Sutlej_river_Himachal_Pradesh_India_2014.jpg>
+- **Ravi** — Ms Sarah Welch, CC0 — <https://commons.wikimedia.org/wiki/File:Chamba_city_and_river_Ravi,_Himachal_Pradesh_India.jpg>
+- **Chenab** — Timothy A. Gonsa, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Villages_Chenab_Udaipur_Lahaul_Himachal_Jul19_D72_10963.jpg>
+- **Yamuna** — Abhi713, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Yamuna_river_beside_paonta_sahib_gurudwara_in_himachal_pradesh.jpg>
+- **Lahaul and Spiti** — Adarsh Patel, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Lord_Vishnu_Taal_(Lake),_Lahaul_and_Spiti_Dist.,_HP,_India,_D35_7480nx-01_01.jpg>
+- **Buddhist Monasteries** — Timothy A. Gonsalves, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:TaboMonastery-Tabo-Spiti-Himachal-D72_6827.jpg>
+- **Sirmaur** — Ramantharki, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Village_Dada_khelu,Mahipur,Nahan,district_Sirmour,_himachal_pradesh.jpg>
+
+Per-kind fallbacks:
+
+- **Kunzum La** (pass) — Gerd Eichmann, CC BY 4.0 — <https://commons.wikimedia.org/wiki/File:Kunzum_La-19a-pass_height-Berge-2016-gje.jpg>
+- **Chandra Taal** (lake) — Adarsh Patel, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Chandra_Taal_(Lake),_HP,_India,_D35_7333_nx01.jpg>
+- **Bara Shigri, 1863** (glacier) — Philip Henry Egerton, CC0 — <https://commons.wikimedia.org/wiki/File:Ice_Cave_at_the_Bara_Shigri_Terminus,_1863.jpg>
+- **Kinner Kailash** (peak) — Anubhav Agarwal, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Kinner_Kailash_Mountain_Range_(edited).jpg>
+- **The Beas at Kullu** (river) — Vyacheslav Argenberg, CC BY 4.0 — <https://commons.wikimedia.org/wiki/File:Kullu_Valley,_Beas_River_near_Manali,_India.jpg>
+- **Kangra Fort** (state) — Monika rana, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Ruined_fort_of_kangra,_kangra,_H.P.jpg>
+- **The Dhauladhar** (district) — Metanish, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Dhauladhar_layers.JPG>
+- **Bhimakali, Sarahan** (topic) — Gerd Eichmann, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Sarahan-Bhimakali-06-gje.jpg>
+- **Viceregal Lodge, Shimla** (event) — Aloofmanish, CC0 — <https://commons.wikimedia.org/wiki/File:Viceregal_Lodge_Shimla.jpg>
