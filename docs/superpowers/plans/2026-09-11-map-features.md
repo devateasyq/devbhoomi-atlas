@@ -442,6 +442,16 @@ test("isolating the already-isolated kind restores everything", () => {
   assert.deepEqual(hidden, [], "second isolate must restore all layers");
 });
 
+test("a layer hidden in another map mode survives isolate and restore", () => {
+  /* `visibleKinds` is only what the current legend shows. A layer hidden
+     in a different mode is not in it, and must not be silently dropped. */
+  let hidden = ["river1"];
+  hidden = kit.layerIsolate(hidden, "pass", KINDS4);
+  assert.ok(hidden.includes("river1"), "isolate dropped an out-of-scope hidden layer");
+  hidden = kit.layerIsolate(hidden, "pass", KINDS4);
+  assert.deepEqual(hidden, ["river1"], "restore must keep it and clear only this legend");
+});
+
 test("isolating a different kind switches the isolation", () => {
   let hidden = kit.layerIsolate([], "pass", KINDS4);
   hidden = kit.layerIsolate(hidden, "lake", KINDS4);
@@ -471,11 +481,14 @@ function layerToggle(hidden, k){
 }
 function layerIsolate(hidden, k, visibleKinds){
   var others = visibleKinds.filter(function(x){ return x !== k; });
+  /* Anything hidden that this legend does not show belongs to another map
+     mode — hide peaks in geo mode, switch to Heritage, and "peak" is still
+     in `hidden` but absent from `visibleKinds`. It must survive BOTH
+     isolating and restoring, so restoring returns `keep`, not []. */
+  var keep = hidden.filter(function(x){ return visibleKinds.indexOf(x) < 0 && x !== k; });
   var isolated = others.every(function(x){ return hidden.indexOf(x) >= 0; })
               && hidden.indexOf(k) < 0;
-  if(isolated) return [];
-  var keep = hidden.filter(function(x){ return visibleKinds.indexOf(x) < 0 && x !== k; });
-  return keep.concat(others);
+  return isolated ? keep : keep.concat(others);
 }
 ```
 
