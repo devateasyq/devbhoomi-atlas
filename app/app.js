@@ -862,6 +862,40 @@ function buildCards(){
   D.people.forEach(p => push("History", "Who was "+p.name+"?",
     "<b>"+p.role+"</b> ("+p.dates+")<br>"+p.one, p.id));
   D.topics.forEach(t => push(t.sec, t.title+" — what must you be able to name?", t.kw, t.id));
+  /* Features and rivers: the facts a prelims paper actually asks. Every
+     card is derived from a record field, so editing the record edits the
+     card and the two cannot drift apart. */
+  (D.features || []).forEach(f => {
+    if(f.k === "peak"){
+      push("Geography", f.name+" — height and range?",
+        "<b>"+f.alt+"</b>"+(f.range ? " · "+f.range : ""), f.id);
+      push("Geography", "Which district is "+f.name+" in?",
+        "<b>"+(f.districts || []).map(d => IDX.has(d) ? IDX.get(d).r.name : d).join(", ")+"</b>", f.id);
+    } else if(f.k === "pass"){
+      push("Geography", f.name+" — height?", "<b>"+f.alt+"</b>", f.id);
+      push("Geography", f.name+" — what does it connect?",
+        "<b>"+f.connects+"</b>"+(f.range ? "<br>"+f.range : ""), f.id);
+    } else if(f.k === "lake"){
+      push("Geography", f.name+" — natural or man-made, and where?",
+        "<b>"+f.type+"</b>"+(f.alt ? " · "+f.alt : "")+
+        " · "+(f.districts || []).map(d => IDX.has(d) ? IDX.get(d).r.name : d).join(", "), f.id);
+      if(f.ramsar) push("Geography", "When was "+f.name+" designated a Ramsar site?",
+        "<b>"+f.ramsar+"</b>", f.id);
+      else push("Geography", f.name+" — what is it known for?",
+        f.sacred || f.river || f.area || f.type, f.id);
+    } else if(f.k === "glacier"){
+      push("Geography", f.name+" — which valley, and which river does it feed?",
+        "<b>"+f.valley+"</b><br>Feeds the <b>"+f.feeds+"</b>", f.id);
+    }
+  });
+  (D.rivers || []).forEach(r => {
+    push("Geography", r.name+" — where does it rise?", "<b>"+r.source+"</b>", r.id);
+    if(r.lenHP) push("Geography", r.name+" — length in Himachal?", "<b>"+r.lenHP+"</b>", r.id);
+    if(r.sans) push("Geography", r.name+" — Sanskrit, Vedic and Greek names?",
+      [r.sans, r.vedic, r.greek].filter(Boolean).join(" · "), r.id);
+    if(r.tribs) push("Geography", r.name+" — tributaries and where they join?", r.tribs, r.id);
+    if(r.projects) push("Geography", r.name+" — the projects on it?", r.projects, r.id);
+  });
   return c;
 }
 const cardPool = () => {
