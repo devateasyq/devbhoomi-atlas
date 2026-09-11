@@ -354,22 +354,37 @@ window.addEventListener("load", async () => {
     const t2 = doc.getElementById("notetext");
     t2.focus();
     t2.value = "typed but never blurred";
+    /* A real keystroke fires input, and that is what marks the editor
+       dirty. Without it the editor is deliberately NOT saved — a stale
+       textarea must never overwrite a note that synced in behind it — so
+       setting .value alone would be testing the wrong contract. */
+    t2.dispatchEvent(new win.Event("input"));
     win.openRec("d-shimla"); await wait(150);
     win.openRec("d-kangra"); await wait(200);
     check("a note typed and navigated away from is not lost",
       doc.getElementById("notetext").value === "typed but never blurred",
       JSON.stringify(doc.getElementById("notetext").value));
 
-    /* Emptying a note must remove it, not store a blank one — otherwise
-       every record ever opened would carry an empty note to the server. */
+    /* Emptying a note leaves a tombstone {text:"", t} rather than removing
+       the key. An absent key always loses to a present remote one in
+       mergeNotes, so a plain removal was undone by the next sync. The
+       tombstone carries the deletion's timestamp so it wins by recency,
+       and realNotes hides it from every reader. */
     const t3 = doc.getElementById("notetext");
     t3.value = "   ";
+    t3.dispatchEvent(new win.Event("input"));
     doc.getElementById("notesave").click();
     await wait(150);
     const stored = JSON.parse(win.localStorage.getItem("hpatlas:notes") || "{}");
-    check("an emptied note is removed, not stored blank",
-      !Object.prototype.hasOwnProperty.call(stored, "d-kangra"),
+    const tomb = stored["d-kangra"];
+    check("an emptied note leaves a tombstone, not a blank note",
+      !!tomb && tomb.text === "" && typeof tomb.t === "number",
       JSON.stringify(stored));
+    check("the tombstone is hidden from every reader",
+      !Object.prototype.hasOwnProperty.call(ev('realNotes(store.get("notes", {}))'), "d-kangra"));
+    check("an emptied note shows as empty in the editor",
+      doc.getElementById("notetext").value === "",
+      JSON.stringify(doc.getElementById("notetext").value));
 
     /* The block above deliberately ends with d-kangra's note removed, to
        cover the removal path. Write it back so the profile checks below
