@@ -374,17 +374,47 @@ button.brow:hover .blab{color:var(--accent)}
 .rounds{height:100%;overflow-y:auto;scroll-snap-type:y mandatory;
   overscroll-behavior:contain;scrollbar-width:none;outline:none}
 .rounds::-webkit-scrollbar{display:none}
-.short{scroll-snap-align:start;scroll-snap-stop:always;
-  height:100%;width:100%;max-width:420px;margin:0 auto;
-  display:flex;flex-direction:column;justify-content:center;gap:13px;
-  padding:32px 26px;border:0;border-bottom:1px solid var(--line-soft);
-  background:none;text-align:left;cursor:pointer;font:inherit}
+.rartdefs{position:absolute;width:0;height:0;overflow:hidden}
+
+.short{position:relative;overflow:hidden;scroll-snap-align:start;scroll-snap-stop:always;
+  height:100%;width:100%;max-width:460px;margin:0 auto;
+  display:flex;flex-direction:column;justify-content:center;gap:12px;
+  padding:32px 28px;border:0;border-bottom:1px solid var(--line-soft);
+  background:none;text-align:left;cursor:pointer;font:inherit;isolation:isolate}
+/* the kind's own colour, washed across the card */
+.short::before{content:"";position:absolute;inset:0;z-index:-2;background:var(--kc);opacity:.055}
+.short > span{position:relative;z-index:1}
+
+/* where this fact sits in Himachal */
+.rart{position:absolute;inset:0;width:100%;height:100%;z-index:-1;
+  pointer-events:none;opacity:.85}
+.rart use{fill:none;stroke:var(--map-line);stroke-width:1.6;opacity:.42}
+.rart .hi-area{fill:var(--kc);opacity:.17;stroke:var(--kc);stroke-width:2.4;
+  stroke-opacity:.5}
+.rart .hi-line{fill:none;stroke:var(--kc);stroke-width:5;stroke-linecap:round;
+  stroke-linejoin:round;opacity:.62}
+.rart .hi-halo{fill:var(--kc);opacity:.15}
+.rart .hi-dot{fill:var(--kc);opacity:.72}
+
 .short .k{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.16em;
-  text-transform:uppercase}
-.short .nm{font-family:var(--f-display);font-size:clamp(26px,6vw,38px);font-weight:600;
-  line-height:1.1;letter-spacing:-.02em;color:var(--ink);text-wrap:balance}
-.short .ft{font-size:19px;line-height:1.5;color:var(--ink-2);text-wrap:pretty}
-.short .go{margin-top:6px;font-size:12.5px;color:var(--accent);
+  text-transform:uppercase;color:var(--kc)}
+.short .nm{font-family:var(--f-display);font-size:21px;font-weight:600;
+  line-height:1.15;letter-spacing:-.01em;color:var(--ink-2)}
+.short .ft{font-family:var(--f-display);font-size:clamp(25px,5.6vw,34px);font-weight:600;
+  line-height:1.22;letter-spacing:-.018em;color:var(--ink);text-wrap:balance}
+.short .go{margin-top:8px;font-size:12.5px;color:var(--accent);
   opacity:0;transition:opacity .15s}
 .short:hover .go,.short:focus-visible .go{opacity:1}
 .short:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
+
+/* Content settles in as the card snaps. The hidden start state is gated on
+   .anim, which mountRounds() adds, so a card is never invisible unless the
+   script that reveals it is actually running. */
+.rounds.anim .short > span,.rounds.anim .short .rart{opacity:0;transform:translateY(9px);
+  transition:opacity .34s ease,transform .34s cubic-bezier(.2,.7,.3,1)}
+.rounds.anim .short.on > span{opacity:1;transform:none}
+.rounds.anim .short.on .rart{opacity:.85;transform:none}
+@media (prefers-reduced-motion:reduce){
+  .rounds.anim .short > span{opacity:1;transform:none;transition:none}
+  .rounds.anim .short .rart{opacity:.85;transform:none;transition:none}
+}

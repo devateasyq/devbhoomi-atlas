@@ -1,6 +1,6 @@
 /* Parikrama Path — offline cache.
    Bump CACHE when any asset changes; old caches are purged on activate. */
-const CACHE = "parikrama-v17";
+const CACHE = "parikrama-v18";
 const ASSETS = [
   "./", "index.html",
   "app/tokens.css", "app/layout.css", "app/components.css", "app/app.js", "app/trends.js", "app/logo.js", "app/mapkit.js", "app/rounds.js",

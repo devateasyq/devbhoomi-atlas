@@ -97,7 +97,23 @@ function orderFacts(facts, seen){
   return fresh.concat(stale);
 }
 
+/* What to draw behind a fact. The feed is the atlas's feed, so every card
+   shows where its subject is: the district filled, the river traced, or a
+   point in the right valley. Returns null when a record has no geometry —
+   the card then shows the outline alone. */
+function factGeom(rec, kind, MAP){
+  if(!rec || !MAP) return null;
+  if(kind === "district" && rec.map && MAP.paths[rec.map])
+    return {shape: "area", d: MAP.paths[rec.map]};
+  if(kind === "river" && MAP.rivers && MAP.rivers[rec.id])
+    return {shape: "line", d: MAP.rivers[rec.id].d};
+  var pid = rec.pid || rec.seat || rec.place;
+  if(pid && MAP.places && MAP.places[pid])
+    return {shape: "point", x: MAP.places[pid].x, y: MAP.places[pid].y};
+  return null;
+}
+
 if(typeof module !== "undefined" && module.exports){
-  module.exports = {buildFacts: buildFacts, orderFacts: orderFacts, splitHook: splitHook,
+  module.exports = {buildFacts: buildFacts, orderFacts: orderFacts, factGeom: factGeom, splitHook: splitHook,
                     keepFact: keepFact, MIN_FACT: MIN_FACT, MAX_FACT: MAX_FACT};
 }

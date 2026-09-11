@@ -122,3 +122,46 @@ test("orderFacts shuffles rather than returning source order", () => {
   const b = rounds.orderFacts(FACTS, []).map(f => f.id).join();
   assert.notEqual(a, b);
 });
+
+/* ---------- the art behind each card ---------- */
+const {MAP} = loadData();
+const BY_ID = new Map();
+for(const k of ["districts","states","events","battles","people","topics","rivers","features"]){
+  for(const r of (D[k] || [])) BY_ID.set(r.id, r);
+}
+
+test("districts resolve to their own outline", () => {
+  const f = FACTS.find(x => x.kind === "district");
+  const g = rounds.factGeom(BY_ID.get(f.srcId), f.kind, MAP);
+  assert.equal(g && g.shape, "area", "no area for " + f.srcId);
+  assert.ok(g.d.length > 50, "district path looks truncated");
+});
+
+test("rivers resolve to their own course", () => {
+  const f = FACTS.find(x => x.kind === "river" && MAP.rivers[x.srcId]);
+  const g = rounds.factGeom(BY_ID.get(f.srcId), f.kind, MAP);
+  assert.equal(g && g.shape, "line", "no line for " + f.srcId);
+});
+
+test("map features resolve to a point inside the map", () => {
+  for(const kind of ["peak","pass","lake","glacier"]){
+    const f = FACTS.find(x => x.kind === kind);
+    const g = rounds.factGeom(BY_ID.get(f.srcId), f.kind, MAP);
+    assert.equal(g && g.shape, "point", "no point for " + f.srcId);
+    assert.ok(g.x > 0 && g.x < MAP.w && g.y > 0 && g.y < MAP.h,
+      f.srcId + " point falls outside the map");
+  }
+});
+
+test("factGeom returns null rather than throwing for a record with no geometry", () => {
+  assert.equal(rounds.factGeom({id:"nope"}, "topic", MAP), null);
+  assert.equal(rounds.factGeom(null, "topic", MAP), null);
+  assert.equal(rounds.factGeom({id:"x"}, "topic", null), null);
+});
+
+test("most facts can be placed on the map", () => {
+  let placed = 0;
+  for(const f of FACTS) if(rounds.factGeom(BY_ID.get(f.srcId), f.kind, MAP)) placed++;
+  const pct = Math.round(placed / FACTS.length * 100);
+  assert.ok(pct >= 60, "only " + pct + "% of facts could be placed on the map");
+});

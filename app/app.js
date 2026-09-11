@@ -1150,15 +1150,41 @@ function moveSearch(d){
    can never drift from the note it came from.
    ============================================================ */
 function viewRounds(){
-  return '<div id="roundsfeed" class="rounds" tabindex="0" role="region" '+
+  /* The state's outline is identical on every card, so it is defined once
+     and referenced — 265 cards must not each carry the district geometry,
+     which runs to tens of kilobytes. It lives outside the feed because
+     mountRounds() clears the feed's contents. */
+  const outline = Object.values(MAP.paths).map(d => '<path d="'+d+'"/>').join('');
+  return '<svg class="rartdefs" aria-hidden="true" width="0" height="0">'+
+      '<symbol id="hpoutline" viewBox="0 0 '+MAP.w+' '+MAP.h+'">'+outline+'</symbol>'+
+    '</svg>'+
+    '<div id="roundsfeed" class="rounds" tabindex="0" role="region" '+
     'aria-label="Prelims facts, one per screen"></div>';
+}
+/* Where this fact sits in Himachal: the district filled, the river traced,
+   or a point in the right valley. Topics and events have no one place, and
+   show the outline alone. */
+function roundArt(f){
+  const rec = IDX.has(f.srcId) ? IDX.get(f.srcId).r : null;
+  const g = factGeom(rec, f.kind, MAP);
+  let hi = "";
+  if(g && g.shape === "area")      hi = '<path class="hi-area" d="'+g.d+'"/>';
+  else if(g && g.shape === "line") hi = '<path class="hi-line" d="'+g.d+'"/>';
+  else if(g && g.shape === "point")
+    hi = '<circle class="hi-halo" cx="'+g.x+'" cy="'+g.y+'" r="34"/>'+
+         '<circle class="hi-dot" cx="'+g.x+'" cy="'+g.y+'" r="11"/>';
+  return '<svg class="rart" viewBox="0 0 '+MAP.w+' '+MAP.h+'" aria-hidden="true">'+
+    '<use href="#hpoutline"/>'+hi+'</svg>';
 }
 /* One fact per card. The kind label reuses the map legend's colour, so a
    glance says whether this is a pass, a lake, a district or a treaty. */
 function roundCard(f){
   const k = KINDS[f.kind];
-  return '<button class="short" type="button" data-fid="'+f.id+'" data-src="'+f.srcId+'">'+
-    '<span class="k" style="color:'+(k ? k.c : "var(--accent)")+'">'+(k ? k.lb : "Fact")+'</span>'+
+  const c = k ? k.c : "var(--accent)";
+  return '<button class="short" type="button" data-fid="'+f.id+'" data-src="'+f.srcId+'" '+
+      'style="--kc:'+c+'">'+
+    roundArt(f)+
+    '<span class="k">'+(k ? k.lb : "Fact")+'</span>'+
     '<span class="nm">'+f.name+'</span>'+
     '<span class="ft">'+f.text+'</span>'+
     '<span class="go">Open the note &rarr;</span></button>';
@@ -1185,12 +1211,16 @@ function mountRounds(){
   if(!feed || !FACTS.length) return;
   RQ = orderFacts(FACTS, S.seen); RI = 0;
   feed.innerHTML = "";
+  /* only now is anything here able to reveal cards, so only now may CSS
+     start them hidden */
+  feed.classList.add("anim");
   if(RIO) RIO.disconnect();
   /* A fact counts as seen only once it has settled on screen — blasting a
      thumb down the feed must not burn facts that were never read. */
   RIO = new IntersectionObserver(entries => {
     let extend = false;
     for(const en of entries){
+      en.target.classList.add("on");
       if(en.intersectionRatio < 0.6) continue;
       const id = en.target.dataset.fid;
       if(S.seen.indexOf(id) < 0){ S.seen.push(id); store.set("seen", S.seen); }
