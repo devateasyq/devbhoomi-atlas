@@ -534,6 +534,16 @@ button.brow:hover .blab{color:var(--accent)}
   white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}
 #acctbtn:hover{border-color:var(--accent-line);color:var(--ink)}
 #acctbtn.in{border-color:var(--accent-line);color:var(--accent)}
+/* Google requires their mark shown unaltered and in full colour on a light
+   surface, so this button is white rather than the app's accent fill. */
+.gbtn{display:flex;align-items:center;justify-content:center;gap:10px;
+  background:#FFFFFF;color:#1F1F1F;border:1px solid #DADCE0;border-radius:8px;
+  padding:10px 14px;font:inherit;font-size:14px;font-weight:500;cursor:pointer;
+  transition:background .12s,box-shadow .12s}
+.gbtn:hover{background:#F7F8F8;box-shadow:0 1px 3px rgba(0,0,0,.14)}
+.gbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.gbtn .glogo{width:18px;height:18px;flex:0 0 18px}
+
 #acctdlg{position:fixed;inset:0;z-index:90;display:grid;place-items:center;
   background:rgba(8,16,13,.55);padding:18px}
 #acctdlg[hidden]{display:none}
