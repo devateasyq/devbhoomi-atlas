@@ -703,6 +703,7 @@ function viewHome(){
   '<div class="hero">'+
     '<div class="kicker">HPPSC · HPAS 2026 · Himachal Pradesh</div>'+
     '<h1>Everything Himachal, connected.</h1>'+
+    '<p class="pitch">Revision isn\u2019t repetition. Each round goes higher.</p>'+
     '<p>The HP-specific syllabus as one linked object. Click a district on the map and you get its dynasty, '+
     'its rulers, the battles fought on it and the modern statistics. Click a battle and you get the state that '+
     'lost it. Nothing here is a separate page — it is one set of '+IDX.size+' records seen from six angles.</p>'+
