@@ -217,6 +217,128 @@ D.features = [
  blocks:[
   ["p","Bashleo Pass, <b>3,300 m</b>, is another <b>internal crossing</b>, linking the Mandi/Kullu side of the Seraj tract to Shimla district — a lower-profile counterpart to Jalori a little further along the same range."],
   ["note","Exam hook","3,300 m · Mandi/Kullu to Shimla (Seraj) · an internal Seraj crossing."]],
- rel:["t-passes","d-mandi","d-kullu","d-shimla"]}
+ rel:["t-passes","d-mandi","d-kullu","d-shimla"]},
+
+/* ---------- PEAKS ---------- */
+
+{id:"pk-reopurgyil", k:"peak", pid:"reopurgyil", name:"Reo Purgyil",
+ alt:"6,816 m", range:"Zanskar range", alias:"Leo Pargial, Reo Purgyal",
+ fame:"The highest point in Himachal Pradesh",
+ districts:["d-kinnaur"],
+ blocks:[
+  ["p","The <b>highest mountain in Himachal Pradesh</b> at <b>6,816 m</b>, standing on the <b>Kinnaur border with Tibet</b> at the southern end of the Zanskar range. It rises directly above the Sutlej where the river has just entered India, so the state's highest point and its principal river gate are within sight of each other."],
+  ["p","The massif has twin summits and is the culminating point of the ridge dividing the Spiti and Sutlej drainages. It was first climbed by an Indo-Tibetan Border Police team, and remains an inner-line area requiring a permit."],
+  ["note","Exam hook","<b>6,816 m — the highest peak in Himachal Pradesh</b> · Kinnaur · Zanskar range · on the Tibet border · also spelt Leo Pargial."]],
+ rel:["t-peaks","d-kinnaur","Sutlej","ps-shipkila"]},
+
+{id:"pk-shigriparbat", k:"peak", pid:"shigriparbat", name:"Shigri Parbat",
+ alt:"6,526 m", range:"Great Himalayan range",
+ fame:"Rises above the Bara Shigri glacier, the largest in Himachal Pradesh",
+ districts:["d-lahaul"],
+ blocks:[
+  ["p","Shigri Parbat, <b>6,526 m</b>, stands in the <b>Great Himalayan range</b> in Lahaul, rising directly above the <b>Bara Shigri glacier</b> — the <b>largest glacier in Himachal Pradesh</b>, whose melt the Chandra collects on its way down the Lahaul valley."],
+  ["p","It is one of two Great Himalayan range peaks in this roster, alongside Kinner Kailash across in Kinnaur; the rest of the twelve belong to the Zanskar, Pir Panjal or Dhauladhar instead."],
+  ["note","Exam hook","6,526 m · Great Himalayan range · Lahaul · above the Bara Shigri glacier, HP's largest."]],
+ rel:["t-peaks","d-lahaul","Chandra"]},
+
+{id:"pk-mulkila", k:"peak", pid:"mulkila", name:"Mulkila",
+ alt:"6,517 m",
+ fame:"The Mulkila massif above the Miyar–Chandra divide",
+ districts:["d-lahaul"],
+ blocks:[
+  ["p","Mulkila, <b>6,517 m</b>, is the high point of the <b>Mulkila massif</b> in Lahaul, standing on the divide between the <b>Miyar</b> glacier valley and the <b>Chandra</b> valley."],
+  ["p","It is part of the same tight cluster of glaciated six-thousanders as Shigri Parbat, Dharmsura and Gepang Goh, all within Lahaul — the district that carries the largest share of the state's highest peaks after Kinnaur's Reo Purgyil."],
+  ["note","Exam hook","6,517 m · Mulkila massif · Lahaul · on the Miyar–Chandra divide."]],
+ rel:["t-peaks","d-lahaul","Chandra"]},
+
+{id:"pk-dharmsura", k:"peak", pid:"dharmsura", name:"Dharmsura (White Sail)",
+ alt:"6,446 m", alias:"White Sail",
+ fame:"Climbed from the Tos glacier",
+ districts:["d-lahaul","d-kullu"],
+ blocks:[
+  ["p","Dharmsura, <b>6,446 m</b>, also called <b>White Sail</b>, sits on the Lahaul–Kullu boundary and is usually climbed from the <b>Tos glacier</b> on the Kullu side."],
+  ["p","It ranks just below Mulkila in this roster and, like Shigri Parbat and Mulkila, belongs to the high glaciated country shared by upper Lahaul and Kullu rather than to the outer, lower ranges."],
+  ["note","Exam hook","6,446 m · Lahaul/Kullu · also called White Sail · climbed from the Tos glacier."]],
+ rel:["t-peaks","d-lahaul","d-kullu"]},
+
+{id:"pk-indrasan", k:"peak", pid:"indrasan", name:"Indrasan",
+ alt:"6,221 m", range:"Pir Panjal",
+ fame:"The highest peak of the Pir Panjal's eastern group",
+ districts:["d-kullu"],
+ blocks:[
+  ["p","Indrasan, <b>6,221 m</b> in Kullu, is the <b>highest peak of the Pir Panjal's eastern group</b> — the range that separates Kullu and Chamba from Lahaul, crossed at Rohtang, Kugti, Sach and Hamta."],
+  ["p","It stands beside <b>Deo Tibba</b>, the dome-shaped peak above Manali; the two are named together in this roster as the signature summits of the Kullu Pir Panjal."],
+  ["note","Exam hook","6,221 m · Pir Panjal · Kullu · the highest peak of the Pir Panjal's eastern group."]],
+ rel:["t-peaks","d-kullu","pk-deotibba"]},
+
+{id:"pk-shilla", k:"peak", pid:"shilla", name:"Shilla",
+ alt:"6,132 m", range:"Zanskar range",
+ fame:"Long, but wrongly, claimed as the highest surveyed peak in India",
+ districts:["d-kinnaur","d-lahaul"],
+ blocks:[
+  ["p","Shilla, <b>6,132 m</b> on the Kinnaur–Spiti border, belongs to the same <b>Zanskar range</b> as Reo Purgyil, the range that separates Spiti and upper Kinnaur from Tibet."],
+  ["p","It was long claimed to be the highest surveyed peak in India — a claim later found to be mistaken, so it should never be cited as such. The state's actual highest point is Reo Purgyil."],
+  ["note","Exam hook","6,132 m · Zanskar range · Kinnaur/Spiti · once wrongly claimed as India's highest surveyed peak."]],
+ rel:["t-peaks","d-kinnaur","d-lahaul","pk-reopurgyil"]},
+
+{id:"pk-kinnerkailash", k:"peak", pid:"kinnerkailash", name:"Kinner Kailash",
+ alt:"6,050 m", range:"Great Himalayan range",
+ fame:"The 79-foot rock Shivling; the Kinner Kailash parikrama",
+ districts:["d-kinnaur"],
+ blocks:[
+  ["p","Kinner Kailash, <b>6,050 m</b> in Kinnaur, is in the <b>Great Himalayan range</b> and carries a <b>79-foot rock formation worshipped as a Shivling</b> near its summit."],
+  ["p","It is circumambulated on the <b>Kinner Kailash parikrama</b>, one of the district's pilgrimage circuits, and is one of two Great Himalayan range peaks in this roster alongside Shigri Parbat."],
+  ["note","Exam hook","6,050 m · Great Himalayan range · Kinnaur · the 79-foot rock Shivling; the Kinner Kailash parikrama."]],
+ rel:["t-peaks","d-kinnaur"]},
+
+{id:"pk-deotibba", k:"peak", pid:"deotibba", name:"Deo Tibba",
+ alt:"6,001 m", range:"Pir Panjal",
+ fame:"The dome-shaped peak above Manali, beside Indrasan",
+ districts:["d-kullu"],
+ blocks:[
+  ["p","Deo Tibba, <b>6,001 m</b>, is the dome-shaped peak that rises above <b>Manali</b> in Kullu, standing beside <b>Indrasan</b> in the same Pir Panjal group."],
+  ["p","Indrasan and Deo Tibba are the two Pir Panjal peaks named in this roster — the range that also carries the Rohtang, Kugti, Sach and Hamta crossings."],
+  ["note","Exam hook","6,001 m · Pir Panjal · Kullu · the dome above Manali, beside Indrasan."]],
+ rel:["t-peaks","d-kullu","pk-indrasan"]},
+
+{id:"pk-hanumantibba", k:"peak", pid:"hanumantibba", name:"Hanuman Tibba",
+ alt:"5,928 m", range:"Dhauladhar",
+ fame:"The highest peak of the Dhauladhar",
+ districts:["d-kullu","d-kangra"],
+ blocks:[
+  ["p","Hanuman Tibba, <b>5,928 m</b>, is the <b>highest peak of the Dhauladhar</b>, standing on the Kullu–Kangra section of the range."],
+  ["p","The Dhauladhar is the wall that stands behind Kangra, crossed further along at Indrahar and Thamsar; Hanuman Tibba is its culminating point rather than one of those crossings."],
+  ["note","Exam hook","5,928 m · Dhauladhar · Kullu/Kangra · the highest peak of the Dhauladhar."]],
+ rel:["t-peaks","d-kullu","d-kangra","ps-indrahar"]},
+
+{id:"pk-gepanggoh", k:"peak", pid:"gepanggoh", name:"Gepang Goh",
+ alt:"5,870 m",
+ fame:"The guardian deity peak of Lahaul",
+ districts:["d-lahaul"],
+ blocks:[
+  ["p","Gepang Goh, <b>5,870 m</b>, is regarded in Lahaul as the <b>guardian deity peak</b> of the valley, with <b>Gepang Gath lake</b> lying below it."],
+  ["p","It stands among the district's cluster of glaciated peaks — Shigri Parbat, Mulkila and Dharmsura — that give Lahaul its share of six-thousanders in this roster."],
+  ["note","Exam hook","5,870 m · Lahaul · the guardian deity peak of Lahaul; Gepang Gath lake below."]],
+ rel:["t-peaks","d-lahaul"]},
+
+{id:"pk-manimaheshkailash", k:"peak", pid:"manimaheshkailash", name:"Manimahesh Kailash",
+ alt:"5,653 m",
+ fame:"Above Manimahesh lake; the yatra peak, never climbed",
+ districts:["d-chamba"],
+ blocks:[
+  ["p","Manimahesh Kailash, <b>5,653 m</b> in Chamba, rises directly above <b>Manimahesh lake</b>, the site of the Manimahesh yatra."],
+  ["p","It is held sacred and, unlike the state's other high peaks in this roster, has never been climbed — the mountain itself, not only the lake below it, is the object of pilgrimage."],
+  ["note","Exam hook","5,653 m · Chamba · above Manimahesh lake · the yatra peak, never climbed."]],
+ rel:["t-peaks","d-chamba"]},
+
+{id:"pk-chaudhar", k:"peak", pid:"chaudhar", name:"Churdhar",
+ alt:"3,647 m", range:"Shivalik (Outer Himalaya)",
+ fame:"The highest peak of the outer Himalaya in Himachal Pradesh",
+ districts:["d-sirmaur"],
+ blocks:[
+  ["p","Churdhar, <b>3,647 m</b> in Sirmaur, is the <b>highest peak of the outer Himalaya in Himachal Pradesh</b> — the Shivalik zone along the state's southern fringe, far lower than the Zanskar, Great Himalayan, Pir Panjal or Dhauladhar peaks in this roster."],
+  ["p","It carries a temple to <b>Shirgul Devta</b> at its summit, and is the lowest peak in this list by a wide margin, standing under 3,700 m against a state high of 6,816 m at Reo Purgyil."],
+  ["note","Exam hook","3,647 m · Shivalik (Outer Himalaya) · Sirmaur · the highest peak of the outer Himalaya in HP; Shirgul Devta temple."]],
+ rel:["t-peaks","d-sirmaur","pk-reopurgyil"]}
 
 ];

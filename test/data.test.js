@@ -115,3 +115,22 @@ test("every pass marker on the map has a record", () => {
     if(p.k === "pass") assert.ok(have.has(pid), "pass marker " + pid + " has no record");
   }
 });
+
+test("all 12 peaks are recorded, with heights", () => {
+  const peaks = (D.features || []).filter(f => f.k === "peak");
+  assert.equal(peaks.length, 12);
+  for(const p of peaks) assert.match(p.alt, /\d[\d,]*\s*m/, p.id + " has no height");
+});
+
+test("every peak marker on the map has a record", () => {
+  const have = new Set((D.features || []).filter(f => f.k === "peak").map(f => f.pid));
+  for(const [pid, p] of Object.entries(MAP.places)){
+    if(p.k === "peak") assert.ok(have.has(pid), "peak marker " + pid + " has no record");
+  }
+});
+
+test("Reo Purgyil is recorded as the highest point in the state", () => {
+  const r = (D.features || []).find(f => f.id === "pk-reopurgyil");
+  assert.ok(r, "pk-reopurgyil missing");
+  assert.match(JSON.stringify(r), /highest/i);
+});
