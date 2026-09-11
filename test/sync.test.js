@@ -301,3 +301,207 @@ test("setNote accepts constructor and toString as ordinary record ids", () => {
   const out2 = sync.setNote({}, "toString", "ts-note");
   assert.equal(out2["toString"].text, "ts-note");
 });
+
+/* ---------- streak ---------- */
+const DAY = {facts: 20, quiz: 5, pyq: 5, recs: 5};
+
+test("dayKey uses local calendar parts, not UTC", () => {
+  /* 23:30 local on the 5th must be the 5th, whatever the timezone offset */
+  const d = new Date(2026, 0, 5, 23, 30, 0);
+  assert.equal(sync.dayKey(d), "2026-01-05");
+});
+
+test("dayKey pads months and days", () => {
+  assert.equal(sync.dayKey(new Date(2026, 8, 7, 12, 0, 0)), "2026-09-07");
+});
+
+test("daysApart counts whole days across month and year boundaries", () => {
+  assert.equal(sync.daysApart("2026-01-31", "2026-02-01"), 1);
+  assert.equal(sync.daysApart("2025-12-31", "2026-01-01"), 1);
+  assert.equal(sync.daysApart("2026-03-01", "2026-03-01"), 0);
+  assert.equal(sync.daysApart("2026-02-28", "2026-03-02"), 2);
+});
+
+test("a fresh streak is zero with one grace in hand", () => {
+  const s = sync.emptyStreak();
+  assert.equal(s.n, 0);
+  assert.equal(s.best, 0);
+  assert.equal(s.grace, 1);
+});
+
+test("counters accumulate without qualifying below the threshold", () => {
+  let s = sync.emptyStreak();
+  for(let i = 0; i < DAY.facts - 1; i++) s = sync.bumpStreak(s, "facts", null, "2026-01-05");
+  assert.equal(s.n, 0, "19 facts is not a day");
+  assert.equal(s.facts, 19);
+});
+
+test("reaching any one threshold qualifies the day", () => {
+  for(const [kind, need] of [["facts",20],["quiz",5],["pyq",5]]){
+    let s = sync.emptyStreak();
+    for(let i = 0; i < need; i++) s = sync.bumpStreak(s, kind, null, "2026-01-05");
+    assert.equal(s.n, 1, kind + " should have qualified the day");
+    assert.equal(s.last, "2026-01-05");
+  }
+});
+
+test("only DISTINCT records count towards the day", () => {
+  let s = sync.emptyStreak();
+  for(let i = 0; i < 8; i++) s = sync.bumpStreak(s, "rec", "d-kangra", "2026-01-05");
+  assert.equal(s.n, 0, "the same record eight times is not five records");
+  assert.equal(s.recs.length, 1);
+  for(const id of ["d-shimla","d-mandi","d-kullu","d-chamba"])
+    s = sync.bumpStreak(s, "rec", id, "2026-01-05");
+  assert.equal(s.n, 1, "five distinct records should qualify");
+});
+
+test("qualifying twice in one day does not increment twice", () => {
+  let s = sync.emptyStreak();
+  for(let i = 0; i < 40; i++) s = sync.bumpStreak(s, "facts", null, "2026-01-05");
+  assert.equal(s.n, 1);
+});
+
+test("consecutive days build the run and counters reset each day", () => {
+  let s = sync.emptyStreak();
+  const qualify = (st, day) => {
+    for(let i = 0; i < DAY.facts; i++) st = sync.bumpStreak(st, "facts", null, day);
+    return st;
+  };
+  s = qualify(s, "2026-01-05");
+  s = qualify(s, "2026-01-06");
+  s = qualify(s, "2026-01-07");
+  assert.equal(s.n, 3);
+  assert.equal(s.best, 3);
+  assert.equal(s.facts, DAY.facts, "counters should be today's only");
+});
+
+test("one missed day is absorbed by the grace day", () => {
+  let s = sync.emptyStreak();
+  const qualify = (st, day) => {
+    for(let i = 0; i < DAY.facts; i++) st = sync.bumpStreak(st, "facts", null, day);
+    return st;
+  };
+  s = qualify(s, "2026-01-05");
+  s = qualify(s, "2026-01-06");
+  s = qualify(s, "2026-01-08");           // the 7th is missed
+  assert.equal(s.n, 3, "the run should continue through one missed day");
+  assert.equal(s.grace, 0, "the grace day should have been spent");
+});
+
+test("a second missed day resets the run, but never the best", () => {
+  let s = sync.emptyStreak();
+  const qualify = (st, day) => {
+    for(let i = 0; i < DAY.facts; i++) st = sync.bumpStreak(st, "facts", null, day);
+    return st;
+  };
+  s = qualify(s, "2026-01-05");
+  s = qualify(s, "2026-01-06");
+  s = qualify(s, "2026-01-10");           // three days missed
+  assert.equal(s.n, 1, "the run should have reset");
+  assert.equal(s.best, 2, "the best must survive a reset");
+});
+
+test("a missed day with no grace in hand resets the run", () => {
+  let s = sync.emptyStreak();
+  s.grace = 0;
+  const qualify = (st, day) => {
+    for(let i = 0; i < DAY.facts; i++) st = sync.bumpStreak(st, "facts", null, day);
+    return st;
+  };
+  s = qualify(s, "2026-01-05");
+  s = qualify(s, "2026-01-07");           // one missed, no grace
+  assert.equal(s.n, 1);
+});
+
+test("the grace day returns after seven consecutive days", () => {
+  let s = sync.emptyStreak();
+  s.grace = 0;
+  for(let d = 1; d <= 7; d++){
+    const day = "2026-01-" + String(d).padStart(2, "0");
+    for(let i = 0; i < DAY.facts; i++) s = sync.bumpStreak(s, "facts", null, day);
+  }
+  assert.equal(s.n, 7);
+  assert.equal(s.grace, 1, "seven consecutive days should restore the grace");
+});
+
+test("bumpStreak never mutates the state it is given", () => {
+  const s = sync.emptyStreak();
+  sync.bumpStreak(s, "facts", null, "2026-01-05");
+  assert.equal(s.facts, 0);
+});
+
+test("mergeStreak is generous in every direction", () => {
+  const a = {n: 5, best: 9, last: "2026-01-05", grace: 0, day: "2026-01-05",
+             facts: 12, quiz: 1, pyq: 0, recs: ["d-kangra"]};
+  const b = {n: 3, best: 11, last: "2026-01-06", grace: 1, day: "2026-01-06",
+             facts: 4, quiz: 3, pyq: 2, recs: ["d-shimla"]};
+  const m = sync.mergeStreak(a, b);
+  assert.equal(m.n, 5, "the higher run wins");
+  assert.equal(m.best, 11, "the higher best wins");
+  assert.equal(m.last, "2026-01-06", "the later date wins");
+  assert.equal(m.grace, 1, "the more forgiving grace wins");
+});
+
+/* Strengthened per review: the original version of this test asserted only
+   `.n`, which is exactly what let a real bug in mergeStreak's date-picking
+   through — merging a real streak against a fresh, never-synced emptyStreak
+   silently wiped `.last`/`.day` and today's counters even though `.n`
+   happened to survive via Math.max. Assert every field a real merge must
+   preserve, not just the one the bug didn't touch. */
+test("mergeStreak copes with either side missing", () => {
+  const only = {n: 2, best: 2, last: "2026-01-05", grace: 1, day: "2026-01-05",
+                facts: 20, quiz: 3, pyq: 1, recs: ["d-kangra", "d-shimla"]};
+
+  const withNull = sync.mergeStreak(only, null);
+  assert.equal(withNull.n, 2);
+  assert.equal(withNull.best, 2);
+  assert.equal(withNull.last, "2026-01-05", "a real date must survive merging against nothing");
+  assert.equal(withNull.day, "2026-01-05");
+  assert.equal(withNull.facts, 20);
+  assert.equal(withNull.quiz, 3);
+  assert.equal(withNull.pyq, 1);
+  assert.deepEqual(withNull.recs, ["d-kangra", "d-shimla"]);
+
+  const nullWith = sync.mergeStreak(null, only);
+  assert.equal(nullWith.n, 2);
+  assert.equal(nullWith.best, 2);
+  assert.equal(nullWith.last, "2026-01-05");
+  assert.equal(nullWith.day, "2026-01-05");
+  assert.equal(nullWith.facts, 20);
+  assert.equal(nullWith.quiz, 3);
+  assert.equal(nullWith.pyq, 1);
+  assert.deepEqual(nullWith.recs, ["d-kangra", "d-shimla"]);
+
+  assert.equal(sync.mergeStreak(null, null).n, 0);
+});
+
+/* Regression test for the bug found in review: daysApart(a, b) returns
+   Infinity whenever EITHER date is "" (a fresh emptyStreak's last/day).
+   mergeStreak's original "later date wins" ternary read that Infinity as
+   "B is later" and picked the EMPTY side, discarding the real side's date
+   and, via the day-gated counters, its facts/quiz/pyq/recs too. This is
+   not a rare edge case: every existing user's first sync after this
+   feature ships merges their real local streak against a remote with no
+   "streak" key yet, i.e. exactly emptyStreak(). Check both argument
+   orders, since the bug was order-dependent. */
+test("mergeStreak preserves a real streak's date and today's counters against a fresh emptyStreak", () => {
+  const real = {n: 4, best: 6, last: "2026-01-05", grace: 1, day: "2026-01-05",
+                facts: 12, quiz: 3, pyq: 2, recs: ["d-kangra", "d-shimla"]};
+  const fresh = sync.emptyStreak();
+
+  const a = sync.mergeStreak(real, fresh);
+  assert.equal(a.last, "2026-01-05", "real merged first must keep its date");
+  assert.equal(a.day, "2026-01-05");
+  assert.equal(a.facts, 12);
+  assert.equal(a.quiz, 3);
+  assert.equal(a.pyq, 2);
+  assert.deepEqual(a.recs, ["d-kangra", "d-shimla"]);
+
+  const b = sync.mergeStreak(fresh, real);
+  assert.equal(b.last, "2026-01-05", "real merged second must keep its date");
+  assert.equal(b.day, "2026-01-05");
+  assert.equal(b.facts, 12);
+  assert.equal(b.quiz, 3);
+  assert.equal(b.pyq, 2);
+  assert.deepEqual(b.recs, ["d-kangra", "d-shimla"]);
+});
