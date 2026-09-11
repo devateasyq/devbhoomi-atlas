@@ -77,8 +77,9 @@ app/components.css          map, timeline, cards, panel, revise, search
 app/app.js                  the application
 app/logo.js                 the brand mark, drawn from theme tokens
 app/mapkit.js               map glyphs, label placement and the legend's toggle/isolate reducers
+app/rounds.js               Rounds — fact extraction from the exam hooks, and the feed's ordering
 app/trends.js               the Trends view — all figures computed from D.pyq at run time
-data/geo.js                 map geometry: district paths, centroids, 107 place markers, 29 rivers
+data/geo.js                 map geometry: district paths, centroids, 135 place markers, 29 rivers
 data/places.js              D.eras, D.districts, D.states
 data/history.js             D.events, D.battles, D.people
 data/topics.js              D.topics
@@ -92,6 +93,33 @@ manifest.webmanifest        PWA manifest
 
 Load order matters: `data/places.js` creates the `D` object, so it must come before the
 other data files. `app/app.js` must come last.
+
+## Rounds
+
+A vertical feed of single prelims facts, one per screen, moved by a flick — the app's
+one passive mode, for the ninety seconds that do not justify opening a topic note.
+
+The facts are **not authored**. They are extracted at run time from the `Exam hook` note
+that most records already carry, split on the `·` separator, then filtered: atoms shorter
+than 8 characters are dropped (`Kol Dam — "NTPC"` is not a fact), atoms that merely
+restate their own record's name are dropped (`Dharmsura (White Sail) — "also called White
+Sail"` says nothing the card's own headline does not), and atoms over 120 characters are
+sentence-split, because a few hooks use no separator at all and would otherwise arrive as
+one 185-character card covering two districts. That yields about 265 facts today, and the
+pool grows on its own as records gain hooks.
+
+Ordering is unseen-first, shuffled; facts already seen sink to the back, oldest-seen
+first, so exhausting the pool turns the feed into spaced repetition rather than a wall.
+There is no completion state and no counter, by design. The seen set persists at
+`hpatlas:seen`.
+
+Tapping a card opens the record it came from — the feed is a way into the atlas, not a
+dead end.
+
+**Known gap:** all 16 battle records and all 24 people records carry no exam hook, so
+Sansar Chand, the Gurkha wars and the Praja Mandal leaders never surface in the feed.
+Adding hooks to those records is the highest-value content work available; it needs no
+code change.
 
 ## Editing the content
 
