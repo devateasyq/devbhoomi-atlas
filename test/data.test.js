@@ -180,3 +180,23 @@ test("Bara Shigri is recorded as the largest glacier in the state", () => {
   assert.ok(g, "gl-barashigri missing");
   assert.match(JSON.stringify(g), /largest/i);
 });
+
+/* An "unknown" field must be omitted entirely, never set to a sentinel
+   like an em-dash. factsList() and buildCards() already skip a missing
+   field correctly; a placeholder string leaks through as a fact row
+   reading "Field: —" or a card whose answer is the placeholder itself. */
+test("no field is a bare placeholder instead of being omitted", () => {
+  const PLACEHOLDER = /^[\s\-‐‑‒–—―.,;:_]*$|^(n\/a|na|none|unknown)$/i;
+  const offenders = [];
+  for(const [key, list] of [["features", D.features], ["rivers", D.rivers]]){
+    for(const r of (list || [])){
+      for(const [field, value] of Object.entries(r)){
+        if(typeof value !== "string") continue;
+        if(value.trim().length && PLACEHOLDER.test(value.trim())){
+          offenders.push(key + " " + r.id + "." + field + " = " + JSON.stringify(value));
+        }
+      }
+    }
+  }
+  assert.deepStrictEqual(offenders, [], "bare placeholder fields (should be omitted): " + offenders.join(", "));
+});

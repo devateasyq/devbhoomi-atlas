@@ -93,7 +93,6 @@ D.rivers = [
  lenHP:"about 115 km through the Chandra valley of Lahaul",
  districts:["d-lahaul"],
  tribs:"Fed by the Bara Shigri and other Lahaul glaciers",
- projects:"—",
  blocks:[
   ["p","The eastern headwater of the Chenab. It rises near <b>Chandra Tal</b> below <b>Baralacha La</b>, then runs <b>south-east and then west</b> down the Chandra valley, collecting the melt of the <b>Bara Shigri</b>, the largest glacier in Himachal, before turning north-west to Tandi."],
   ["note","Exam hook","Chandra rises south of Baralacha La near Chandra Tal; Bhaga rises north of the same pass at Suraj Tal. They meet at Tandi."]],
@@ -108,7 +107,6 @@ D.rivers = [
  lenHP:"about 60 km, past Keylong",
  districts:["d-lahaul"],
  tribs:"Small glacier-fed nalas of upper Lahaul",
- projects:"—",
  blocks:[
   ["p","The western headwater of the Chenab, rising at <b>Suraj Tal</b> — one of the highest lakes in India — on the far side of Baralacha La from the Chandra. It flows south-west past <b>Keylong</b>, the district headquarters of Lahaul & Spiti, to the junction at Tandi."],
   ["note","Exam hook","Suraj Tal is the source of the Bhaga; Chandra Tal of the Chandra. Same pass, opposite sides, and they meet again at Tandi."]],

@@ -129,7 +129,7 @@ D.features = [
  rel:["t-passes","Parvati","Spiti","d-kullu","d-lahaul"]},
 
 {id:"ps-parangla", k:"pass", pid:"parangla", name:"Parang La",
- alt:"5,578 m", range:"—",
+ alt:"5,578 m",
  connects:"Spiti ⇄ Ladakh (Tso Moriri)",
  status:"A seasonal Himalayan crossing, closed under snow for much of the year — the highest in the roster",
  route:"Spiti — Parang La — Ladakh, towards Tso Moriri",
@@ -176,7 +176,7 @@ D.features = [
  rel:["t-passes","t-tribes","d-kangra","d-chamba"]},
 
 {id:"ps-padri", k:"pass", pid:"padri", name:"Padri Pass",
- alt:"3,300 m", range:"—",
+ alt:"3,300 m",
  connects:"Chamba ⇄ Bhaderwah (Jammu)",
  status:"A seasonal Himalayan crossing, closed under snow for much of the year",
  route:"Chamba — Padri — Bhaderwah (Jammu)",
@@ -209,7 +209,7 @@ D.features = [
  rel:["t-passes","Ravi","d-kangra"]},
 
 {id:"ps-bashleo", k:"pass", pid:"bashleo", name:"Bashleo Pass",
- alt:"3,300 m", range:"—",
+ alt:"3,300 m",
  connects:"Mandi/Kullu ⇄ Shimla (Seraj)",
  status:"An internal Seraj crossing",
  route:"Mandi/Kullu (Seraj) — Bashleo — Shimla district",
