@@ -22,7 +22,7 @@
 .distlabel{font-family:var(--f-body);font-size:13px;font-weight:600;fill:var(--ink-2);text-anchor:middle;
   pointer-events:none;paint-order:stroke;stroke:var(--ground);stroke-width:3px;stroke-linejoin:round}
 .mk{cursor:pointer}
-.mk .gly{stroke:var(--surface);stroke-width:1.4;transition:transform .12s}
+.mk .gly{stroke:var(--surface);stroke-width:1.4;transition:transform .12s;transform-box:fill-box;transform-origin:center}
 .mk:hover .gly{transform:scale(1.35)}
 .mk.sel .gly{stroke:var(--accent);stroke-width:2.2;transform:scale(1.35)}
 .mk text{font-family:var(--f-body);font-size:10.5px;font-weight:600;fill:var(--ink-2);
