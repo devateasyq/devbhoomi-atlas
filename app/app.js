@@ -92,14 +92,38 @@ function localState(){
 function userDoc(fb, user){
   return fb.firestore().collection("users").doc(user.uid);
 }
+/* Students share devices. localStorage is not partitioned by user, so the
+   three progress keys on this device may belong to whoever last used it —
+   not to the account now signing in. hpatlas:owner tracks whose progress is
+   currently sitting in local storage:
+     - owner empty        -> guest data on this device: merge it in, exactly
+                              as before (first-sign-in migration).
+     - owner === user.uid -> same person returning: merge, as before.
+     - owner is someone else -> this device last held a *different* account's
+                              progress. Merging it into the new account would
+                              leak one student's facts/answers into another's
+                              Firestore document. Instead take the account's
+                              own remote state as authoritative and overwrite
+                              local storage with it. */
 function pullAndMerge(user){
   if(!user) return Promise.resolve();
   return loadFirebase().then(fb => userDoc(fb, user).get().then(snap => {
     const remote = snap.exists ? (snap.data() || {}) : {};
+    const owner = store.get("owner", "");
+    if(owner && owner !== user.uid){
+      const theirs = {seen: remote.seen || [], quiz: remote.quiz || {}, pyq: remote.pyq || {}};
+      store.set("seen", theirs.seen);
+      store.set("quiz", theirs.quiz);
+      store.set("pyq",  theirs.pyq);
+      store.set("owner", user.uid);
+      S.seen = theirs.seen;
+      return Promise.resolve();
+    }
     const merged = mergeState(localState(), remote);
     store.set("seen", merged.seen);
     store.set("quiz", merged.quiz);
     store.set("pyq",  merged.pyq);
+    store.set("owner", user.uid);
     S.seen = merged.seen;
     /* the merged result goes straight back up, so both sides agree */
     return userDoc(fb, user).set(merged, {merge: true});
@@ -124,6 +148,11 @@ function pushStateSoon(){
     pushState(u).catch(function(){});
   }, 4000);
 }
+/* A push scheduled for the signed-in user at the time must not be allowed to
+   fire after the signed-in user changes — otherwise it lands in the wrong
+   account's document. Call this before anything else runs on any auth
+   change, sign-in or sign-out. */
+function cancelPendingPush(){ clearTimeout(_pushTimer); _pushTimer = null; }
 function mountAccount(){
   const btn = document.getElementById("acctbtn");
   const dlg = document.getElementById("acctdlg");
@@ -154,6 +183,7 @@ function mountAccount(){
       .catch(err => say(err && err.message ? err.message : "Could not send the link"));
   });
   onAuthChange(user => {
+    cancelPendingPush();
     renderAccount(user);
     if(!user) return;
     pullAndMerge(user)
