@@ -1163,7 +1163,48 @@ function roundCard(f){
     '<span class="ft">'+f.text+'</span>'+
     '<span class="go">Open the note &rarr;</span></button>';
 }
-function mountRounds(){ /* filled in by the feed task */ }
+let RQ = [], RI = 0, RIO = null;
+/* The feed is endless, so it renders a window and extends it rather than
+   building a node per fact. RQ is the current ordering, RI the cursor. */
+function appendRounds(feed, n){
+  const tmp = document.createElement("div");
+  let html = "";
+  for(let i = 0; i < n; i++){
+    if(RI >= RQ.length){ RQ = orderFacts(FACTS, S.seen); RI = 0; }
+    html += roundCard(RQ[RI++]);
+  }
+  tmp.innerHTML = html;
+  while(tmp.firstChild){
+    const el = tmp.firstChild;
+    feed.appendChild(el);
+    if(RIO) RIO.observe(el);
+  }
+}
+function mountRounds(){
+  const feed = document.getElementById("roundsfeed");
+  if(!feed || !FACTS.length) return;
+  RQ = orderFacts(FACTS, S.seen); RI = 0;
+  feed.innerHTML = "";
+  if(RIO) RIO.disconnect();
+  /* A fact counts as seen only once it has settled on screen — blasting a
+     thumb down the feed must not burn facts that were never read. */
+  RIO = new IntersectionObserver(entries => {
+    let extend = false;
+    for(const en of entries){
+      if(en.intersectionRatio < 0.6) continue;
+      const id = en.target.dataset.fid;
+      if(S.seen.indexOf(id) < 0){ S.seen.push(id); store.set("seen", S.seen); }
+      const cards = feed.children;
+      if([].indexOf.call(cards, en.target) >= cards.length - 5) extend = true;
+    }
+    if(extend) appendRounds(feed, 15);
+  }, {root: feed, threshold: 0.6});
+  appendRounds(feed, 30);
+  feed.addEventListener("click", e => {
+    const b = e.target.closest(".short");
+    if(b && IDX.has(b.dataset.src)) openRec(b.dataset.src);
+  });
+}
 
 /* ---------- render dispatcher ---------- */
 function render(){

@@ -180,6 +180,31 @@ window.addEventListener("load", async () => {
   check("searching 'ramsar' finds the three sites",
     ["lk-pong","lk-renuka","lk-chandratal"].every(id => hits("ramsar").includes(id)));
 
+  ev('S.view="rounds"; render();');
+  await wait(400);
+  const feed = doc.getElementById("roundsfeed");
+  check("the feed renders", !!feed);
+  if(feed){
+    const cards = feed.querySelectorAll(".short");
+    check("a window of cards is rendered, not one per fact",
+      cards.length >= 20 && cards.length <= 40, cards.length + " cards");
+    check("the feed is a scroll-snap container",
+      win.getComputedStyle(feed).scrollSnapType.indexOf("mandatory") >= 0,
+      win.getComputedStyle(feed).scrollSnapType);
+    check("each card fills the feed",
+      cards.length > 0 && Math.abs(cards[0].getBoundingClientRect().height -
+        feed.getBoundingClientRect().height) < 2);
+
+    const first = cards[0];
+    const want = first.dataset.src;
+    doc.getElementById("panel").hidden = true;
+    first.click();
+    await wait(150);
+    check("tapping a card opens the record it names", ev("S.sel") === want,
+      "got " + ev("S.sel") + ", wanted " + want);
+    check("the card names a real record", !!want && want.length > 1);
+  }
+
   out.innerHTML += "\n" + pass + " passed, " + fail + " failed";
   document.title = fail ? "FAIL (" + fail + ")" : "PASS";
 });
