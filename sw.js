@@ -1,6 +1,6 @@
 /* Parikrama Path — offline cache.
    Bump CACHE when any asset changes; old caches are purged on activate. */
-const CACHE = "parikrama-v36";
+const CACHE = "parikrama-v37";
 const ASSETS = [
   "./", "index.html",
   "app/tokens.css", "app/layout.css", "app/components.css", "app/app.js", "app/trends.js", "app/logo.js", "app/mapkit.js", "app/credits.js", "app/rounds.js", "app/sync.js", "app/firebase-config.js", "app/auth.js",
@@ -27,6 +27,14 @@ self.addEventListener("fetch", e => {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(req, copy)).catch(()=>{});
         return res;
-      }).catch(() => caches.match("index.html")))
+      }).catch(() => {
+        // The index.html fallback is only correct for a page navigation.
+        // Any other failed same-origin GET (a script — e.g. the Firebase
+        // SDK loaded on demand — a stylesheet, an image) must propagate
+        // its failure rather than resolve to an HTML document standing
+        // in for the asset that was actually requested.
+        if(req.mode === "navigate") return caches.match("index.html");
+        throw new Error("offline");
+      }))
   );
 });

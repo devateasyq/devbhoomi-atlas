@@ -318,7 +318,7 @@ window.addEventListener("load", async () => {
   const ab = doc.getElementById("acctbtn");
   check("the account control exists", !!ab);
   check("it is hidden while Firebase is unconfigured",
-    ab && ab.hidden === !ev("authAvailable()"), "hidden=" + (ab && ab.hidden));
+    ab && ab.hidden === true, "hidden=" + (ab && ab.hidden));
   check("the app works signed out", !doc.getElementById("stage").hidden);
   check("no Firebase SDK was loaded",
     !doc.querySelector('script[src*="firebase-app-compat"]'));

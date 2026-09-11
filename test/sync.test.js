@@ -38,9 +38,20 @@ test("mergeAnswers treats legacy answers as older than any timestamped one", () 
   assert.equal(m["Q1"].v, 0, "a timestamped answer must beat a legacy one");
 });
 
-test("mergeAnswers is order-independent for the same inputs", () => {
+test("mergeAnswers picks the later timestamp regardless of argument order", () => {
   const a = {"Q1": {v: 1, t: 100}}, b = {"Q1": {v: 0, t: 900}};
   assert.deepEqual(sync.mergeAnswers(a, b), sync.mergeAnswers(b, a));
+});
+
+/* On a tie — two legacy t:0 answers is the common real case — the result is
+   NOT order-independent: the first argument wins. That is deliberate (it is
+   how a caller can prefer "local" over "remote" on an exact tie) but it must
+   be pinned down, or a future change could silently make ties pick whichever
+   side happens to be b instead. */
+test("mergeAnswers keeps the first argument's answer on an exact tie", () => {
+  const a = {"Q1": {v: 1, t: 0}}, b = {"Q1": {v: 0, t: 0}};
+  assert.equal(sync.mergeAnswers(a, b)["Q1"].v, 1, "a's answer should win when a is first");
+  assert.equal(sync.mergeAnswers(b, a)["Q1"].v, 0, "b's answer should win when b is first");
 });
 
 /* ---------- seen facts ---------- */

@@ -246,10 +246,10 @@ exists for one reason: to carry your progress between devices.
 
 ### Privacy
 
-If you sign in, Firebase stores your **email address** and **display name** (from Google
-or from the email link you used), plus the three progress keys above, in a Firestore
-document scoped to your account. Nothing else is collected — no analytics, no tracking,
-no third-party sharing.
+If you sign in, Firebase Auth holds your **email address** and **display name** (from
+Google, or from the email link you used) separately, to know it's you. The Firestore
+document scoped to your account stores only the three progress keys above — `seen`,
+`quiz` and `pyq` — and nothing else. No analytics, no tracking, no third-party sharing.
 
 **Account deletion is not yet built.** There is no in-app control to delete your account
 or its stored data, and none is planned in this repository yet. This is a real gap, not

@@ -117,6 +117,7 @@ function pullAndMerge(user){
       store.set("pyq",  theirs.pyq);
       store.set("owner", user.uid);
       S.seen = theirs.seen;
+      toast("Loaded this account's progress");
       return Promise.resolve();
     }
     const merged = mergeState(localState(), remote);
@@ -129,9 +130,24 @@ function pullAndMerge(user){
     return userDoc(fb, user).set(merged, {merge: true});
   }));
 }
+/* A raw {merge:true} write replaces the seen array wholesale and lets an
+   older answer clobber a newer one from another device. Read the remote
+   document inside a transaction and run it through the same merge rules
+   the pull uses, so a push can only add progress, never erase it. */
+function pushSnapshot(user, local){
+  return loadFirebase().then(function(fb){
+    const ref = userDoc(fb, user);
+    return fb.firestore().runTransaction(function(tx){
+      return tx.get(ref).then(function(snap){
+        const remote = snap.exists ? (snap.data() || {}) : {};
+        tx.set(ref, mergeState(local, remote));
+      });
+    });
+  });
+}
 function pushState(user){
   if(!user) return Promise.resolve();
-  return loadFirebase().then(fb => userDoc(fb, user).set(localState(), {merge: true}));
+  return pushSnapshot(user, localState());
 }
 /* Rounds marks a fact seen on every card that settles on screen, so pushing
    directly would mean a Firestore write per fact scrolled. Coalesce them. */
@@ -145,14 +161,17 @@ function pushStateSoon(){
 }
 /* A pending push belongs to whoever scheduled it. Local state is snapshotted
    synchronously here, before an incoming user's pull can rewrite it, so the
-   write always carries the right person's progress to the right document. */
-function flushPendingPush(){
+   write always carries the right person's progress to the right document.
+   `done`, if given, fires once the write settles either way — success or
+   failure — so a caller (sign-out) can wait without ever being blocked by
+   a network problem. */
+function flushPendingPush(done){
   clearTimeout(_pushTimer); _pushTimer = null;
   const u = _pushUser; _pushUser = null;
-  if(!u) return;
+  if(!u){ if(done) done(); return; }
   const snap = localState();
-  loadFirebase().then(function(fb){ return userDoc(fb, u).set(snap, {merge: true}); })
-                .catch(function(){});
+  pushSnapshot(u, snap).then(function(){ if(done) done(); })
+                        .catch(function(){ if(done) done(); });
 }
 function mountAccount(){
   const btn = document.getElementById("acctbtn");
@@ -165,7 +184,22 @@ function mountAccount(){
 
   btn.addEventListener("click", () => {
     if(authUser()){
-      signOutUser().then(() => toast("Signed out")).catch(() => toast("Could not sign out"));
+      /* Flush before signing out, and wait for it: onAuthChange fires after
+         the token is already cleared, so a push queued from in there goes
+         out unauthenticated and firestore.rules silently discards it. */
+      flushPendingPush(function(){
+        signOutUser().then(() => {
+          /* A shared device must not hand the next guest this account's
+             progress, and must not let a guest's later additions merge
+             back into this account when it signs in again. Clearing is a
+             person leaving, not a token expiring, so it belongs here and
+             not in the onAuthChange backstop. */
+          store.del("seen"); store.del("quiz"); store.del("pyq"); store.del("owner");
+          S.seen = [];
+          render();
+          toast("Signed out");
+        }).catch(() => toast("Could not sign out"));
+      });
     } else open();
   });
   document.getElementById("acctclose").addEventListener("click", shut);
@@ -1486,7 +1520,23 @@ document.addEventListener("click", e => {
   if(hit("#themebtn")){ cycleTheme(); return; }
   if(hit("#randbtn")){ surpriseMe(); return; }
   if(hit("#resetbtn")){
-    if(confirm("Clear saved quiz and past-paper progress? This cannot be undone.")){ store.del("quiz"); store.del("pyq"); render(); toast("Progress cleared"); }
+    if(confirm("Clear saved quiz and past-paper progress? This cannot be undone.")){
+      /* Cancel any pending debounced push first — a merge write from the old
+         snapshot would resurrect the very data this button just promised to
+         remove. */
+      clearTimeout(_pushTimer); _pushTimer = null; _pushUser = null;
+      store.del("quiz"); store.del("pyq"); render(); toast("Progress cleared");
+      /* {merge:true} never removes a Firestore field, so a plain merge write
+         of the emptied state would leave the old answers sitting in the
+         remote document for the next pullAndMerge to bring straight back.
+         A non-merge set replaces the document instead. seen is preserved —
+         this button clears quiz and past-paper progress only. */
+      if(authUser()){
+        loadFirebase().then(function(fb){
+          return userDoc(fb, authUser()).set({seen: S.seen, quiz: {}, pyq: {}});
+        }).catch(function(){});
+      }
+    }
     return; }
   if(!hit(".searchwrap")) $("#results").hidden = true;
 });
