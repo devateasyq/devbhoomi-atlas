@@ -103,7 +103,7 @@ test("no fact exceeds the 120-character ceiling", () => {
 test("circular atoms that only restate the record name are dropped", () => {
   const dharmsura = FACTS.filter(f => f.srcId === "pk-dharmsura");
   for(const f of dharmsura){
-    assert.notMatch(f.text.toLowerCase(), /^also called white sail$/,
+    assert.ok(!/^also called white sail$/.test(f.text.toLowerCase()),
       "kept a circular atom: " + f.name + " — " + f.text);
   }
 });
