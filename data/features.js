@@ -477,7 +477,7 @@ D.features = [
  sacred:"Beside Nako monastery, a Rinchen Zangpo foundation",
  districts:["d-kinnaur"],
  blocks:[
-  ["p","Nako Lake lies in the <b>Hangrang valley</b> of Kinnaur, beside <b>Nako village and its monastery</b> — one of the Rinchen Zangpo foundations named alongside Tabo, Key and Dhankar in the state's Buddhist heritage."],
+  ["p","Nako Lake lies in the <b>Hangrang valley</b> of Kinnaur, beside <b>Nako village and its monastery</b> — one of the Rinchen Zangpo foundations in the state's Buddhist heritage, alongside <b>Tabo</b>."],
   ["p","It is the one lake in this roster that sits in the cold-desert tract of upper Kinnaur, close to the Spiti border."],
   ["note","Exam hook","Kinnaur, Hangrang valley · beside Nako monastery, a Rinchen Zangpo foundation."]],
  rel:["t-lakes","t-monasteries","d-kinnaur"]},
