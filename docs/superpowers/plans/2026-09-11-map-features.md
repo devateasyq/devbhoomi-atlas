@@ -10,6 +10,7 @@
 
 ## Global Constraints
 
+- **Run tests with `node --test` (no path argument).** `node --test test/` is broken on the installed Node 25.2.1 and reports a spurious failure. Note that plain `node --test` also picks up `test/load.js` as a vacuous test file; that is expected.
 - **Zero runtime dependencies.** No npm packages ship to the browser. `test/` may not import anything outside Node's stdlib.
 - **No build step.** `index.html` loads plain `<script src>` tags; every file defines globals. `app/mapkit.js` additionally ends with a `typeof module` guard so Node tests can require it.
 - **Record ids are namespaced:** `pk-` peaks, `ps-` passes, `lk-` lakes, `gl-` glaciers. Existing prefixes `d- s- ev- b- p- t-` are unchanged. River ids are bare names (`"Sutlej"`) — do not "fix" them.
@@ -72,7 +73,15 @@ function loadData(files){
   for(const f of list){
     const p = path.join(ROOT, "data", f);
     if(!fs.existsSync(p)) continue;
-    const src = fs.readFileSync(p, "utf8").replace(/^const MAP\s*=/m, "MAP =");
+    /* geo.js declares `const MAP`, and places.js declares `const D` — the
+       two files that establish the globals. Rewrite MAP's declaration into
+       an assignment, and delete D's outright: D is pre-seeded as a const
+       here and its identity must stay stable across files, so an eval'd
+       `const D = {}` would shadow it and silently discard everything the
+       later files hang off it. */
+    const src = fs.readFileSync(p, "utf8")
+      .replace(/^const MAP\s*=/m, "MAP =")
+      .replace(/^const D\s*=\s*\{\s*\}\s*;?\s*$/m, "");
     // eslint-disable-next-line no-eval
     eval(src);
   }
@@ -131,7 +140,7 @@ test("every MAP.places entry has a position and a kind", () => {
 
 - [ ] **Step 3: Run the tests**
 
-Run: `cd /Users/avinashnegi/Downloads/prep/hp-atlas && node --test test/`
+Run: `cd /Users/avinashnegi/Downloads/prep/hp-atlas && node --test`
 Expected: 3 tests pass. If "every rel id resolves" fails, a dangling id already exists in the data — fix that dangling id before continuing; do not weaken the test.
 
 - [ ] **Step 4: Commit**
@@ -200,7 +209,7 @@ test("the district layer is a base layer the legend cannot hide", () => {
 
 - [ ] **Step 2: Run it to confirm it fails**
 
-Run: `node --test test/mapkit.test.js`
+Run: `node --testmapkit.test.js`
 Expected: FAIL — `Cannot find module '../app/mapkit.js'`
 
 - [ ] **Step 3: Write the implementation**
@@ -250,7 +259,7 @@ if(typeof module !== "undefined" && module.exports){
 
 - [ ] **Step 4: Run the tests**
 
-Run: `node --test test/mapkit.test.js`
+Run: `node --testmapkit.test.js`
 Expected: 4 tests pass.
 
 - [ ] **Step 5: Commit**
@@ -337,7 +346,7 @@ test("no two surviving label boxes overlap", () => {
 
 - [ ] **Step 2: Run it to confirm it fails**
 
-Run: `node --test test/mapkit.test.js`
+Run: `node --testmapkit.test.js`
 Expected: FAIL — `kit.placeLabels is not a function`
 
 - [ ] **Step 3: Write the implementation**
@@ -375,7 +384,7 @@ Add `placeLabels: placeLabels` and `LABEL_DY: LABEL_DY` to the `module.exports` 
 
 - [ ] **Step 4: Run the tests**
 
-Run: `node --test test/mapkit.test.js`
+Run: `node --testmapkit.test.js`
 Expected: 9 tests pass.
 
 - [ ] **Step 5: Commit**
@@ -443,7 +452,7 @@ test("isolating a different kind switches the isolation", () => {
 
 - [ ] **Step 2: Run it to confirm it fails**
 
-Run: `node --test test/mapkit.test.js`
+Run: `node --testmapkit.test.js`
 Expected: FAIL — `kit.layerToggle is not a function`
 
 - [ ] **Step 3: Write the implementation**
@@ -474,7 +483,7 @@ Add `layerToggle: layerToggle` and `layerIsolate: layerIsolate` to `module.expor
 
 - [ ] **Step 4: Run the tests**
 
-Run: `node --test test/mapkit.test.js`
+Run: `node --testmapkit.test.js`
 Expected: 14 tests pass.
 
 - [ ] **Step 5: Commit**
@@ -534,7 +543,7 @@ test("glacier markers sit inside the map viewbox", () => {
 
 - [ ] **Step 2: Run it to confirm it fails**
 
-Run: `node --test test/data.test.js`
+Run: `node --testdata.test.js`
 Expected: FAIL on "twelve glaciers are on the map" — `Expected 0 to equal 12`.
 
 - [ ] **Step 3: Generate the entries**
@@ -573,7 +582,7 @@ Paste the output into the `places:{...}` object in `data/geo.js`, immediately be
 
 - [ ] **Step 4: Run the tests**
 
-Run: `node --test test/`
+Run: `node --test`
 Expected: all pass, including the three new glacier tests.
 
 - [ ] **Step 5: Commit**
@@ -659,7 +668,7 @@ test("every pass marker on the map has a record", () => {
 
 - [ ] **Step 2: Run it to confirm it fails**
 
-Run: `node --test test/data.test.js`
+Run: `node --testdata.test.js`
 Expected: FAIL on "all 18 passes are recorded" — `Expected 0 to equal 18`.
 
 - [ ] **Step 3: Create the file with one fully worked record**
@@ -742,7 +751,7 @@ Each record's `rel` must name `"t-passes"`, its district id(s), and any river or
 
 - [ ] **Step 6: Run the tests**
 
-Run: `node --test test/`
+Run: `node --test`
 Expected: all pass. "every pass marker on the map has a record" catches any pid typo.
 
 - [ ] **Step 7: Commit**
@@ -791,7 +800,7 @@ test("Reo Purgyil is recorded as the highest point in the state", () => {
 
 - [ ] **Step 2: Run it to confirm it fails**
 
-Run: `node --test test/data.test.js`
+Run: `node --testdata.test.js`
 Expected: FAIL — `Expected 0 to equal 12`.
 
 - [ ] **Step 3: Write the records**
@@ -830,7 +839,7 @@ Each `rel` names `"t-peaks"`, the district, and any linked lake, glacier or pass
 
 - [ ] **Step 4: Run the tests**
 
-Run: `node --test test/`
+Run: `node --test`
 Expected: all pass.
 
 - [ ] **Step 5: Commit**
@@ -884,7 +893,7 @@ test("exactly three lakes are Ramsar sites, with the right years", () => {
 
 - [ ] **Step 2: Run it to confirm it fails**
 
-Run: `node --test test/data.test.js`
+Run: `node --testdata.test.js`
 Expected: FAIL — `Expected 0 to equal 20`.
 
 - [ ] **Step 3: Write the records**
@@ -916,7 +925,7 @@ Reservoir records must `rel` their river (`"Sutlej"`, `"Beas"`, `"Ravi"`) and `"
 
 - [ ] **Step 4: Run the tests**
 
-Run: `node --test test/`
+Run: `node --test`
 Expected: all pass.
 
 - [ ] **Step 5: Commit**
@@ -968,7 +977,7 @@ test("Bara Shigri is recorded as the largest glacier in the state", () => {
 
 - [ ] **Step 2: Run it to confirm it fails**
 
-Run: `node --test test/data.test.js`
+Run: `node --testdata.test.js`
 Expected: FAIL — `Expected 0 to equal 12`.
 
 - [ ] **Step 3: Write the records**
@@ -992,7 +1001,7 @@ Every glacier record's prose must carry the retreat theme — glacier recession 
 
 - [ ] **Step 4: Run the tests**
 
-Run: `node --test test/`
+Run: `node --test`
 Expected: all pass.
 
 - [ ] **Step 5: Commit**
@@ -1164,7 +1173,7 @@ In `viewMap()`, the marker `<g>` currently reads `'<g class="mk" data-p="..." da
 
 - [ ] **Step 7: Run both test layers**
 
-Run: `node --test test/`
+Run: `node --test`
 Expected: all pass.
 
 Then serve and open the harness — `file://` will not work, the iframe needs a same-origin HTTP context:
@@ -1285,7 +1294,7 @@ Append inside the harness's load handler, before the summary line:
 
 - [ ] **Step 6: Verify**
 
-Run: `node --test test/` — all pass.
+Run: `node --test` — all pass.
 Open `http://localhost:8765/test/harness.html` — title `PASS`, including the two new label checks.
 
 Then look at the map itself at `http://localhost:8765/` with geo mode selected: four distinguishable glyph shapes, no label mush, and labels appearing as you zoom.
@@ -1493,7 +1502,7 @@ Append inside the harness load handler, before the summary:
 
 - [ ] **Step 7: Verify**
 
-Run: `node --test test/` — all pass.
+Run: `node --test` — all pass.
 Open `http://localhost:8765/test/harness.html` — title `PASS`.
 
 Then exercise it by hand at `http://localhost:8765/`: click "Peak" (peaks vanish, row goes struck-through, "Show all" appears), double click "Lake" (only lakes remain), double click "Lake" again (everything back), reload the page (the hidden set persists), press "Show all".
@@ -1822,7 +1831,7 @@ test("no card has an empty question or answer", () => {
 
 - [ ] **Step 2: Run it to confirm it fails**
 
-Run: `node --test test/cards.test.js`
+Run: `node --testcards.test.js`
 Expected: FAIL — `no card for ps-shipkila`.
 
 - [ ] **Step 3: Extend buildCards**
@@ -1870,7 +1879,7 @@ The `IDX` lookup means `buildCards()` now depends on `IDX`, which is defined abo
 
 - [ ] **Step 4: Run the tests**
 
-Run: `node --test test/`
+Run: `node --test`
 Expected: all pass.
 
 - [ ] **Step 5: Sanity-check the count**
@@ -1935,7 +1944,7 @@ Add `data/features.js` and `app/mapkit.js` to the file map, and document the leg
 - [ ] **Step 5: Full verification**
 
 ```bash
-cd /Users/avinashnegi/Downloads/prep/hp-atlas && node --test test/
+cd /Users/avinashnegi/Downloads/prep/hp-atlas && node --test
 ```
 Expected: every test passes.
 
