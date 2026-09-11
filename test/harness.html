@@ -390,10 +390,14 @@ window.addEventListener("load", async () => {
   const prof = doc.querySelector(".profile");
   check("the profile lists the note just written",
     !!prof && /Kangra/.test(prof.textContent));
+  /* Gated BOTH ways: offered when a sign-in can actually work, absent when
+     it cannot. Asserting only the absent branch could never pass here. */
   check("the sign-in affordance is gated on Firebase availability",
-    !doc.getElementById("psignin"),
-    "authAvailable=" + ev("authAvailable()"));
-  const nrow = doc.querySelector("[data-go]");
+    !!doc.getElementById("psignin") === !!ev("authAvailable()"),
+    "psignin=" + !!doc.getElementById("psignin") + " authAvailable=" + ev("authAvailable()"));
+  /* Scoped to the notes index: data-go is also on every related-record chip,
+     and an open record panel puts one of those earlier in the DOM. */
+  const nrow = doc.querySelector(".noterow2[data-go]");
   check("the notes index links to its record", !!nrow);
   if(nrow){
     nrow.click();

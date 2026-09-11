@@ -429,7 +429,7 @@ function noteBlock(id){
   return '<div class="blk noteblk"><h5>Your note</h5>'+
     '<textarea id="notetext" maxlength="'+NOTE_MAX+'" rows="3" '+
       'placeholder="Anything you want to remember about this…">'+
-      cur.replace(/&/g,"&amp;").replace(/</g,"&lt;")+'</textarea>'+
+      esc(cur)+'</textarea>'+
     '<div class="noterow"><span class="notecount" id="notecount">'+
       cur.length+' / '+NOTE_MAX+'</span>'+
       '<button class="btn sm" type="button" id="notesave">Save</button></div></div>';
@@ -1572,6 +1572,11 @@ function mountRounds(){
   });
 }
 
+/* Anything interpolated into an innerHTML string goes through here. & first,
+   then <, or the ampersand of an entity gets escaped twice. */
+function esc(v){
+  return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+}
 function viewProfile(){
   const u = authUser();
   const st = store.get("streak", emptyStreak());
@@ -1586,7 +1591,7 @@ function viewProfile(){
   const noteList = ids.length
     ? ids.map(id => '<button class="noterow2" type="button" data-go="'+id+'">'+
         '<span class="nr-t">'+nameOf(IDX.get(id))+'</span>'+
-        '<span class="nr-x">'+notes[id].text.slice(0, 90).replace(/&/g,"&amp;").replace(/</g,"&lt;")+
+        '<span class="nr-x">'+esc(notes[id].text.slice(0, 90))+
         (notes[id].text.length > 90 ? "…" : "")+'</span></button>').join('')
     : '<p class="pmuted">No notes yet. Open any record and write one at the foot of the panel.</p>';
 
@@ -1595,8 +1600,8 @@ function viewProfile(){
      than offering none, same reasoning renderAccount used to apply to the
      whole button. */
   const acct = u
-    ? '<div class="pcard"><div class="pident"><b>'+(u.displayName || u.email || "Signed in")+'</b>'+
-      (u.email && u.displayName ? '<span>'+u.email+'</span>' : '')+'</div>'+
+    ? '<div class="pcard"><div class="pident"><b>'+esc(u.displayName || u.email || "Signed in")+'</b>'+
+      (u.email && u.displayName ? '<span>'+esc(u.email)+'</span>' : '')+'</div>'+
       '<button class="btn sm" type="button" id="psignout">Sign out</button></div>'
     : '<div class="pcard"><div class="pident"><b>Not signed in</b>'+
       '<span>Your streak and notes are on this device only.</span></div>'+
