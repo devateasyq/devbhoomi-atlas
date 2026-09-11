@@ -256,7 +256,7 @@ D.features = [
  fame:"Climbed from the Tos glacier",
  districts:["d-lahaul","d-kullu"],
  blocks:[
-  ["p","Dharmsura, <b>6,446 m</b>, also called <b>White Sail</b>, sits on the Lahaul–Kullu boundary and is usually climbed from the <b>Tos glacier</b> on the Kullu side."],
+  ["p","Dharmsura, <b>6,446 m</b>, also called <b>White Sail</b>, sits on the Lahaul–Kullu boundary and is usually climbed from the <b>Tos glacier</b>."],
   ["p","It ranks just below Mulkila in this roster and, like Shigri Parbat and Mulkila, belongs to the high glaciated country shared by upper Lahaul and Kullu rather than to the outer, lower ranges."],
   ["note","Exam hook","6,446 m · Lahaul/Kullu · also called White Sail · climbed from the Tos glacier."]],
  rel:["t-peaks","d-lahaul","d-kullu"]},
