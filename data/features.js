@@ -640,7 +640,7 @@ D.features = [
  valley:"Miyar valley, Lahaul", feeds:"Miyar Nala, which joins the Chenab",
  districts:["d-lahaul"],
  blocks:[
-  ["p","Miyar Glacier sits at the head of the long <b>Miyar valley</b> in Lahaul — the long valley approach that gives this glacier its character in the roster."],
+  ["p","Miyar Glacier sits at the head of the <b>Miyar valley</b> in Lahaul, feeding the <b>Miyar Nala</b> on its way to the <b>Chenab</b>."],
   ["p","Its meltwater drains through the <b>Miyar Nala</b> to the <b>Chenab</b>, named among the Chenab's own tributaries below the Chandra–Bhaga confluence at Tandi; <b>Mulkila</b>, on the Miyar–Chandra divide, stands above the same valley."],
   ["note","Exam hook","Miyar valley, Lahaul · the long Miyar valley approach · feeds the Miyar Nala → Chenab."]],
  rel:["t-peaks","d-lahaul","Chenab","pk-mulkila","t-disaster"]},
