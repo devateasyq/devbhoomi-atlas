@@ -369,3 +369,22 @@ button.brow:hover .blab{color:var(--accent)}
 .locator .lr{fill:none;stroke:var(--water);stroke-width:9;stroke-linecap:round;stroke-linejoin:round}
 
 #stage.noscroll{overflow:hidden}
+
+/* ---------- Rounds: one fact per screen, native scroll-snap ---------- */
+.rounds{height:100%;overflow-y:auto;scroll-snap-type:y mandatory;
+  overscroll-behavior:contain;scrollbar-width:none;outline:none}
+.rounds::-webkit-scrollbar{display:none}
+.short{scroll-snap-align:start;scroll-snap-stop:always;
+  height:100%;width:100%;max-width:420px;margin:0 auto;
+  display:flex;flex-direction:column;justify-content:center;gap:13px;
+  padding:32px 26px;border:0;border-bottom:1px solid var(--line-soft);
+  background:none;text-align:left;cursor:pointer;font:inherit}
+.short .k{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.16em;
+  text-transform:uppercase}
+.short .nm{font-family:var(--f-display);font-size:clamp(26px,6vw,38px);font-weight:600;
+  line-height:1.1;letter-spacing:-.02em;color:var(--ink);text-wrap:balance}
+.short .ft{font-size:19px;line-height:1.5;color:var(--ink-2);text-wrap:pretty}
+.short .go{margin-top:6px;font-size:12.5px;color:var(--accent);
+  opacity:0;transition:opacity .15s}
+.short:hover .go,.short:focus-visible .go{opacity:1}
+.short:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
