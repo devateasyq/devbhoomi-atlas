@@ -693,7 +693,7 @@ git commit -m "feat: mount the Rounds feed with windowed rendering and seen-mark
 
 ```python
 js  += "\n" + "\n".join(pathlib.Path("app", f).read_text()
-                        for f in ("logo.js","mapkit.js","rounds.js","trends.js","app.js"))
+                        for f in ("logo.js","trends.js","mapkit.js","rounds.js","app.js"))
 ```
 
 `rounds.js` must precede `app.js`, which calls `buildFacts()` at load time.
