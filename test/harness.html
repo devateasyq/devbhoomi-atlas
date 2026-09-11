@@ -121,6 +121,22 @@ window.addEventListener("load", async () => {
 
   check("Show all button is absent when nothing is hidden", !doc.getElementById("lgall"));
 
+  win.openRec("ps-shipkila"); await wait(150);
+  const pb = doc.getElementById("pbody").textContent;
+  check("pass panel shows the height", /3,930 m/.test(pb));
+  check("pass panel shows what it connects", /Tibet/.test(pb));
+  check("pass panel shows a locator map", !!doc.querySelector("#pbody .locator"));
+  check("pass panel shows district chips", /Kinnaur/.test(pb));
+  check("pass panel kind label reads Pass",
+    doc.getElementById("pkind").textContent.includes("Pass"));
+
+  win.openRec("lk-pong"); await wait(150);
+  check("lake panel shows the Ramsar year", /2002/.test(doc.getElementById("pbody").textContent));
+
+  win.openRec("gl-barashigri"); await wait(150);
+  check("glacier panel names the river it feeds",
+    /Chenab|Chandra/.test(doc.getElementById("pbody").textContent));
+
   out.innerHTML += "\n" + pass + " passed, " + fail + " failed";
   document.title = fail ? "FAIL (" + fail + ")" : "PASS";
 });

@@ -168,7 +168,7 @@ function locatorFor(id){
       (r.lenHP || r.joins || "")+'</div></div>';
   }
   else {
-    const pid = r.seat || r.place;
+    const pid = r.seat || r.place || r.pid;
     if(pid && MAP.places[pid]){
       const p = MAP.places[pid];
       mark = [p.x, p.y];
@@ -223,6 +223,19 @@ function renderTrail(){
   }).join('');
   t.scrollLeft = t.scrollWidth;
 }
+
+/* Each kind shows only its own rows; factsList() already drops empties,
+   so a record that omits an optional field simply loses that row. */
+const FEATURE_FACTS = {
+  peak:    [["Height","alt"],["Range","range"],["Also called","alias"],
+            ["First ascent","ascent"],["Known for","fame"]],
+  pass:    [["Height","alt"],["Range","range"],["Connects","connects"],
+            ["Status","status"],["On the route to","route"]],
+  lake:    [["Type","type"],["Altitude","alt"],["On river","river"],
+            ["Area","area"],["Sacred to","sacred"],["Ramsar site","ramsar"]],
+  glacier: [["Size","size"],["Valley / basin","valley"],["Feeds","feeds"],
+            ["Retreat","retreat"]]
+};
 
 /* ---------- detail panel ---------- */
 function openRec(id, headerNote, fromHash){
@@ -295,6 +308,19 @@ function openRec(id, headerNote, fromHash){
       if(v.length) body += '<div class="blk"><h5>Flows through</h5><div class="rel">'+v.map(x =>
         '<button class="relchip" type="button" data-go="'+x+'">'+
         '<i class="k" style="background:'+KINDS.district.c+'"></i>'+IDX.get(x).r.name+'</button>').join('')+'</div></div>';
+    }
+  }
+  else if(FEATURE_FACTS[k]){
+    body += factsList(FEATURE_FACTS[k].map(([lb,f]) => [lb, r[f]]));
+    body += locatorFor(id);
+    body += renderBlocks(r.blocks);
+    if(r.districts && r.districts.length){
+      const v = r.districts.filter(x => IDX.has(x));
+      if(v.length) body += '<div class="blk"><h5>'+
+        (k === "pass" ? "Connects these districts" : "In these districts")+'</h5><div class="rel">'+
+        v.map(x => '<button class="relchip" type="button" data-go="'+x+'">'+
+        '<i class="k" style="background:'+KINDS.district.c+'"></i>'+IDX.get(x).r.name+
+        '</button>').join('')+'</div></div>';
     }
   }
   else if(k === "topic"){
