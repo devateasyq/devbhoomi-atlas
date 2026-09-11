@@ -84,6 +84,31 @@ function renderAccount(user){
   btn.textContent = user ? (user.displayName || user.email || "Account") : "Sign in";
   btn.classList.toggle("in", !!user);
 }
+/* One document per user holds the progress that belongs to the person.
+   Device preferences are deliberately absent — see the spec. */
+function localState(){
+  return {seen: store.get("seen", []), quiz: store.get("quiz", {}), pyq: store.get("pyq", {})};
+}
+function userDoc(fb, user){
+  return fb.firestore().collection("users").doc(user.uid);
+}
+function pullAndMerge(user){
+  if(!user) return Promise.resolve();
+  return loadFirebase().then(fb => userDoc(fb, user).get().then(snap => {
+    const remote = snap.exists ? (snap.data() || {}) : {};
+    const merged = mergeState(localState(), remote);
+    store.set("seen", merged.seen);
+    store.set("quiz", merged.quiz);
+    store.set("pyq",  merged.pyq);
+    S.seen = merged.seen;
+    /* the merged result goes straight back up, so both sides agree */
+    return userDoc(fb, user).set(merged, {merge: true});
+  }));
+}
+function pushState(user){
+  if(!user) return Promise.resolve();
+  return loadFirebase().then(fb => userDoc(fb, user).set(localState(), {merge: true}));
+}
 function mountAccount(){
   const btn = document.getElementById("acctbtn");
   const dlg = document.getElementById("acctdlg");
@@ -113,7 +138,13 @@ function mountAccount(){
       .then(() => say("Link sent. Check your inbox — and your spam folder."))
       .catch(err => say(err && err.message ? err.message : "Could not send the link"));
   });
-  onAuthChange(renderAccount);
+  onAuthChange(user => {
+    renderAccount(user);
+    if(!user) return;
+    pullAndMerge(user)
+      .then(() => { render(); toast("Progress synced"); })
+      .catch(() => toast("Could not sync just now"));
+  });
   completeEmailLink().then(u => { if(u){ shut(); toast("Signed in"); } }).catch(() => {});
 }
 
@@ -1123,6 +1154,7 @@ function pyAnswer(i){
   S.pyAnswered = i;
   const prog = store.get("pyq",{});
   store.set("pyq", recordAnswer(prog, q.y+"|"+q.q.slice(0,60), i === q.a));
+  if(authUser()) pushState(authUser()).catch(() => {});
   render();
 }
 function pyStep(d){
@@ -1175,6 +1207,7 @@ function answer(i){
   const q = quizPool()[S.qIdx]; if(!q) return;
   S.qAnswered = i;
   const prog = store.get("quiz",{}); store.set("quiz", recordAnswer(prog, q.q, i === q.a));
+  if(authUser()) pushState(authUser()).catch(() => {});
   render();
 }
 function stepQ(d){
@@ -1448,7 +1481,12 @@ $("#search").addEventListener("keydown", e => {
 document.addEventListener("keydown", e => {
   const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
   if(e.key === "/" && !typing){ e.preventDefault(); $("#search").focus(); $("#search").select(); return; }
-  if(e.key === "Escape"){ if(!$("#panel").hidden) closePanel(); return; }
+  if(e.key === "Escape"){
+    const dlg = $("#acctdlg");
+    if(dlg && !dlg.hidden){ dlg.hidden = true; return; }
+    if(!$("#panel").hidden) closePanel();
+    return;
+  }
   if(typing || e.metaKey || e.ctrlKey || e.altKey) return;
   if(S.view === "revise" && S.revMode === "quiz"){
     if(/^[1-4]$/.test(e.key)) answer(+e.key-1);
