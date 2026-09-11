@@ -326,6 +326,27 @@ window.addEventListener("load", async () => {
   check("no Firebase SDK was loaded",
     !doc.querySelector('script[src*="firebase-app-compat"]'));
 
+  win.openRec("d-kangra");
+  await wait(200);
+  const ta = doc.getElementById("notetext");
+  check("a record panel offers a note field", !!ta);
+  if(ta){
+    ta.value = "Kangra fort fell to Jahangir in 1620";
+    ta.dispatchEvent(new win.Event("input"));
+    check("the counter tracks what is typed",
+      /36 \/ 1000/.test(doc.getElementById("notecount").textContent),
+      doc.getElementById("notecount").textContent);
+    doc.getElementById("notesave").click();
+    await wait(150);
+    win.openRec("d-shimla"); await wait(150);
+    win.openRec("d-kangra"); await wait(200);
+    check("the note survives navigating away and back",
+      doc.getElementById("notetext").value === "Kangra fort fell to Jahangir in 1620",
+      JSON.stringify(doc.getElementById("notetext").value));
+    check("the textarea enforces the cap",
+      doc.getElementById("notetext").getAttribute("maxlength") === "1000");
+  }
+
   out.innerHTML += "\n" + pass + " passed, " + fail + " failed";
   document.title = fail ? "FAIL (" + fail + ")" : "PASS";
 });

@@ -394,6 +394,36 @@ function locatorFor(id){
     '</svg><div class="lt">'+caption+'</div></div>';
 }
 
+/* One note per record, at the foot of the panel. The counter is visible
+   rather than the cap being enforced silently at save. */
+function noteBlock(id){
+  const notes = store.get("notes", {});
+  const cur = notes[id] && notes[id].text ? notes[id].text : "";
+  return '<div class="blk noteblk"><h5>Your note</h5>'+
+    '<textarea id="notetext" maxlength="'+NOTE_MAX+'" rows="3" '+
+      'placeholder="Anything you want to remember about this…">'+
+      cur.replace(/&/g,"&amp;").replace(/</g,"&lt;")+'</textarea>'+
+    '<div class="noterow"><span class="notecount" id="notecount">'+
+      cur.length+' / '+NOTE_MAX+'</span>'+
+      '<button class="btn sm" type="button" id="notesave">Save</button></div></div>';
+}
+function mountNote(id){
+  const ta = document.getElementById("notetext");
+  if(!ta) return;
+  const count = document.getElementById("notecount");
+  const save = () => {
+    const next = setNote(store.get("notes", {}), id, ta.value);
+    store.set("notes", next);
+    if(authUser()) pushStateSoon();
+    toast(ta.value.trim() ? "Note saved" : "Note removed");
+  };
+  ta.addEventListener("input", () => {
+    count.textContent = ta.value.length + " / " + NOTE_MAX;
+  });
+  ta.addEventListener("blur", save);
+  document.getElementById("notesave").addEventListener("click", save);
+}
+
 /* ---------- related, grouped by kind ---------- */
 function relBlock(ids){
   const valid = ids.filter(id => IDX.has(id));
@@ -553,9 +583,11 @@ function openRec(id, headerNote, fromHash){
     body += renderBlocks(r.blocks);
     if(TOPIC_FEATURES[id]) body += featureChips(TOPIC_FEATURES[id]);
   }
+  body += noteBlock(id);
   body += relBlock(rels(r));
 
   $("#pbody").innerHTML = body;
+  mountNote(id);
   $("#pbody").scrollTop = 0;
   $("#panel").hidden = false;
   renderTrail();

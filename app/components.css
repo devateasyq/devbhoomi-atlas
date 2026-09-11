@@ -559,3 +559,9 @@ button.brow:hover .blab{color:var(--accent)}
 #acctemail:focus{outline:none;border-color:var(--accent-line)}
 .acctmsg{min-height:17px;font-size:12px;color:var(--accent)}
 @media (max-width:600px){ #acctbtn{max-width:96px} }
+.noteblk textarea{width:100%;font:inherit;font-size:14px;line-height:1.5;
+  padding:9px 11px;border-radius:8px;border:1px solid var(--line);
+  background:var(--ground);color:var(--ink);resize:vertical;min-height:66px}
+.noteblk textarea:focus{outline:none;border-color:var(--accent-line)}
+.noterow{display:flex;align-items:center;justify-content:space-between;margin-top:7px}
+.notecount{font-family:var(--f-mono);font-size:10.5px;color:var(--ink-3)}
