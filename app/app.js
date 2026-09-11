@@ -72,7 +72,7 @@ function factsList(pairs){
 /* ---------- app state ---------- */
 const S = {
   view:"home", sel:null, trail:[],
-  mapMode:"districts", era:"all", battleFilter:"all", topicSec:"all",
+  era:"all", battleFilter:"all", topicSec:"all",
   revMode:"cards", cardIdx:0, cardFlip:false, cardSec:"all",
   qIdx:0, qSec:"all", qAnswered:null,
   pyYear:"all", pyHP:true, pyIdx:0, pyAnswered:null
@@ -369,9 +369,6 @@ function goTo(id){
   const v = KINDS[o.kind].view;
   if(S.view !== v){
     if(o.kind === "event" && o.r.era) S.era = o.r.era;
-    if(o.kind === "state") S.mapMode = "states";
-    if(o.kind === "district") S.mapMode = "districts";
-    if(["peak","pass","lake","glacier"].includes(o.kind)) S.mapMode = "geo";
     setView(v, true);
   }
   openRec(id);
@@ -398,13 +395,6 @@ function paintSelection(){
    subsequent click event to the <svg>, which silently swallows
    every click on a district or marker.
    ============================================================ */
-const MAP_MODES = [
-  {id:"districts", lb:"Districts",              kinds:[]},
-  {id:"states",    lb:"Hill States",            kinds:["state"]},
-  {id:"geo",       lb:"Peaks · Passes · Lakes · Glaciers", kinds:["peak","pass","lake","glacier"]},
-  {id:"heritage",  lb:"Temples & Monasteries",  kinds:["temple"]},
-  {id:"sites",     lb:"Battle & Movement Sites",kinds:["battle"]}
-];
 const MONASTERIES = new Set(["tabo","key","dhankar","trilokinath","gurughantal","mcleodganj"]);
 const PLACE_LINK = {
   subathu:"ev-subathu", kotgarh:"p-stokes", sanjauli:"ev-hhsrc", pajhota:"ev-pajhota",
@@ -429,8 +419,6 @@ function placeTarget(pid){
   return null;
 }
 function viewMap(){
-  const mode = MAP_MODES.find(m => m.id === S.mapMode) || MAP_MODES[0];
-  const showLabels = mode.id === "districts";
   const paths = Object.entries(MAP.paths).map(([n,d]) => {
     const rec = D.districts.find(x => x.map === n);
     return '<path class="dist" d="'+d+'" data-d="'+(rec?rec.id:"")+'" data-name="'+n+'"/>';
@@ -453,15 +441,16 @@ function viewMap(){
   const rivers = '<g class="rivers" clip-path="url(#'+clipId+')">'+
     rPaths+'<g class="rlabels">'+rLabels+'</g></g>';
   const marks = Object.entries(MAP.places)
-    .filter(([,p]) => mode.kinds.includes(p.k))
     .map(([id,p]) => '<g class="mk" data-k="'+p.k+'" data-p="'+id+'" '+
       'data-rec="'+(placeTarget(id)||"")+'" data-n="'+p.n+'" '+
       'transform="translate('+p.x+','+p.y+')">'+
       '<g class="gly" style="fill:'+LAYER_BY_KIND[p.k].c+'">'+mkGlyph(LAYER_BY_KIND[p.k].glyph)+'</g>'+
       '<text y="-9">'+p.n+'</text></g>').join('');
-  const shownKinds = mode.kinds.concat(["river1","river2"]);
-  const legend = '<div class="maplegend"><div class="lt">'+
-    (mode.id === "states" ? "Seats of the hill states, c. 1815" : "Layers")+'</div><ul>'+
+  /* Every layer the map can draw, in LAYERS order. `base` layers (the
+     district polygons) are the map itself, not an overlay, so they are
+     not listed and cannot be hidden. */
+  const shownKinds = LAYERS.filter(l => !l.base).map(l => l.k);
+  const legend = '<div class="maplegend"><div class="lt">Layers</div><ul>'+
     shownKinds.map(k => {
       const l = LAYER_BY_KIND[k], off = S.mapOff.includes(k);
       return '<li><button type="button" class="lgi'+(off ? " off" : "")+'" data-lk="'+k+'" '+
@@ -470,18 +459,13 @@ function viewMap(){
     }).join('')+
     '</ul>'+
     (S.mapOff.length ? '<button type="button" class="lgall" id="lgall">Show all</button>' : '')+
-    (mode.kinds.length ? '' : '<div class="lghint">Click a district to open its record</div>')+
+    '<div class="lghint">Click a district or marker to open its record</div>'+
     '</div>';
   return '<div id="mapview">'+
-    '<div class="maptools"><div class="seg">'+
-      MAP_MODES.map(m => '<button type="button" data-mm="'+m.id+'" aria-pressed="'+(m.id===S.mapMode)+'">'+
-        m.lb+'</button>').join('')+
-    '</div>'+
-    '</div>'+
     '<div class="mapcanvas" id="mapcanvas">'+
       '<svg id="hpsvg" viewBox="0 0 '+MAP.w+' '+MAP.h+'" preserveAspectRatio="xMidYMid meet" '+
         'role="img" aria-label="Map of Himachal Pradesh — click a district or marker">'+
-        '<defs>'+clip+rDefs+'</defs><g id="mapg">'+paths+rivers+(showLabels?labels:"")+marks+'</g></svg>'+
+        '<defs>'+clip+rDefs+'</defs><g id="mapg">'+paths+rivers+labels+marks+'</g></svg>'+
       '<div id="maptip"></div>'+legend+
       '<div class="zoomer">'+
         '<button type="button" data-zoom="1" aria-label="Zoom in">+</button>'+
@@ -503,10 +487,11 @@ function applyZoom(){
 /* Labels are laid out after every zoom: their boxes are constant in
    screen pixels, so in SVG units they shrink as you zoom in and more of
    them fit. Markers are never hidden — only their labels. */
-const LABEL_PRI = {peak:4, pass:3, glacier:2, lake:1, state:3, temple:2, battle:2};
+const LABEL_PRI = {district:9, peak:4, pass:3, glacier:2, lake:1,
+                   state:3, temple:2, battle:2};
 function relabel(){
   const g = document.getElementById("mapg"); if(!g) return;
-  const marks = [...g.querySelectorAll(".mk:not(.hid)")];
+  const marks = [...g.querySelectorAll(".mk:not(.hid),.dl")];
   if(!marks.length) return;
   const inv = 1/ZT.k;
   const items = marks.map((m,i) => {
@@ -517,10 +502,13 @@ function relabel(){
     const raw = m.dataset.at ||
       ((m.getAttribute("transform") || "").match(/translate\(([^)]*)\)/) || [,""])[1];
     const xy = raw.split(/[\s,]+/).map(Number);
-    const n = m.dataset.n || "";
+    const isDist = m.classList.contains("dl");
+    const n = isDist ? (m.textContent || "") : (m.dataset.n || "");
+    /* district labels are 13px and centred on the label itself, marker
+       labels 10.5px and sitting above the glyph */
     return {id:i, x:xy[0], y:xy[1],
-            w:(n.length*5.6+6)*inv, h:13*inv,
-            pri:(LABEL_PRI[m.dataset.k] || 1)*1000 - n.length};
+            w:(n.length*(isDist ? 7.2 : 5.6)+6)*inv, h:(isDist ? 16 : 13)*inv,
+            pri:(LABEL_PRI[isDist ? "district" : m.dataset.k] || 1)*1000 - n.length};
   });
   const keep = placeLabels(items);
   marks.forEach((m,i) => m.classList.toggle("nolabel", !keep.has(i)));
@@ -1165,7 +1153,6 @@ document.addEventListener("click", e => {
   const nav = hit("[data-view]");   if(nav){ go(nav.dataset.view); return; }
   const gob = hit("[data-go]");     if(gob){ $("#results").hidden = true; goTo(gob.dataset.go); return; }
   const tr  = hit("[data-trail]");  if(tr){ goTo(tr.dataset.trail); return; }
-  const mm  = hit("[data-mm]");     if(mm){ S.mapMode = mm.dataset.mm; render(); return; }
   const zm  = hit("[data-zoom]");   if(zm){ zoomBy(+zm.dataset.zoom); return; }
   const era = hit("[data-era]");    if(era){ S.era = era.dataset.era; render(); return; }
   const ev  = hit(".ev");           if(ev){ openRec(ev.dataset.e); return; }
@@ -1270,6 +1257,10 @@ applyTheme();
 S.mapOff = store.get("mapoff", null) ||
   (store.get("rivers", true) ? [] : ["river1","river2"]);
 store.del("rivers");
+/* Map mode tabs are gone; every kind is now a permanent legend layer.
+   Drop the stored key (lowercase, matching "mapoff"/"rivers"/"theme")
+   so a returning visitor is not left with a dead one. */
+store.del("mapmode");
 buildNav();
 document.getElementById("brandmark").innerHTML = logoMark(26);
 document.getElementById("brandmarkm").innerHTML = logoMark(24);

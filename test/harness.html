@@ -56,8 +56,13 @@ window.addEventListener("load", async () => {
      openRec, runSearch) do land on window, so those are called directly. */
   const ev = src => win.eval(src);
 
-  ev('S.view="map"; S.mapMode="geo"; render();');
+  ev('S.view="map"; render();');
   await wait(300);
+
+  for(const kind of ["peak","pass","lake","glacier","temple","battle","state"]){
+    check(kind + " markers render with no mode selected",
+      doc.querySelectorAll('.mk[data-k="' + kind + '"]').length > 0);
+  }
 
   for(const kind of ["peak","pass","lake","glacier"]){
     const mk = doc.querySelector('.mk[data-k="' + kind + '"]');

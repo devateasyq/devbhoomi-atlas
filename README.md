@@ -50,10 +50,14 @@ Nothing is origin-specific — relative paths throughout, so it works from a sub
   transform as the districts and clipped to the state outline. Each is labelled on the map and
   clicking one opens its own record: Sanskrit, Vedic and Greek names, source, entry and exit points,
   length in the state, tributaries with their junctions, and the projects on it.
-- **A toggleable legend.** The map legend controls layer visibility, Plotly-style: single click a
-  row to hide that layer, double click to isolate it (hide every other layer), and double click the
-  isolated row again to restore the lot. "Show all" resets everything in one click. The hidden set
-  persists across visits in `localStorage` under `hpatlas:mapoff`.
+- **The legend is the map's only control.** Every kind of marker — hill-state seats, peaks,
+  passes, lakes, glaciers, temples and monasteries, battle and movement sites — plus the two
+  river tiers is a permanent legend layer, all visible by default. (The district boundaries are
+  the map itself, not an overlay, so they are not in the legend and cannot be hidden.) The legend
+  controls layer visibility, Plotly-style: single click a row to hide that layer, double click to
+  isolate it (hide every other layer), and double click the isolated row again to restore the lot.
+  "Show all" resets everything in one click. The hidden set persists across visits in
+  `localStorage` under `hpatlas:mapoff`.
 - **Question trends.** A Trends view computes, from the past-paper bank itself, how many Himachal
   questions each paper carries, which subjects they come from, how each subject moves year to year,
   and which topic notes are examined most — every bar links back into the atlas.

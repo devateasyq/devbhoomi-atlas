@@ -1,7 +1,5 @@
 /* ---------- map ---------- */
 #mapview{display:flex;flex-direction:column;height:100%;min-height:0}
-.maptools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 18px;
-  border-bottom:1px solid var(--line-soft)}
 .seg{display:inline-flex;background:var(--surface-2);border-radius:8px;padding:2px;gap:2px;flex-wrap:wrap}
 .seg button{padding:5px 11px;border-radius:6px;font-size:12.5px;font-weight:500;color:var(--ink-2);white-space:nowrap}
 .seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow);font-weight:600}
@@ -29,6 +27,7 @@
   text-anchor:middle;paint-order:stroke;stroke:var(--surface);stroke-width:3px;
   stroke-linejoin:round;pointer-events:none}
 .mk.nolabel text{display:none}
+.dl.nolabel text{display:none}
 .mk.hid{display:none}
 #maptip{position:absolute;pointer-events:none;background:var(--ink);color:var(--ground);
   font-size:12px;font-weight:600;padding:5px 9px;border-radius:6px;white-space:nowrap;
