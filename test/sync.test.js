@@ -188,9 +188,26 @@ test("normaliseNotes drops junk rather than propagating it", () => {
   assert.deepEqual(sync.normaliseNotes(null), {});
 });
 
-test("normaliseNotes drops a note that is only whitespace", () => {
+/* Finding 2 (review): normaliseNotes used to drop any blank-text entry,
+   which made a tombstone {text: "", t} impossible to represent — an absent
+   key always lost to a present remote key in mergeNotes, so a deletion was
+   silently undone by the next sync. Blank text (whitespace-only or a true
+   empty-string tombstone) is now kept through normalise and hidden only at
+   read time (see realNotes below) — junk with no text STRING at all is the
+   only thing normaliseNotes still drops. */
+test("normaliseNotes keeps a whitespace-only note rather than dropping it", () => {
   const out = sync.normaliseNotes({a: {text: "   \n ", t: 1}, b: {text: "real", t: 1}});
-  assert.deepEqual(Object.keys(out), ["b"]);
+  assert.deepEqual(Object.keys(out).sort(), ["a", "b"]);
+});
+
+test("normaliseNotes keeps an empty-string tombstone rather than dropping it", () => {
+  const out = sync.normaliseNotes({"d-kangra": {text: "", t: 500}});
+  assert.deepEqual(out["d-kangra"], {text: "", t: 500});
+});
+
+test("normaliseNotes still drops junk with no text string at all", () => {
+  const out = sync.normaliseNotes({a: null, b: 42, c: {t: 1}, d: {text: "ok", t: 2}, e: {text: "", t: 3}});
+  assert.deepEqual(Object.keys(out).sort(), ["d", "e"]);
 });
 
 test("mergeNotes keeps the most recent note per record", () => {
@@ -222,9 +239,17 @@ test("setNote clamps to the cap on the way in", () => {
   assert.equal(out["x"].text.length, 1000);
 });
 
-test("setNote with empty text removes the note", () => {
+/* Contract change per finding 2: deleting a note used to remove the key,
+   which mergeNotes (additive-with-recency) cannot represent as "newer than
+   a remote that still has it" — an absent key always lost. setNote now
+   writes a tombstone {text: "", t: Date.now()} instead, so the deletion
+   itself is a dated entry that can win a merge like any other note. */
+test("setNote with empty text stores a tombstone rather than removing the key", () => {
+  const before = Date.now();
   const out = sync.setNote({"x": {text: "gone soon", t: 1}}, "x", "   ");
-  assert.ok(!("x" in out), "an emptied note should be removed, not stored blank");
+  assert.ok("x" in out, "a cleared note must remain as a tombstone, not disappear");
+  assert.equal(out["x"].text, "", "cleared text is stored as an empty-string tombstone");
+  assert.ok(out["x"].t >= before, "the tombstone needs a fresh timestamp to outrace a stale remote note");
 });
 
 test("setNote does not mutate the map it is given", () => {
@@ -325,6 +350,34 @@ test("setNote treats __proto__ as junk, not a prototype reassignment", () => {
   assert.equal(out.t, undefined);
   assert.equal(out["d-kangra"].text, "keep me", "a legitimate neighbouring note must survive");
   assert.ok(!Object.keys(out).includes("__proto__"));
+});
+
+/* realNotes is the one place "is this a real, displayable note" is decided,
+   used by noteBlock, viewProfile and exportData alike so a tombstone or a
+   whitespace-only entry never renders as a note or counts in a tally. */
+test("realNotes hides a tombstone and a whitespace-only note, keeps a real one", () => {
+  const out = sync.realNotes({a: {text: "", t: 5}, b: {text: "   ", t: 5}, c: {text: "real", t: 5}});
+  assert.deepEqual(Object.keys(out), ["c"]);
+});
+
+test("realNotes drops junk the same way normaliseNotes does", () => {
+  assert.deepEqual(sync.realNotes({a: null, b: 42}), {});
+  assert.deepEqual(sync.realNotes(null), {});
+});
+
+/* The round trip the review said no existing test covered: delete a note,
+   then merge against a remote that has not seen the deletion yet. Before
+   finding 2's fix this came back — the tombstone must win because it is
+   newer, and it must not show up as a note afterwards either. */
+test("a deleted note stays deleted after merging against a remote that still has it", () => {
+  const original = {"d-kangra": {text: "private note", t: 1000}};
+  const afterDelete = sync.setNote(original, "d-kangra", "");
+  assert.equal(afterDelete["d-kangra"].text, "", "setNote must tombstone, not remove, the key");
+
+  const remoteStillHasIt = {"d-kangra": {text: "private note", t: 1000}};
+  const merged = sync.mergeNotes(afterDelete, remoteStillHasIt);
+  assert.equal(merged["d-kangra"].text, "", "the newer tombstone must beat the older remote note");
+  assert.deepEqual(sync.realNotes(merged), {}, "a tombstoned record must not appear as a real note");
 });
 
 test("setNote accepts constructor and toString as ordinary record ids", () => {

@@ -421,14 +421,13 @@ function locatorFor(id){
 }
 
 /* One note per record, at the foot of the panel. The counter is visible
-   rather than the cap being enforced silently at save. */
+   rather than the cap being enforced silently at save. realNotes (app/sync.js)
+   is the single filter for "is this a real note" — it hides a tombstone
+   {text:"", t} left by a deletion and clamps to NOTE_MAX, so a deleted note
+   can never render here as if it were still there. */
 function noteBlock(id){
-  const notes = store.get("notes", {});
-  /* Clamped on the way out as well as on the way in: a note that arrived
-     over-length from an older build would otherwise render in full and the
-     counter would read "1250 / 1000", showing a cap that is not being kept. */
-  const has = Object.prototype.hasOwnProperty.call(notes, id) && notes[id];
-  const cur = (has && typeof notes[id].text === "string" ? notes[id].text : "").slice(0, NOTE_MAX);
+  const notes = realNotes(store.get("notes", {}));
+  const cur = Object.prototype.hasOwnProperty.call(notes, id) ? notes[id].text : "";
   return '<div class="blk noteblk"><h5>Your note</h5>'+
     '<textarea id="notetext" maxlength="'+NOTE_MAX+'" rows="3" '+
       'placeholder="Anything you want to remember about this…">'+
@@ -1615,7 +1614,10 @@ function esc(v){
    key added later is exported without anybody remembering to add it here. */
 function exportData(){
   const out = {exportedAt: new Date().toISOString(), app: "Parikrama Path"};
-  for(const e of SYNC_KEYS) out[e.k] = store.get(e.k, e.empty());
+  /* A deleted note's tombstone is sync bookkeeping, not something the
+     student wrote — leave it out of what they download as "everything". */
+  for(const e of SYNC_KEYS)
+    out[e.k] = e.k === "notes" ? realNotes(store.get("notes", {})) : store.get(e.k, e.empty());
   const u = authUser();
   if(u) out.account = {email: u.email || "", name: u.displayName || ""};
   const blob = new Blob([JSON.stringify(out, null, 2)], {type: "application/json"});
@@ -1669,7 +1671,10 @@ function deleteAccount(){
 function viewProfile(){
   const u = authUser();
   const st = store.get("streak", emptyStreak());
-  const notes = store.get("notes", {});
+  /* realNotes (app/sync.js) hides a deletion's tombstone {text:"", t} here
+     too — otherwise it would both render as a blank row and inflate "Your
+     notes — N" for a note the student deliberately removed. */
+  const notes = realNotes(store.get("notes", {}));
   const quiz = store.get("quiz", {});
   const done = Object.keys(quiz).length;
   const right = Object.values(quiz).filter(v => answerValue(v) === 1).length;

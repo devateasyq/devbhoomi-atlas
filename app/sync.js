@@ -65,8 +65,31 @@ function normaliseNotes(obj){
     v = obj[k];
     if(!v || typeof v !== "object" || typeof v.text !== "string") continue;
     text = v.text.slice(0, NOTE_MAX);
-    if(!text.trim()) continue;          /* blank is the same as no note */
+    /* Blank text — including the empty-string tombstone setNote now writes
+       for a deletion — used to be dropped right here, which is exactly
+       what made a tombstone impossible to represent: an absent key always
+       loses to a present remote key in mergeNotes' recency check, so a
+       genuine deletion was silently undone by the next sync (review
+       finding 2). Keep every entry that has a real text STRING, blank or
+       not, and let realNotes() decide what counts as displayable at read
+       time. Only an entry with no text string at all — corrupt data — is
+       junk and is dropped here. */
     out[k] = {text: text, t: typeof v.t === "number" ? v.t : 0};
+  }
+  return out;
+}
+
+/* The one place "is this a real, displayable note" is decided — a tombstone
+   {text: "", t} or a whitespace-only entry is neither, and every reader
+   (noteBlock, viewProfile, exportData) must agree on that or a deletion can
+   still leak back into the UI as a blank note, or into a tally that counts
+   it. Keeping this filter here, instead of copied into three call sites,
+   is what "use one treatment" means. */
+function realNotes(notes){
+  var norm = normaliseNotes(notes), out = {}, k;
+  for(k in norm){
+    if(!Object.prototype.hasOwnProperty.call(norm, k)) continue;
+    if(norm[k].text.trim()) out[k] = norm[k];
   }
   return out;
 }
@@ -98,8 +121,16 @@ function setNote(notes, id, text){
      out[id] = ... below would reassign out's own prototype instead of
      storing a note. Treat it as an invalid id: leave the map untouched. */
   if(id === "__proto__") return out;
-  if(!clean.trim()) { delete out[id]; return out; }
-  out[id] = {text: clean, t: Date.now()};
+  /* Clearing a note used to delete the key. mergeNotes is additive with a
+     recency tiebreak, so an ABSENT key can never beat a PRESENT one on
+     another device — deleting was indistinguishable from "never synced
+     that change yet", and the next pull silently brought the note back
+     (review finding 2). Write a dated tombstone instead: a deletion is now
+     an entry like any other, so it wins a merge exactly when it is the
+     more recent change. Whitespace-only input is canonicalised to the same
+     empty-string tombstone, matching the old "blank is the same as no
+     note" rule. */
+  out[id] = {text: clean.trim() ? clean : "", t: Date.now()};
   return out;
 }
 /* flushNote decides whether the mounted note editor's value should be
@@ -262,7 +293,7 @@ if(typeof module !== "undefined" && module.exports){
                     mergeSeen: mergeSeen, mergeStreak: mergeStreak, mergeState: mergeState,
                     answerValue: answerValue, recordAnswer: recordAnswer,
                     SYNC_KEYS: SYNC_KEYS, NOTE_MAX: NOTE_MAX, normaliseNotes: normaliseNotes,
-                    mergeNotes: mergeNotes, setNote: setNote,
+                    realNotes: realNotes, mergeNotes: mergeNotes, setNote: setNote,
                     shouldWriteNote: shouldWriteNote,
                     DAY_GOAL: DAY_GOAL, emptyStreak: emptyStreak, dayKey: dayKey,
                     daysApart: daysApart, bumpStreak: bumpStreak};
