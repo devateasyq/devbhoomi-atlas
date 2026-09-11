@@ -382,11 +382,24 @@ button.brow:hover .blab{color:var(--accent)}
   padding:32px 28px;border:0;border-bottom:1px solid var(--line-soft);
   background:none;text-align:left;cursor:pointer;font:inherit;isolation:isolate}
 /* the kind's own colour, washed across the card */
-.short::before{content:"";position:absolute;inset:0;z-index:-2;background:var(--kc);opacity:.055}
-.short > span{position:relative;z-index:1}
+.short::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--kc);opacity:.07}
+.short > span{position:relative;z-index:2}
+
+/* the photograph, furthest back and heavily knocked down: it is
+   atmosphere behind the fact, not a hero image */
+.rpic{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  z-index:-3;pointer-events:none;opacity:.26;filter:saturate(.8)}
+/* a scrim so the text never has to fight the photograph */
+.short::after{content:"";position:absolute;inset:0;z-index:-2;pointer-events:none;
+  background:linear-gradient(to bottom, var(--surface) 0%, transparent 30%,
+    transparent 58%, var(--surface) 94%);opacity:.75}
+
+.short .cred{position:absolute;left:28px;right:28px;bottom:14px;
+  font-family:var(--f-mono);font-size:9px;letter-spacing:.06em;
+  color:var(--ink-3);opacity:.72;line-height:1.3}
 
 /* where this fact sits in Himachal */
-.rart{position:absolute;inset:0;width:100%;height:100%;z-index:-1;
+.rart{position:absolute;inset:0;width:100%;height:100%;z-index:0;
   pointer-events:none;opacity:.85}
 .rart use{fill:none;stroke:var(--map-line);stroke-width:1.6;opacity:.42}
 .rart .hi-area{fill:var(--kc);opacity:.17;stroke:var(--kc);stroke-width:2.4;
@@ -410,11 +423,11 @@ button.brow:hover .blab{color:var(--accent)}
 /* Content settles in as the card snaps. The hidden start state is gated on
    .anim, which mountRounds() adds, so a card is never invisible unless the
    script that reveals it is actually running. */
-.rounds.anim .short > span,.rounds.anim .short .rart{opacity:0;transform:translateY(9px);
+.rounds.anim .short > span:not(.cred),.rounds.anim .short .rart{opacity:0;transform:translateY(9px);
   transition:opacity .34s ease,transform .34s cubic-bezier(.2,.7,.3,1)}
-.rounds.anim .short.on > span{opacity:1;transform:none}
+.rounds.anim .short.on > span:not(.cred){opacity:1;transform:none}
 .rounds.anim .short.on .rart{opacity:.85;transform:none}
 @media (prefers-reduced-motion:reduce){
-  .rounds.anim .short > span{opacity:1;transform:none;transition:none}
+  .rounds.anim .short > span:not(.cred){opacity:1;transform:none;transition:none}
   .rounds.anim .short .rart{opacity:.85;transform:none;transition:none}
 }

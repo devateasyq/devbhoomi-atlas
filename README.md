@@ -216,3 +216,17 @@ same transform.
 
 Content is compiled from public sources for personal exam preparation. Reuse freely; verify before
 you rely on any single figure in an examination.
+
+## Image credits
+
+The photographs behind the Rounds cards are all freely licensed. Sources:
+
+- **Kunzum La** — Kunzum La-19a-pass height-Berge-2016-gje.jpg — Gerd Eichmann, CC BY 4.0 — <https://commons.wikimedia.org/wiki/File:Kunzum_La-19a-pass_height-Berge-2016-gje.jpg>
+- **Chandra Taal** — Chandra Taal (Lake), HP, India, D35 7333 nx01.jpg — Adarsh Patel, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Chandra_Taal_(Lake),_HP,_India,_D35_7333_nx01.jpg>
+- **Bara Shigri, 1863** — Ice Cave at the Bara Shigri Terminus, 1863.jpg — Philip Henry Egerton, CC0 — <https://commons.wikimedia.org/wiki/File:Ice_Cave_at_the_Bara_Shigri_Terminus,_1863.jpg>
+- **Kinner Kailash** — Kinner Kailash Mountain Range (edited).jpg — Anubhav Agarwal, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Kinner_Kailash_Mountain_Range_(edited).jpg>
+- **The Beas at Kullu** — Kullu Valley, Beas River near Manali, India.jpg — Vyacheslav Argenberg, CC BY 4.0 — <https://commons.wikimedia.org/wiki/File:Kullu_Valley,_Beas_River_near_Manali,_India.jpg>
+- **Kangra Fort** — Ruined fort of kangra, kangra, H.P.jpg — Monika rana, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Ruined_fort_of_kangra,_kangra,_H.P.jpg>
+- **The Dhauladhar** — Dhauladhar layers.JPG — Metanish, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Dhauladhar_layers.JPG>
+- **Bhimakali, Sarahan** — Sarahan-Bhimakali-06-gje.jpg — Gerd Eichmann, CC BY-SA 4.0 — <https://commons.wikimedia.org/wiki/File:Sarahan-Bhimakali-06-gje.jpg>
+- **Viceregal Lodge, Shimla** — Viceregal Lodge Shimla.jpg — Aloofmanish, CC0 — <https://commons.wikimedia.org/wiki/File:Viceregal_Lodge_Shimla.jpg>

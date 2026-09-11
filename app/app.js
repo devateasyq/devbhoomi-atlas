@@ -1181,13 +1181,17 @@ function roundArt(f){
 function roundCard(f){
   const k = KINDS[f.kind];
   const c = k ? k.c : "var(--accent)";
+  const p = PICS[f.kind];
   return '<button class="short" type="button" data-fid="'+f.id+'" data-src="'+f.srcId+'" '+
       'style="--kc:'+c+'">'+
+    (p ? '<img class="rpic" src="'+p.s+'" alt="" loading="lazy" decoding="async">' : '')+
     roundArt(f)+
     '<span class="k">'+(k ? k.lb : "Fact")+'</span>'+
     '<span class="nm">'+f.name+'</span>'+
     '<span class="ft">'+f.text+'</span>'+
-    '<span class="go">Open the note &rarr;</span></button>';
+    '<span class="go">Open the note &rarr;</span>'+
+    (p ? '<span class="cred">'+p.t+' &middot; '+p.a+' / '+p.l+'</span>' : '')+
+    '</button>';
 }
 let RQ = [], RI = 0, RIO = null;
 /* The feed is endless, so it renders a window and extends it rather than

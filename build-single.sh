@@ -13,12 +13,18 @@ js   = "\n".join(pathlib.Path("data", f).read_text()
                  for f in ("geo.js","places.js","history.js","topics.js",
                            "rivers.js","features.js","quiz.js","pyq.js"))
 js  += "\n" + "\n".join(pathlib.Path("app", f).read_text()
-                        for f in ("logo.js","trends.js","mapkit.js","rounds.js","app.js"))
+                        for f in ("logo.js","trends.js","mapkit.js","credits.js","rounds.js","app.js"))
 html = re.sub(r'\s*<link rel="stylesheet" href="app/[^"]+">', "", html)
 html = re.sub(r'\s*<link rel="manifest"[^>]*>', "", html)
 html = re.sub(r'\s*<link rel="(icon|apple-touch-icon)"[^>]*>', "", html)
 html = re.sub(r'\s*<script src="[^"]+"></script>', "", html)
 html = html.replace("</head>", "<style>\n" + css + "\n</style>\n</head>")
+# The photographs are referenced by path, which cannot resolve from a single
+# file on disk, so inline each one as a data URI.
+import base64
+for p in sorted(pathlib.Path("img").glob("*.webp")):
+    uri = "data:image/webp;base64," + base64.b64encode(p.read_bytes()).decode()
+    js = js.replace('"img/%s"' % p.name, '"%s"' % uri)
 html = html.replace("</body>", "<script>\n" + js + "\n</script>\n</body>")
 out.write_text(html)
 print(f"{out} — {out.stat().st_size if out.exists() else 0:,} bytes" if False else f"{out} written")
