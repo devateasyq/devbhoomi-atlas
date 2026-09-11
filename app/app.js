@@ -583,7 +583,12 @@ function mountMap(){
      Plotly's legend uses; the cost is a barely perceptible lag. */
   const legendEl = document.querySelector(".maplegend");
   if(legendEl){
-    let clickTimer = null;
+    /* One timer PER ROW, not one shared timer: with a single shared timer,
+       clicking row A then row B inside the deferral window cancels A's
+       pending toggle instead of applying it, silently swallowing a click. */
+    const timers = new Map();
+    const clearTimer = k => { clearTimeout(timers.get(k)); timers.delete(k); };
+    const clearTimers = () => { timers.forEach(clearTimeout); timers.clear(); };
     const kindsHere = () => [...legendEl.querySelectorAll(".lgi")].map(b => b.dataset.lk);
     const commit = () => {
       store.set("mapoff", S.mapOff);
@@ -602,20 +607,26 @@ function mountMap(){
       applyLayers();
     };
     legendEl.addEventListener("click", e => {
-      if(e.target.closest("#lgall")){ S.mapOff = []; commit(); return; }
+      /* Show all must also drop pending toggles, or one fires just after
+         and silently re-hides a layer the user just restored. */
+      if(e.target.closest("#lgall")){ clearTimers(); S.mapOff = []; commit(); return; }
       const b = e.target.closest(".lgi"); if(!b) return;
-      clearTimeout(clickTimer);
-      clickTimer = setTimeout(() => { S.mapOff = layerToggle(S.mapOff, b.dataset.lk); commit(); }, 250);
+      const k = b.dataset.lk;
+      clearTimer(k);
+      timers.set(k, setTimeout(() => {
+        timers.delete(k);
+        S.mapOff = layerToggle(S.mapOff, k); commit();
+      }, 250));
     });
     legendEl.addEventListener("dblclick", e => {
       const b = e.target.closest(".lgi"); if(!b) return;
-      clearTimeout(clickTimer);
+      clearTimer(b.dataset.lk);
       S.mapOff = layerIsolate(S.mapOff, b.dataset.lk, kindsHere());
       commit();
     });
     legendEl.addEventListener("keydown", e => {
       const b = e.target.closest(".lgi"); if(!b || e.key !== "Enter") return;
-      e.preventDefault(); clearTimeout(clickTimer);
+      e.preventDefault(); clearTimer(b.dataset.lk);
       S.mapOff = e.shiftKey
         ? layerIsolate(S.mapOff, b.dataset.lk, kindsHere())
         : layerToggle(S.mapOff, b.dataset.lk);
