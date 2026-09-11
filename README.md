@@ -1,4 +1,4 @@
-# Devbhoomi Atlas
+# Parikrama Path
 
 An interactive revision atlas for the **Himachal Pradesh** portion of the **HPPSC HPAS** syllabus —
 a clickable map of the 12 districts and the princely hill states, a timeline from prehistory to
@@ -7,6 +7,8 @@ statehood, battles and treaties, topic notes, generated flashcards and a questio
 Plain static files. No build step, no framework, no backend.
 
 **Live:** <https://devateasyq.github.io/devbhoomi-atlas/>
+
+**Domain:** parikramapath.com *(not yet purchased or pointed here)*
 
 ---
 
@@ -48,6 +50,10 @@ Nothing is origin-specific — relative paths throughout, so it works from a sub
   transform as the districts and clipped to the state outline. Each is labelled on the map and
   clicking one opens its own record: Sanskrit, Vedic and Greek names, source, entry and exit points,
   length in the state, tributaries with their junctions, and the projects on it.
+- **A toggleable legend.** The map legend controls layer visibility, Plotly-style: single click a
+  row to hide that layer, double click to isolate it (hide every other layer), and double click the
+  isolated row again to restore the lot. "Show all" resets everything in one click. The hidden set
+  persists across visits in `localStorage` under `hpatlas:mapoff`.
 - **Question trends.** A Trends view computes, from the past-paper bank itself, how many Himachal
   questions each paper carries, which subjects they come from, how each subject moves year to year,
   and which topic notes are examined most — every bar links back into the atlas.
@@ -60,20 +66,24 @@ Nothing is origin-specific — relative paths throughout, so it works from a sub
 ## Structure
 
 ```
-index.html                 markup shell and asset links
-app/tokens.css             colour, type and spacing tokens, both themes
-app/layout.css             app shell and responsive rules
-app/components.css         map, timeline, cards, panel, revise, search
-app/app.js                 the application
-app/logo.js                the brand mark, drawn from theme tokens
-app/trends.js              the Trends view — all figures computed from D.pyq at run time
-data/geo.js                map geometry: district paths, centroids, 107 place markers, 29 rivers
-data/places.js             D.eras, D.districts, D.states
-data/history.js            D.events, D.battles, D.people
-data/topics.js             D.topics
-data/quiz.js               D.quiz
-sw.js                      offline cache
-manifest.webmanifest       PWA manifest
+index.html                  markup shell and asset links
+app/tokens.css              colour, type and spacing tokens, both themes
+app/layout.css              app shell and responsive rules
+app/components.css          map, timeline, cards, panel, revise, search
+app/app.js                  the application
+app/logo.js                 the brand mark, drawn from theme tokens
+app/mapkit.js               map glyphs, label placement and the legend's toggle/isolate reducers
+app/trends.js               the Trends view — all figures computed from D.pyq at run time
+data/geo.js                 map geometry: district paths, centroids, 107 place markers, 29 rivers
+data/places.js              D.eras, D.districts, D.states
+data/history.js             D.events, D.battles, D.people
+data/topics.js              D.topics
+data/rivers.js              D.rivers
+data/features.js            D.features — peaks, passes, lakes and glaciers
+data/quiz.js                D.quiz
+data/pyq.js                 D.pyq — the past-paper bank
+sw.js                       offline cache
+manifest.webmanifest        PWA manifest
 ```
 
 Load order matters: `data/places.js` creates the `D` object, so it must come before the

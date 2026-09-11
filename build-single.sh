@@ -8,9 +8,12 @@ import sys, re, pathlib
 out  = pathlib.Path(sys.argv[1])
 html = pathlib.Path("index.html").read_text()
 css  = "\n".join(pathlib.Path("app", f).read_text() for f in ("tokens.css","layout.css","components.css"))
+# Keep this list in the same order as the <script> tags in index.html.
 js   = "\n".join(pathlib.Path("data", f).read_text()
-                 for f in ("geo.js","places.js","history.js","topics.js","quiz.js"))
-js  += "\n" + pathlib.Path("app","app.js").read_text()
+                 for f in ("geo.js","places.js","history.js","topics.js",
+                           "rivers.js","features.js","quiz.js","pyq.js"))
+js  += "\n" + "\n".join(pathlib.Path("app", f).read_text()
+                        for f in ("logo.js","trends.js","mapkit.js","app.js"))
 html = re.sub(r'\s*<link rel="stylesheet" href="app/[^"]+">', "", html)
 html = re.sub(r'\s*<link rel="manifest"[^>]*>', "", html)
 html = re.sub(r'\s*<link rel="(icon|apple-touch-icon)"[^>]*>', "", html)
