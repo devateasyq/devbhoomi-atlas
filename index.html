@@ -55,12 +55,16 @@
       <div class="bartools">
         <div class="searchwrap">
           <svg class="si" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
-          <input id="search" type="search" placeholder="Search" autocomplete="off" spellcheck="false" aria-label="Search all records">
+          <input id="search" type="search" placeholder="Search &hellip;" autocomplete="off" spellcheck="false" aria-label="Search all records">
           <span class="kbd">/</span>
         </div>
       </div>
       <div id="results" hidden role="listbox" aria-label="Search results"></div>
     </header>
+
+    <!-- On a phone the header carries only the wordmark, so the view's own
+         name sits on its own strip beneath it. -->
+    <div id="viewbar"><span id="vbtitle">Overview</span><small id="vbsub">Start here</small></div>
 
     <div id="viewport">
       <main id="stage" tabindex="-1"></main>

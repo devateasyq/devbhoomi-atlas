@@ -177,6 +177,8 @@ function setView(view, fromHash){
   });
   $("#crumbtitle").textContent = TITLE[view];
   $("#crumbsub").textContent = SUB[view];
+  $("#vbtitle").textContent = TITLE[view];
+  $("#vbsub").textContent = SUB[view];
   render();
   $("#stage").scrollTop = 0;
   if(!fromHash) writeHash();

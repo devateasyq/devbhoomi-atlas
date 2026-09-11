@@ -28,6 +28,13 @@ nav.rail-nav{display:flex;flex-direction:column;gap:1px;padding:0 10px;overflow-
   letter-spacing:.01em;color:var(--accent);line-height:1.1}
 .crumb small{font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
   color:var(--ink-3);display:block;font-weight:500;margin-top:1px}
+#viewbar{display:none;align-items:baseline;gap:10px;padding:7px 14px 8px;
+  border-bottom:1px solid var(--line);background:var(--surface);flex:0 0 auto}
+#viewbar #vbtitle{font-family:var(--f-display);font-size:17px;font-weight:600;
+  letter-spacing:-.01em;color:var(--ink)}
+#viewbar #vbsub{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3);font-weight:500;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .bartools{margin-left:auto;display:flex;align-items:center;gap:8px}
 .searchwrap{position:relative;display:flex;align-items:center}
 #search{background:var(--ground);border:1px solid var(--line);border-radius:8px;padding:7px 30px 7px 30px;
@@ -63,10 +70,11 @@ nav.rail-nav{display:flex;flex-direction:column;gap:1px;padding:0 10px;overflow-
   .mtab[aria-current="page"]{color:var(--accent)}
   #search{width:104px;padding-right:10px} #search:focus{width:168px}
   .crumb{font-size:16px} .kbd{display:none}
-  /* the wordmark takes the subtitle's line rather than adding a third:
-     the rail that normally carries the brand is hidden at this width */
-  .brandm{display:block}
-  .crumb small{display:none}
+  /* the header carries the wordmark alone; the view's own name gets the
+     strip below, so neither has to shrink to fit beside the other */
+  .brandm{display:block;font-size:15.5px;color:var(--ink)}
+  .crumb small,.crumb #crumbtitle{display:none}
+  #viewbar{display:flex}
   #topbar .logowrap{align-self:center}
 }
 @media (max-width:600px){

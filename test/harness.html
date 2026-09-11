@@ -296,8 +296,22 @@ window.addEventListener("load", async () => {
   check("the wordmark is in the header", brand && /Parikrama Path/.test(brand.textContent),
     brand ? brand.textContent : "absent");
   const si = doc.getElementById("search");
-  check("the search label is just Search", si && si.placeholder === "Search",
-    si ? si.placeholder : "no input");
+  check("the search label reads Search \u2026",
+    si && /^Search\s*\u2026$/.test(si.placeholder), si ? si.placeholder : "no input");
+
+  /* the view's name moved out of the header onto its own strip */
+  const vb = doc.getElementById("viewbar");
+  check("a view bar exists below the header", !!vb);
+  if(vb){
+    ev('S.view="map"; render();'); await wait(250);
+    check("the view bar names the current view",
+      /Atlas/.test(doc.getElementById("vbtitle").textContent),
+      doc.getElementById("vbtitle").textContent);
+    ev('S.view="rounds"; render();'); await wait(250);
+    check("the view bar follows the view",
+      /Rounds/.test(doc.getElementById("vbtitle").textContent),
+      doc.getElementById("vbtitle").textContent);
+  }
 
   out.innerHTML += "\n" + pass + " passed, " + fail + " failed";
   document.title = fail ? "FAIL (" + fail + ")" : "PASS";
