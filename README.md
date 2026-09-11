@@ -6,6 +6,8 @@ statehood, battles and treaties, topic notes, generated flashcards and a questio
 
 Plain static files. No build step, no framework, no backend.
 
+**Live:** <https://devateasyq.github.io/devbhoomi-atlas/>
+
 ---
 
 ## Run it locally
