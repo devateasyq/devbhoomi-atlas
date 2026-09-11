@@ -355,7 +355,7 @@ Insert into `app/mapkit.js` before the `module.exports` guard:
 
 ```js
 /* Greedy de-collision. Labels sit above the marker, offset by LABEL_DY,
-   matching the `y="-10"` the marker <text> already uses. Highest
+   matching the `y="-9"` the marker <text> uses (Task 11). Highest
    priority wins the space; everything else that collides is simply not
    drawn — the marker itself stays visible and still shows a tooltip. */
 var LABEL_DY = 9;
