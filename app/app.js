@@ -109,6 +109,21 @@ function pushState(user){
   if(!user) return Promise.resolve();
   return loadFirebase().then(fb => userDoc(fb, user).set(localState(), {merge: true}));
 }
+/* Rounds marks a fact seen on every card that settles on screen, so pushing
+   directly would mean a Firestore write per fact scrolled — hundreds in a
+   browsing session, against a free tier with a daily write quota. Coalesce
+   them: the last write within the window wins, and pushState always sends
+   the whole local state, so nothing is lost by waiting. */
+let _pushTimer = null;
+function pushStateSoon(){
+  const u = authUser();
+  if(!u) return;
+  clearTimeout(_pushTimer);
+  _pushTimer = setTimeout(function(){
+    _pushTimer = null;
+    pushState(u).catch(function(){});
+  }, 4000);
+}
 function mountAccount(){
   const btn = document.getElementById("acctbtn");
   const dlg = document.getElementById("acctdlg");
@@ -1378,7 +1393,7 @@ function mountRounds(){
       en.target.classList.add("on");
       if(en.intersectionRatio < 0.6) continue;
       const id = en.target.dataset.fid;
-      if(S.seen.indexOf(id) < 0){ S.seen.push(id); store.set("seen", S.seen); }
+      if(S.seen.indexOf(id) < 0){ S.seen.push(id); store.set("seen", S.seen); pushStateSoon(); }
       const cards = feed.children;
       if([].indexOf.call(cards, en.target) >= cards.length - 5) extend = true;
     }
@@ -1536,3 +1551,8 @@ else setView("home", true);
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(()=>{}));
 }
+
+/* A pending debounced push would otherwise die with the page. */
+window.addEventListener("pagehide", function(){
+  if(_pushTimer && authUser()){ clearTimeout(_pushTimer); _pushTimer = null; pushState(authUser()).catch(function(){}); }
+});
