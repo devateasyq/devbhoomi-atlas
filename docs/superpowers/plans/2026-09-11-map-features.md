@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- **Run tests with `node --test` (no path argument).** `node --test test/` is broken on the installed Node 25.2.1 and reports a spurious failure. Note that plain `node --test` also picks up `test/load.js` as a vacuous test file; that is expected.
+- **Run tests with `node --test` (no path argument) to run the whole suite, or `node --test test/<file>.test.js` for one file.** Passing a *directory* — `node --test test/` — is broken on the installed Node 25.2.1 and reports a spurious failure; a file path is fine. Note that plain `node --test` also picks up `test/load.js` as a vacuous test file; that is expected.
 - **Zero runtime dependencies.** No npm packages ship to the browser. `test/` may not import anything outside Node's stdlib.
 - **No build step.** `index.html` loads plain `<script src>` tags; every file defines globals. `app/mapkit.js` additionally ends with a `typeof module` guard so Node tests can require it.
 - **Record ids are namespaced:** `pk-` peaks, `ps-` passes, `lk-` lakes, `gl-` glaciers. Existing prefixes `d- s- ev- b- p- t-` are unchanged. River ids are bare names (`"Sutlej"`) — do not "fix" them.
@@ -209,7 +209,7 @@ test("the district layer is a base layer the legend cannot hide", () => {
 
 - [ ] **Step 2: Run it to confirm it fails**
 
-Run: `node --testmapkit.test.js`
+Run: `node --test test/mapkit.test.js`
 Expected: FAIL — `Cannot find module '../app/mapkit.js'`
 
 - [ ] **Step 3: Write the implementation**
@@ -259,7 +259,7 @@ if(typeof module !== "undefined" && module.exports){
 
 - [ ] **Step 4: Run the tests**
 
-Run: `node --testmapkit.test.js`
+Run: `node --test test/mapkit.test.js`
 Expected: 4 tests pass.
 
 - [ ] **Step 5: Commit**
@@ -346,7 +346,7 @@ test("no two surviving label boxes overlap", () => {
 
 - [ ] **Step 2: Run it to confirm it fails**
 
-Run: `node --testmapkit.test.js`
+Run: `node --test test/mapkit.test.js`
 Expected: FAIL — `kit.placeLabels is not a function`
 
 - [ ] **Step 3: Write the implementation**
@@ -384,7 +384,7 @@ Add `placeLabels: placeLabels` and `LABEL_DY: LABEL_DY` to the `module.exports` 
 
 - [ ] **Step 4: Run the tests**
 
-Run: `node --testmapkit.test.js`
+Run: `node --test test/mapkit.test.js`
 Expected: 9 tests pass.
 
 - [ ] **Step 5: Commit**
@@ -462,7 +462,7 @@ test("isolating a different kind switches the isolation", () => {
 
 - [ ] **Step 2: Run it to confirm it fails**
 
-Run: `node --testmapkit.test.js`
+Run: `node --test test/mapkit.test.js`
 Expected: FAIL — `kit.layerToggle is not a function`
 
 - [ ] **Step 3: Write the implementation**
@@ -496,7 +496,7 @@ Add `layerToggle: layerToggle` and `layerIsolate: layerIsolate` to `module.expor
 
 - [ ] **Step 4: Run the tests**
 
-Run: `node --testmapkit.test.js`
+Run: `node --test test/mapkit.test.js`
 Expected: 14 tests pass.
 
 - [ ] **Step 5: Commit**
@@ -556,7 +556,7 @@ test("glacier markers sit inside the map viewbox", () => {
 
 - [ ] **Step 2: Run it to confirm it fails**
 
-Run: `node --testdata.test.js`
+Run: `node --test test/data.test.js`
 Expected: FAIL on "twelve glaciers are on the map" — `Expected 0 to equal 12`.
 
 - [ ] **Step 3: Generate the entries**
@@ -681,7 +681,7 @@ test("every pass marker on the map has a record", () => {
 
 - [ ] **Step 2: Run it to confirm it fails**
 
-Run: `node --testdata.test.js`
+Run: `node --test test/data.test.js`
 Expected: FAIL on "all 18 passes are recorded" — `Expected 0 to equal 18`.
 
 - [ ] **Step 3: Create the file with one fully worked record**
@@ -813,7 +813,7 @@ test("Reo Purgyil is recorded as the highest point in the state", () => {
 
 - [ ] **Step 2: Run it to confirm it fails**
 
-Run: `node --testdata.test.js`
+Run: `node --test test/data.test.js`
 Expected: FAIL — `Expected 0 to equal 12`.
 
 - [ ] **Step 3: Write the records**
@@ -906,7 +906,7 @@ test("exactly three lakes are Ramsar sites, with the right years", () => {
 
 - [ ] **Step 2: Run it to confirm it fails**
 
-Run: `node --testdata.test.js`
+Run: `node --test test/data.test.js`
 Expected: FAIL — `Expected 0 to equal 20`.
 
 - [ ] **Step 3: Write the records**
@@ -990,7 +990,7 @@ test("Bara Shigri is recorded as the largest glacier in the state", () => {
 
 - [ ] **Step 2: Run it to confirm it fails**
 
-Run: `node --testdata.test.js`
+Run: `node --test test/data.test.js`
 Expected: FAIL — `Expected 0 to equal 12`.
 
 - [ ] **Step 3: Write the records**
@@ -1844,7 +1844,7 @@ test("no card has an empty question or answer", () => {
 
 - [ ] **Step 2: Run it to confirm it fails**
 
-Run: `node --testcards.test.js`
+Run: `node --test test/cards.test.js`
 Expected: FAIL — `no card for ps-shipkila`.
 
 - [ ] **Step 3: Extend buildCards**
