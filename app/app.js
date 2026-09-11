@@ -1610,7 +1610,17 @@ function deleteAccount(){
       .catch(err => {
         if(!err || err.code !== "auth/requires-recent-login") throw err;
         toast("Confirm it is you, then it will be deleted");
-        return signInGoogle().then(() => authUser().delete());
+        /* Use the credential the sign-in hands back rather than re-reading
+           authUser(): that is only refreshed when onAuthStateChanged fires,
+           and nothing guarantees that has happened by the time this promise
+           resolves. On the redirect fallback nothing resolves at all — the
+           page is already navigating away — so there is no user and the
+           delete is simply retried after the round trip. */
+        return signInGoogle().then(cred => {
+          const fresh = (cred && cred.user) || authUser();
+          if(!fresh) throw err;
+          return fresh.delete();
+        });
       })
   ).then(() => {
     wipeLocal();
