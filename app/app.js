@@ -207,7 +207,14 @@ function mountAccount(){
   document.getElementById("acctgoogle").addEventListener("click", () => {
     say("Opening Google…");
     signInGoogle().then(() => { shut(); toast("Signed in"); })
-                  .catch(err => say(err && err.message ? err.message : "Sign-in failed"));
+                  .catch(err => {
+                    /* the code is what identifies the cause; the prose alone
+                       is not enough to act on */
+                    const code = err && err.code ? err.code : "";
+                    console.error("[parikrama] sign-in failed:", code, err);
+                    say((err && err.message ? err.message : "Sign-in failed") +
+                        (code ? " (" + code + ")" : ""));
+                  });
   });
   document.getElementById("acctlink").addEventListener("click", () => {
     const email = document.getElementById("acctemail").value.trim();
@@ -226,6 +233,8 @@ function mountAccount(){
       .catch(() => toast("Could not sync just now"));
   });
   completeEmailLink().then(u => { if(u){ shut(); toast("Signed in"); } }).catch(() => {});
+  /* coming back from a Google redirect looks identical to a normal load */
+  completeRedirect().then(u => { if(u){ shut(); toast("Signed in"); } }).catch(() => {});
 }
 
 function renderBlocks(arr){

@@ -23,10 +23,36 @@ function onAuthChange(fn){
   }).catch(function(){ /* stays signed out, which is a working state */ });
 }
 
+/* A popup is the nicer desktop experience, but iOS Safari blocks it routinely
+   and an installed PWA has no popup context at all. Fall back to a redirect,
+   which navigates to Google and returns — nothing for a browser to block. */
+var REDIRECT_CODES = {
+  "auth/popup-blocked": 1,
+  "auth/popup-closed-by-user": 1,
+  "auth/cancelled-popup-request": 1,
+  "auth/operation-not-supported-in-this-environment": 1,
+  "auth/web-storage-unsupported": 1
+};
 function signInGoogle(){
   return loadFirebase().then(function(fb){
     var p = new fb.auth.GoogleAuthProvider();
-    return fb.auth().signInWithPopup(p);
+    return fb.auth().signInWithPopup(p).catch(function(err){
+      if(!err || !REDIRECT_CODES[err.code]) throw err;
+      /* the redirect never resolves here: the page navigates away and
+         completeRedirect() picks the result up on the way back */
+      return fb.auth().signInWithRedirect(p);
+    });
+  });
+}
+
+/* Runs on load, like completeEmailLink. Resolves to a user when we have just
+   come back from Google, and to null otherwise. */
+function completeRedirect(){
+  if(!authAvailable()) return Promise.resolve(null);
+  return loadFirebase().then(function(fb){
+    return fb.auth().getRedirectResult().then(function(res){
+      return (res && res.user) ? res.user : null;
+    });
   });
 }
 
