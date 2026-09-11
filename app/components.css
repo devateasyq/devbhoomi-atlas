@@ -528,3 +528,24 @@ button.brow:hover .blab{color:var(--accent)}
   .rounds.anim .short > span:not(.cred){opacity:1;transform:none;transition:none}
   .rounds.anim .short .rart{opacity:.85;transform:none;transition:none}
 }
+
+#acctbtn{padding:6px 11px;border:1px solid var(--line);border-radius:20px;
+  background:var(--surface);font:inherit;font-size:12px;color:var(--ink-2);cursor:pointer;
+  white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}
+#acctbtn:hover{border-color:var(--accent-line);color:var(--ink)}
+#acctbtn.in{border-color:var(--accent-line);color:var(--accent)}
+#acctdlg{position:fixed;inset:0;z-index:90;display:grid;place-items:center;
+  background:rgba(8,16,13,.55);padding:18px}
+#acctdlg[hidden]{display:none}
+.acctcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  padding:22px;width:min(380px,100%);box-shadow:var(--shadow-lg);
+  display:flex;flex-direction:column;gap:11px}
+.acctcard h3{font-family:var(--f-display);font-size:20px;font-weight:600;margin:0}
+.acctcard p{font-size:13px;color:var(--ink-2);margin:0;line-height:1.5}
+.acctor{font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-3);text-align:center}
+#acctemail{font:inherit;font-size:14px;padding:9px 11px;border-radius:8px;
+  border:1px solid var(--line);background:var(--ground);color:var(--ink)}
+#acctemail:focus{outline:none;border-color:var(--accent-line)}
+.acctmsg{min-height:17px;font-size:12px;color:var(--accent)}
+@media (max-width:600px){ #acctbtn{max-width:96px} }

@@ -74,6 +74,49 @@ function toast(msg){
   clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.classList.remove("on"), 2200);
 }
 
+/* The control only appears when Firebase is configured: with no project set
+   up, offering a sign-in that cannot work would be worse than offering none. */
+function renderAccount(user){
+  const btn = document.getElementById("acctbtn");
+  if(!btn) return;
+  btn.hidden = !authAvailable();
+  if(!authAvailable()) return;
+  btn.textContent = user ? (user.displayName || user.email || "Account") : "Sign in";
+  btn.classList.toggle("in", !!user);
+}
+function mountAccount(){
+  const btn = document.getElementById("acctbtn");
+  const dlg = document.getElementById("acctdlg");
+  const msg = document.getElementById("acctmsg");
+  if(!btn || !dlg) return;
+  const say = t => { msg.textContent = t; };
+  const open = () => { dlg.hidden = false; say(""); };
+  const shut = () => { dlg.hidden = true; };
+
+  btn.addEventListener("click", () => {
+    if(authUser()){
+      signOutUser().then(() => toast("Signed out")).catch(() => toast("Could not sign out"));
+    } else open();
+  });
+  document.getElementById("acctclose").addEventListener("click", shut);
+  dlg.addEventListener("click", e => { if(e.target === dlg) shut(); });
+  document.getElementById("acctgoogle").addEventListener("click", () => {
+    say("Opening Google…");
+    signInGoogle().then(() => { shut(); toast("Signed in"); })
+                  .catch(err => say(err && err.message ? err.message : "Sign-in failed"));
+  });
+  document.getElementById("acctlink").addEventListener("click", () => {
+    const email = document.getElementById("acctemail").value.trim();
+    if(!email){ say("Enter an email address first"); return; }
+    say("Sending…");
+    sendSignInLink(email)
+      .then(() => say("Link sent. Check your inbox — and your spam folder."))
+      .catch(err => say(err && err.message ? err.message : "Could not send the link"));
+  });
+  onAuthChange(renderAccount);
+  completeEmailLink().then(u => { if(u){ shut(); toast("Signed in"); } }).catch(() => {});
+}
+
 function renderBlocks(arr){
   if(!arr || !arr.length) return "";
   let out = '<div class="blk">';
@@ -1448,6 +1491,7 @@ store.del("mapmode");
 buildNav();
 document.getElementById("brandmark").innerHTML = logoMark(26);
 document.getElementById("brandmarkm").innerHTML = logoMark(24);
+mountAccount();
 if(location.hash && readHash().view) applyHash();
 else setView("home", true);
 

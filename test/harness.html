@@ -313,6 +313,16 @@ window.addEventListener("load", async () => {
       doc.getElementById("vbtitle").textContent);
   }
 
+  /* With no Firebase project configured the control must stay hidden:
+     offering a sign-in that cannot work is worse than offering none. */
+  const ab = doc.getElementById("acctbtn");
+  check("the account control exists", !!ab);
+  check("it is hidden while Firebase is unconfigured",
+    ab && ab.hidden === !ev("authAvailable()"), "hidden=" + (ab && ab.hidden));
+  check("the app works signed out", !doc.getElementById("stage").hidden);
+  check("no Firebase SDK was loaded",
+    !doc.querySelector('script[src*="firebase-app-compat"]'));
+
   out.innerHTML += "\n" + pass + " passed, " + fail + " failed";
   document.title = fail ? "FAIL (" + fail + ")" : "PASS";
 });
