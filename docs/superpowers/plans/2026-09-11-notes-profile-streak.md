@@ -579,10 +579,33 @@ test("mergeStreak is generous in every direction", () => {
 
 test("mergeStreak copes with either side missing", () => {
   const only = {n: 2, best: 2, last: "2026-01-05", grace: 1, day: "2026-01-05",
-                facts: 20, quiz: 0, pyq: 0, recs: []};
-  assert.equal(sync.mergeStreak(only, null).n, 2);
-  assert.equal(sync.mergeStreak(null, only).n, 2);
+                facts: 20, quiz: 0, pyq: 0, recs: ["d-kangra"]};
+  for(const m of [sync.mergeStreak(only, null), sync.mergeStreak(null, only)]){
+    assert.equal(m.n, 2);
+    assert.equal(m.last, "2026-01-05", "a real date must not lose to an empty one");
+    assert.equal(m.day,  "2026-01-05");
+    assert.equal(m.facts, 20, "today's counters must survive the merge");
+    assert.deepEqual(m.recs, ["d-kangra"]);
+  }
   assert.equal(sync.mergeStreak(null, null).n, 0);
+});
+
+/* The bug this guards against would have fired on every existing user's
+   first sync: their remote document has no streak key at all. */
+test("a real streak merged against a fresh one survives intact", () => {
+  const real = {n: 5, best: 9, last: "2026-01-05", grace: 0, day: "2026-01-05",
+                facts: 12, quiz: 3, pyq: 1, recs: ["d-kangra", "d-shimla"]};
+  for(const m of [sync.mergeStreak(real, sync.emptyStreak()),
+                  sync.mergeStreak(sync.emptyStreak(), real)]){
+    assert.equal(m.n, 5);
+    assert.equal(m.best, 9);
+    assert.equal(m.last, "2026-01-05");
+    assert.equal(m.day, "2026-01-05");
+    assert.equal(m.facts, 12);
+    assert.equal(m.quiz, 3);
+    assert.equal(m.pyq, 1);
+    assert.deepEqual(m.recs, ["d-kangra", "d-shimla"]);
+  }
 });
 ```
 
@@ -672,8 +695,14 @@ function bumpStreak(st, kind, id, today){
    other, so every field takes the more generous value. */
 function mergeStreak(a, b){
   var A = normaliseStreak(a), B = normaliseStreak(b);
-  var later = daysApart(A.last, B.last) > 0 ? B.last : (A.last || B.last);
-  var day = daysApart(A.day, B.day) > 0 ? B.day : (A.day || B.day);
+  /* An empty date is settled BEFORE daysApart is consulted. daysApart
+     returns Infinity when either side is missing — correct for its own
+     contract, but fed to a `> 0` test it reads as "B is later", which
+     would discard a real date in favour of an empty one. That is not
+     hypothetical: every existing user's first sync merges their real
+     local streak against a remote that has no streak key at all. */
+  var later = !A.last ? B.last : !B.last ? A.last : (daysApart(A.last, B.last) > 0 ? B.last : A.last);
+  var day   = !A.day  ? B.day  : !B.day  ? A.day  : (daysApart(A.day,  B.day)  > 0 ? B.day  : A.day);
   var recs = mergeSeen(A.day === day ? A.recs : [], B.day === day ? B.recs : []);
   return {
     n:     Math.max(A.n, B.n),
@@ -694,7 +723,7 @@ Add `DAY_GOAL: DAY_GOAL, emptyStreak: emptyStreak, dayKey: dayKey, daysApart: da
 - [ ] **Step 4: Verify**
 
 Run: `node --test`
-Expected: **125 pass, 0 fail**.
+Expected: **126 pass, 0 fail**.
 
 - [ ] **Step 5: Commit**
 
@@ -804,7 +833,7 @@ Append inside the harness's load handler, before the summary line:
 - [ ] **Step 4: Verify**
 
 Run: `node --check app/app.js && node --test`
-Expected: **125 pass, 0 fail** — this task adds no Node tests; its logic was tested in Task 2.
+Expected: **126 pass, 0 fail** — this task adds no Node tests; its logic was tested in Task 2.
 
 Confirm the CSS braces balance:
 
@@ -871,7 +900,7 @@ function noteActivity(kind, id){
 - [ ] **Step 3: Verify**
 
 Run: `node --check app/app.js && node --test`
-Expected: **125 pass, 0 fail**.
+Expected: **126 pass, 0 fail**.
 
 Then confirm every route is wired:
 
@@ -1060,7 +1089,7 @@ click, so this check does not depend on a live Firebase project.
 - [ ] **Step 6: Verify**
 
 Run: `node --check app/app.js && node --test`
-Expected: **125 pass, 0 fail**.
+Expected: **126 pass, 0 fail**.
 
 Confirm the route is legal and the view renders:
 
@@ -1157,7 +1186,7 @@ In `mountProfile()`, add:
 - [ ] **Step 4: Verify**
 
 Run: `node --check app/app.js && node --test`
-Expected: **125 pass, 0 fail**.
+Expected: **126 pass, 0 fail**.
 
 Confirm export covers every synced key by reading `exportData` — it must iterate `SYNC_KEYS` rather than naming keys, so a key added later is included automatically. State in your report that **deletion cannot be tested here**: it needs a live Firebase project and a real account, and running it would destroy that account. Do not attempt it.
 
@@ -1199,7 +1228,7 @@ Add a section covering: one note per record, capped at 1,000 characters and why 
 ```bash
 cd /Users/avinashnegi/Downloads/prep/hp-atlas && node --test
 ```
-Expected: **125 pass, 0 fail**.
+Expected: **126 pass, 0 fail**.
 
 Then the repo owner runs `http://localhost:8765/test/harness.html` and confirms `PASS`, and walks it by hand:
 
