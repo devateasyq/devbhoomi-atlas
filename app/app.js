@@ -505,7 +505,8 @@ function viewMap(){
       '<svg id="hpsvg" viewBox="0 0 '+MAP.w+' '+MAP.h+'" preserveAspectRatio="xMidYMid meet" '+
         'role="img" aria-label="Map of Himachal Pradesh — click a district or marker">'+
         '<defs>'+clip+rDefs+'</defs><g id="mapg">'+paths+rivers+labels+marks+'</g></svg>'+
-      '<div id="maptip"></div>'+legend+
+      '<div id="maptip"></div>'+
+      '<button id="focusbadge" type="button" hidden></button>'+legend+
       '<div class="zoomer">'+
         '<button type="button" data-zoom="1" aria-label="Zoom in">+</button>'+
         '<button type="button" data-zoom="-1" aria-label="Zoom out">&minus;</button>'+
@@ -566,6 +567,13 @@ function relabel(){
    its place in the state rather than floating alone. */
 /* Focusing a district moves the map to it. Dimming alone left the whole
    state on screen, which is not what "show me this district" means. */
+function clearFocus(){
+  S.focus = "";
+  const sel = document.getElementById("focusd");
+  if(sel) sel.value = "";
+  applyFocus();
+  zoomToFocus();
+}
 function zoomToFocus(){
   const g = document.getElementById("mapg"); if(!g) return;
   let t;
@@ -591,6 +599,13 @@ function applyFocus(){
     m.classList.toggle("dim", on && !(MK_DIST[m.dataset.p] || []).includes(S.focus)));
   g.querySelectorAll(".river").forEach(r =>
     r.classList.toggle("dim", on && !(RIVER_DIST[r.dataset.river] || []).includes(S.focus)));
+  /* tapping empty ground exits, but nobody would guess that unprompted */
+  const badge = document.getElementById("focusbadge");
+  if(badge){
+    badge.hidden = !on;
+    if(on) badge.innerHTML = '<b>'+(IDX.has(S.focus) ? IDX.get(S.focus).r.name : "")+'</b>'+
+      '<span>tap the map to exit</span>';
+  }
   relabel();
 }
 function applyLayers(){
@@ -704,7 +719,13 @@ function mountMap(){
     svg.classList.remove("grabbing");
     const t = down.target;
     down = null; dragging = false;
-    if(wasDragging || !t) return;
+    if(wasDragging) return;
+    if(!t){
+      /* tapping the empty ground around the state is the way back out of a
+         focused district */
+      if(S.focus) clearFocus();
+      return;
+    }
     if(t.classList.contains("river")){
       if(IDX.has(t.dataset.river)) openRec(t.dataset.river);
       else openRec("t-rivers", t.dataset.river);
@@ -794,12 +815,15 @@ function mountMap(){
     lgt.setAttribute("aria-expanded", String(S.legendOpen));
     lgt.closest(".maplegend").classList.toggle("shut", !S.legendOpen);
   });
+  const fbadge = document.getElementById("focusbadge");
+  if(fbadge) fbadge.addEventListener("click", clearFocus);
   const fsel = document.getElementById("focusd");
   if(fsel) fsel.addEventListener("change", () => {
+    /* focusing is a map gesture, not a navigation: it moves the view and
+       leaves the panel alone. The record is still one tap on the district. */
     S.focus = fsel.value;
     applyFocus();
     zoomToFocus();
-    if(S.focus && IDX.has(S.focus)) openRec(S.focus);
   });
 
   applyLayers();

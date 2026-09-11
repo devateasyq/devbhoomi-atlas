@@ -435,6 +435,15 @@ button.brow:hover .blab{color:var(--accent)}
 .maplegend.shut .lgtoggle .lt{display:none}
 .maplegend.shut .lgtoggle .ic{width:18px;height:18px;flex:0 0 18px}
 
+#focusbadge{position:absolute;top:12px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:baseline;gap:8px;z-index:3;cursor:pointer;
+  background:var(--surface);border:1px solid var(--accent-line);border-radius:20px;
+  padding:6px 14px;box-shadow:var(--shadow);font:inherit;max-width:calc(100% - 24px)}
+#focusbadge b{font-size:13px;font-weight:600;color:var(--ink)}
+#focusbadge span{font-size:11px;color:var(--ink-3);white-space:nowrap}
+#focusbadge:hover{border-color:var(--accent)}
+#focusbadge:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
 /* the map eases only while focus moves it, never while dragging */
 #mapg.gliding{transition:transform .42s cubic-bezier(.35,.85,.35,1)}
 @media (prefers-reduced-motion:reduce){ #mapg.gliding{transition:none} }

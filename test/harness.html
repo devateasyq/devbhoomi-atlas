@@ -259,13 +259,30 @@ window.addEventListener("load", async () => {
       focused + " of " + all + " markers remain");
     check("focusing leaves that district's own markers lit", focused > 0);
     check("focusing moves the map to that district", zoom() > 1.2, "k=" + zoom());
+    check("focusing does NOT open the record", doc.getElementById("panel").hidden);
+    const badge = doc.getElementById("focusbadge");
+    check("a badge names the focused district", badge && !badge.hidden &&
+      /Kinnaur/.test(badge.textContent), badge ? badge.textContent : "no badge");
 
-    fsel.value = "";
-    fsel.dispatchEvent(new win.Event("change"));
+    /* the badge is the discoverable way out; the empty-ground tap is tested below */
+    badge.click();
     await wait(600);
+    check("the badge clears the focus", ev("S.focus") === "");
     check("clearing focus restores every marker", shown() === all);
     check("clearing focus returns to the whole state",
       Math.abs(zoom() - 1) < 0.01, "k=" + zoom());
+
+    /* tapping bare ground outside every district must also exit */
+    fsel.value = "d-kinnaur";
+    fsel.dispatchEvent(new win.Event("change"));
+    await wait(600);
+    const svgEl = doc.getElementById("hpsvg");
+    const r2 = svgEl.getBoundingClientRect();
+    pointerAt(svgEl, "pointerdown", r2.left + 4, r2.top + 4);
+    pointerAt(svgEl, "pointerup",   r2.left + 4, r2.top + 4);
+    await wait(600);
+    check("tapping empty map ground exits focus", ev("S.focus") === "",
+      "focus=" + ev("S.focus"));
   }
 
   out.innerHTML += "\n" + pass + " passed, " + fail + " failed";
