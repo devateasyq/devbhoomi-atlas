@@ -178,9 +178,9 @@ events, battles, people and topics, but never rivers.
 - `sw.js` — bump `CACHE`, or returning visitors keep the stale version. Add
   `data/features.js` to the precache list.
 - `index.html` — add the `data/features.js` script tag before `app/app.js`.
-- `build-single.sh` line 12 is missing `rivers.js` and `pyq.js`, so the offline
-  `hp-revision.html` has been shipping without rivers or past papers. Add those two
-  plus `features.js`.
+- `build-single.sh` keeps its own module list and must stay in step with the
+  `<script>` tags in `index.html` — it has fallen behind once already. Add
+  `data/features.js` and `app/mapkit.js`, each in its `index.html` position.
 
 ## Verification
 

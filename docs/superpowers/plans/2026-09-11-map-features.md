@@ -4,7 +4,7 @@
 
 **Goal:** Give every peak, pass, lake and glacier its own clickable map marker and detail record, at the depth `D.rivers` already has.
 
-**Architecture:** A new `data/features.js` holds ~62 records keyed to existing `MAP.places` markers by a `pid` field. A new `app/mapkit.js` holds the pure, DOM-free map logic — marker glyphs, greedy label de-collision, and the legend visibility reducer — so the tricky parts are unit-testable in Node without a DOM, and `app/app.js` (already 1085 lines) does not grow another 250. `app/app.js` wires them in: rendering, legend events, the detail panel, search and flashcards.
+**Architecture:** Parikrama is plain static files; the map is its Atlas view. A new `data/features.js` holds ~62 records keyed to existing `MAP.places` markers by a `pid` field. A new `app/mapkit.js` holds the pure, DOM-free map logic — marker glyphs, greedy label de-collision, and the legend visibility reducer — so the tricky parts are unit-testable in Node without a DOM, and `app/app.js` (already 1085 lines) does not grow another 250. `app/app.js` wires them in: rendering, legend events, the detail panel, search and flashcards.
 
 **Tech Stack:** Plain ES5-compatible browser JavaScript, no framework, no build step, no runtime dependencies. Tests run on Node's built-in `node --test` (Node 25 is installed) plus a committed in-browser harness for pointer interaction.
 
@@ -37,7 +37,7 @@
 - `app/components.css` — glyph and legend-button rules.
 - `index.html:92` — script tags.
 - `sw.js:6-7` — cache name and precache list.
-- `build-single.sh:12` — missing data files.
+- `build-single.sh:11-14` — the module list, which must stay in step with `index.html`.
 
 ---
 
@@ -1901,21 +1901,19 @@ git commit -m "feat: generate flashcards from features and rivers"
 - Modify: `build-single.sh:12-13`
 - Modify: `README.md`
 
-- [ ] **Step 1: Fix the single-file build**
+- [ ] **Step 1: Add the two new files to the single-file build**
 
-`build-single.sh` line 12 omits `rivers.js` and `pyq.js`, so the offline `hp-revision.html` has been shipping with no rivers and no past papers. Replace the tuple:
-
-```python
-                 for f in ("geo.js","places.js","history.js","topics.js","rivers.js",
-                           "features.js","quiz.js","pyq.js"))
-```
-
-And line 13 must pick up mapkit before app.js:
+`build-single.sh` keeps its own module list, and it must stay in step with the `<script>` tags in `index.html` — it has silently fallen behind once already. Add `features.js` to the data tuple and `mapkit.js` to the app tuple, each in the same position it occupies in `index.html`:
 
 ```python
-js  += "\n" + pathlib.Path("app","mapkit.js").read_text()
-js  += "\n" + pathlib.Path("app","app.js").read_text()
+js   = "\n".join(pathlib.Path("data", f).read_text()
+                 for f in ("geo.js","places.js","history.js","topics.js",
+                           "rivers.js","features.js","quiz.js","pyq.js"))
+js  += "\n" + "\n".join(pathlib.Path("app", f).read_text()
+                        for f in ("logo.js","mapkit.js","trends.js","app.js"))
 ```
+
+`mapkit.js` must come before `app.js` — `app.js` calls `mkGlyph()` and `placeLabels()` at render time. Its `typeof module` guard is inert in the browser, so concatenating it is safe.
 
 - [ ] **Step 2: Verify the single-file build**
 
@@ -1924,7 +1922,7 @@ cd /Users/avinashnegi/Downloads/prep/hp-atlas && ./build-single.sh && \
   grep -c "D.features" ../hp-revision.html && grep -c "D.pyq" ../hp-revision.html
 ```
 
-Expected: both greps report at least 1. Open `../hp-revision.html` directly in a browser, go to the map, and click a pass — the panel must open with full detail and no network access.
+Expected: both greps report at least 1 — `D.pyq` confirms the rest of the module list is still in step. Open `../hp-revision.html` directly in a browser, go to the map, and click a pass — the panel must open with full detail and no network access.
 
 - [ ] **Step 3: Bump the service worker**
 
@@ -1979,5 +1977,5 @@ git commit -m "chore: bundle features and mapkit into the offline build, bump ca
 | Generated reverse links | 14 |
 | Height indexed for search | 15 |
 | ~160 generated cards, rivers gap closed | 16 |
-| `sw.js` cache bump, `build-single.sh` fix | 17 |
+| `sw.js` cache bump, `build-single.sh` module list | 17 |
 | Pointer-capture regression guard | 10 (harness drag test), 11, 12 |
