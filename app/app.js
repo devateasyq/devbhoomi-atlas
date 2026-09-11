@@ -217,8 +217,18 @@ function flushPendingPush(done){
   const u = _pushUser; _pushUser = null;
   if(!u){ if(done) done(); return; }
   const snap = localState();
+  /* The Firestore SDK retries a transient offline write itself, so a
+     failure that reaches this catch is a permanent one (over the 1 MB
+     ceiling the note cap defends, or similar) — silently swallowing it
+     told the student nothing while they kept revising believing it
+     synced. done() still fires on both paths: sign-out must never block
+     on a network error. */
   pushSnapshot(u, snap).then(function(){ if(done) done(); })
-                        .catch(function(){ if(done) done(); });
+                        .catch(function(err){
+                          console.error("[parikrama] push failed:", err && err.code, err);
+                          toast("Could not sync just now");
+                          if(done) done();
+                        });
 }
 function mountAccount(){
   const btn = document.getElementById("acctbtn");
@@ -1367,7 +1377,13 @@ function pyAnswer(i){
   const prog = store.get("pyq",{});
   store.set("pyq", recordAnswer(prog, q.y+"|"+q.q.slice(0,60), i === q.a));
   noteActivity("pyq", q.q);
-  if(authUser()) pushState(authUser()).catch(() => {});
+  /* See flushPendingPush: what reaches this catch is a permanent failure,
+     not a transient one the SDK already retried, so it is worth telling
+     the student about rather than swallowing. */
+  if(authUser()) pushState(authUser()).catch(err => {
+    console.error("[parikrama] push failed:", err && err.code, err);
+    toast("Could not sync just now");
+  });
   render();
 }
 function pyStep(d){
@@ -1421,7 +1437,13 @@ function answer(i){
   S.qAnswered = i;
   const prog = store.get("quiz",{}); store.set("quiz", recordAnswer(prog, q.q, i === q.a));
   noteActivity("quiz", q.q);
-  if(authUser()) pushState(authUser()).catch(() => {});
+  /* See flushPendingPush: what reaches this catch is a permanent failure,
+     not a transient one the SDK already retried, so it is worth telling
+     the student about rather than swallowing. */
+  if(authUser()) pushState(authUser()).catch(err => {
+    console.error("[parikrama] push failed:", err && err.code, err);
+    toast("Could not sync just now");
+  });
   render();
 }
 function stepQ(d){
