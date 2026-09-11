@@ -604,7 +604,7 @@ D.features = [
  valley:"Lahaul–Chamba divide", feeds:"Chenab",
  districts:["d-lahaul","d-chamba"],
  blocks:[
-  ["p","Perad sits on the <b>Lahaul–Chamba divide</b>, one of the less-documented glaciers in this roster, its meltwater draining eventually into the <b>Chenab</b> system that the Chandra and Bhaga both feed."],
+  ["p","Perad sits on the <b>Lahaul–Chamba divide</b>, its meltwater draining eventually into the <b>Chenab</b> system that the Chandra and Bhaga both feed."],
   ["p","Its position on the district boundary places it among the glaciers of upper Chamba and Lahaul whose retreat is watched for the same reasons as the better-studied ice of the Chandra valley — the bearing on downstream hydel generation and on glacial-lake outburst flood risk."],
   ["note","Exam hook","Lahaul–Chamba divide · feeds the Chenab system."]],
  rel:["t-peaks","d-lahaul","d-chamba","Chenab","t-disaster"]},
@@ -640,7 +640,7 @@ D.features = [
  valley:"Miyar valley, Lahaul", feeds:"Miyar Nala, which joins the Chenab",
  districts:["d-lahaul"],
  blocks:[
-  ["p","Miyar Glacier sits at the head of the long <b>Miyar valley</b> in Lahaul — the long valley approach that gives this glacier its character in the roster, distinct from the shorter, road-served approaches to the Chandra basin's glaciers."],
+  ["p","Miyar Glacier sits at the head of the long <b>Miyar valley</b> in Lahaul — the long valley approach that gives this glacier its character in the roster."],
   ["p","Its meltwater drains through the <b>Miyar Nala</b> to the <b>Chenab</b>, named among the Chenab's own tributaries below the Chandra–Bhaga confluence at Tandi; <b>Mulkila</b>, on the Miyar–Chandra divide, stands above the same valley."],
   ["note","Exam hook","Miyar valley, Lahaul · the long Miyar valley approach · feeds the Miyar Nala → Chenab."]],
  rel:["t-peaks","d-lahaul","Chenab","pk-mulkila","t-disaster"]},
