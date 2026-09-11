@@ -274,6 +274,23 @@ function mergeState(local, remote){
   return out;
 }
 
+/* "Clear progress" used to write localState() straight over the remote
+   document with no merge — safe back when the document held only
+   seen/quiz/pyq and local was authoritative, but not since notes and
+   streak joined it: a laptop idle since morning does not know about notes
+   written on a phone since, and a non-merge write would replace the
+   cloud's copy of them with the laptop's stale one (review finding 4,
+   IMPORTANT). Merge first, through the same rules every other sync uses,
+   then force only the two fields the button promises to clear — the
+   non-merge INTENT (a cleared answer must not come back) survives; the
+   collateral damage to notes and streak does not. */
+function resetDocument(local, remote){
+  var out = mergeState(local, remote || {});
+  out.quiz = {};
+  out.pyq = {};
+  return out;
+}
+
 /* One reader for both shapes. Every call site must go through this, or old
    saved progress reads as unattempted and a user's history vanishes. */
 function answerValue(x){
@@ -291,6 +308,7 @@ function recordAnswer(prog, key, correct){
 if(typeof module !== "undefined" && module.exports){
   module.exports = {normaliseAnswers: normaliseAnswers, mergeAnswers: mergeAnswers,
                     mergeSeen: mergeSeen, mergeStreak: mergeStreak, mergeState: mergeState,
+                    resetDocument: resetDocument,
                     answerValue: answerValue, recordAnswer: recordAnswer,
                     SYNC_KEYS: SYNC_KEYS, NOTE_MAX: NOTE_MAX, normaliseNotes: normaliseNotes,
                     realNotes: realNotes, mergeNotes: mergeNotes, setNote: setNote,

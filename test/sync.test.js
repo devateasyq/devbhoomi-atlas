@@ -387,6 +387,38 @@ test("setNote accepts constructor and toString as ordinary record ids", () => {
   assert.equal(out2["toString"].text, "ts-note");
 });
 
+/* ---------- resetDocument ---------- */
+/* Finding 4 (review, IMPORTANT): "Clear progress" used to write localState()
+   over the remote document with no merge, which is safe only for quiz/pyq —
+   but the document now also carries notes and streak, which a laptop idle
+   since morning may not know about. resetDocument merges first, then forces
+   only the two fields the button promises to clear. */
+test("resetDocument clears quiz and pyq but keeps everything else merged", () => {
+  const local  = {seen: ["f1"], quiz: {"Q1": {v: 1, t: 10}}, pyq: {"P1": {v: 1, t: 10}},
+                  notes: {"d-kangra": {text: "local stale note", t: 10}},
+                  streak: {n: 1, best: 1, last: "2026-01-05", grace: 1, day: "2026-01-05",
+                           facts: 20, quiz: 0, pyq: 0, recs: []}};
+  const remote = {seen: ["f2"], quiz: {"Q2": {v: 1, t: 5}}, pyq: {},
+                  notes: {"d-mandi": {text: "written on the phone this morning", t: 999999}},
+                  streak: {n: 2, best: 2, last: "2026-01-06", grace: 1, day: "2026-01-06",
+                           facts: 20, quiz: 0, pyq: 0, recs: []}};
+  const out = sync.resetDocument(local, remote);
+  assert.deepEqual(out.quiz, {}, "reset must clear quiz");
+  assert.deepEqual(out.pyq, {}, "reset must clear pyq");
+  assert.equal(out.notes["d-mandi"].text, "written on the phone this morning",
+    "a note that exists only on the cloud must survive a laptop's reset");
+  assert.equal(out.notes["d-kangra"].text, "local stale note", "the laptop's own note must survive too");
+  assert.equal(out.streak.best, 2, "the streak must be merged, not replaced");
+  assert.deepEqual(out.seen.sort(), ["f1", "f2"]);
+});
+
+test("resetDocument copes with no remote document yet", () => {
+  const local = {seen: ["f1"], quiz: {"Q1": {v: 1, t: 1}}, pyq: {}, notes: {}, streak: sync.emptyStreak()};
+  const out = sync.resetDocument(local, {});
+  assert.deepEqual(out.quiz, {});
+  assert.deepEqual(out.seen, ["f1"]);
+});
+
 /* ---------- streak ---------- */
 const DAY = {facts: 20, quiz: 5, pyq: 5, recs: 5};
 

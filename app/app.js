@@ -1832,16 +1832,28 @@ document.addEventListener("click", e => {
          remove. */
       clearTimeout(_pushTimer); _pushTimer = null; _pushUser = null;
       store.del("quiz"); store.del("pyq"); render(); toast("Progress cleared");
-      if(authUser()){
+      const u = authUser();
+      if(u){
         loadFirebase().then(function(fb){
-          /* Non-merge, so the cleared answers cannot come back — but built
-             from the full local state with only quiz and pyq emptied, or
-             this button would also wipe notes and the streak, which it
-             never promised to touch. */
-          const kept = localState();
-          kept.quiz = {}; kept.pyq = {};
-          return userDoc(fb, authUser()).set(kept);
-        }).catch(function(){});
+          const ref = userDoc(fb, u);
+          /* A raw non-merge set() here replaced the WHOLE remote document
+             with this device's local snapshot — safe when the document
+             held only seen/quiz/pyq, not since it also carries notes and
+             streak: a laptop idle since morning does not know about notes
+             written on a phone since, and would wipe the cloud's copy of
+             them (review finding 4). Read the remote document inside a
+             transaction, same shape as pushSnapshot, and let
+             resetDocument (app/sync.js) merge it before forcing only the
+             two fields this button promises to clear. */
+          return fb.firestore().runTransaction(function(tx){
+            return tx.get(ref).then(function(snap){
+              const remote = snap.exists ? (snap.data() || {}) : {};
+              tx.set(ref, resetDocument(localState(), remote));
+            });
+          });
+        }).catch(function(err){
+          console.error("[parikrama] reset push failed:", err && err.code, err);
+        });
       }
     }
     return; }
