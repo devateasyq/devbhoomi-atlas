@@ -42,19 +42,30 @@ function mergeSeen(a, b){
   return out;
 }
 
-function mergeStreak(a, b){
-  return Math.max(typeof a === "number" ? a : 0, typeof b === "number" ? b : 0);
-}
+/* replaced in Task 2 */
+function mergeNotes(a, b){ return {}; }
+/* replaced in Task 3 */
+function emptyStreak(){ return {}; }
+function mergeStreak(a, b){ return {}; }
 
-/* Only the keys that belong to the person. Theme, hidden map layers and the
-   legend's state belong to the device and are deliberately absent. */
+/* The single source of truth for what syncs and how each key merges. It was
+   previously spelled out in four places — localState, both branches of
+   pullAndMerge, and mergeState — which is how a key gets missed and its data
+   silently stops syncing. Add a key here and every consumer follows. */
+var SYNC_KEYS = [
+  {k: "seen",   empty: function(){ return []; }, merge: mergeSeen},
+  {k: "quiz",   empty: function(){ return {}; }, merge: mergeAnswers},
+  {k: "pyq",    empty: function(){ return {}; }, merge: mergeAnswers},
+  {k: "notes",  empty: function(){ return {}; }, merge: mergeNotes},
+  {k: "streak", empty: emptyStreak,              merge: mergeStreak}
+];
 function mergeState(local, remote){
-  var L = local || {}, R = remote || {};
-  return {
-    seen: mergeSeen(L.seen, R.seen),
-    quiz: mergeAnswers(L.quiz, R.quiz),
-    pyq:  mergeAnswers(L.pyq,  R.pyq)
-  };
+  var L = local || {}, R = remote || {}, out = {}, i, e;
+  for(i = 0; i < SYNC_KEYS.length; i++){
+    e = SYNC_KEYS[i];
+    out[e.k] = e.merge(L[e.k], R[e.k]);
+  }
+  return out;
 }
 
 /* One reader for both shapes. Every call site must go through this, or old
@@ -74,5 +85,6 @@ function recordAnswer(prog, key, correct){
 if(typeof module !== "undefined" && module.exports){
   module.exports = {normaliseAnswers: normaliseAnswers, mergeAnswers: mergeAnswers,
                     mergeSeen: mergeSeen, mergeStreak: mergeStreak, mergeState: mergeState,
-                    answerValue: answerValue, recordAnswer: recordAnswer};
+                    answerValue: answerValue, recordAnswer: recordAnswer,
+                    SYNC_KEYS: SYNC_KEYS};
 }

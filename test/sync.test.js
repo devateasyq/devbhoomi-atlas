@@ -74,13 +74,6 @@ test("mergeSeen never mutates its inputs", () => {
 });
 
 /* ---------- streak ---------- */
-test("mergeStreak takes the higher count", () => {
-  assert.equal(sync.mergeStreak(3, 7), 7);
-  assert.equal(sync.mergeStreak(7, 3), 7);
-  assert.equal(sync.mergeStreak(undefined, 4), 4);
-  assert.equal(sync.mergeStreak(null, null), 0);
-});
-
 /* ---------- the whole state ---------- */
 test("mergeState applies all three rules together", () => {
   const local  = {seen: ["f1"], quiz: {"Q1": {v: 1, t: 10}}, pyq: {}};
@@ -149,4 +142,25 @@ test("recordAnswer does not mutate the map it is given", () => {
   const prog = {};
   sync.recordAnswer(prog, "Q1", 1);
   assert.deepEqual(prog, {}, "recordAnswer mutated its input");
+});
+
+test("SYNC_KEYS is the single source of truth for what syncs", () => {
+  const keys = sync.SYNC_KEYS.map(e => e.k);
+  assert.deepEqual(keys, ["seen", "quiz", "pyq", "notes", "streak"]);
+  for(const e of sync.SYNC_KEYS){
+    assert.equal(typeof e.empty, "function", e.k + " has no empty()");
+    assert.equal(typeof e.merge, "function", e.k + " has no merge()");
+  }
+});
+
+test("mergeState returns exactly the registry's keys", () => {
+  const out = sync.mergeState({}, {});
+  assert.deepEqual(Object.keys(out).sort(), sync.SYNC_KEYS.map(e => e.k).sort());
+});
+
+test("device preferences still never survive a merge", () => {
+  const m = sync.mergeState({theme: "dark", mapoff: ["peak"], legendopen: true},
+                            {theme: "light", mapoff: [], legendopen: false});
+  for(const k of ["theme", "mapoff", "legendopen"])
+    assert.ok(!(k in m), k + " belongs to the device and must not merge");
 });

@@ -87,7 +87,21 @@ function renderAccount(user){
 /* One document per user holds the progress that belongs to the person.
    Device preferences are deliberately absent — see the spec. */
 function localState(){
-  return {seen: store.get("seen", []), quiz: store.get("quiz", {}), pyq: store.get("pyq", {})};
+  var out = {}, i, e;
+  for(i = 0; i < SYNC_KEYS.length; i++){
+    e = SYNC_KEYS[i];
+    out[e.k] = store.get(e.k, e.empty());
+  }
+  return out;
+}
+/* Signing out on a shared device, or deleting the account, must leave
+   nothing of the person behind — including notes, which are the most
+   private thing here. Driven by SYNC_KEYS so a key added later is cleared
+   without anybody remembering to come back for it. */
+function wipeLocal(){
+  for(const e of SYNC_KEYS) store.del(e.k);
+  store.del("owner");
+  S.seen = [];
 }
 function userDoc(fb, user){
   return fb.firestore().collection("users").doc(user.uid);
@@ -111,19 +125,14 @@ function pullAndMerge(user){
     const remote = snap.exists ? (snap.data() || {}) : {};
     const owner = store.get("owner", "");
     if(owner && owner !== user.uid){
-      const theirs = {seen: remote.seen || [], quiz: remote.quiz || {}, pyq: remote.pyq || {}};
-      store.set("seen", theirs.seen);
-      store.set("quiz", theirs.quiz);
-      store.set("pyq",  theirs.pyq);
+      for(const e of SYNC_KEYS) store.set(e.k, remote[e.k] || e.empty());
       store.set("owner", user.uid);
-      S.seen = theirs.seen;
+      S.seen = store.get("seen", []);
       toast("Loaded this account's progress");
       return Promise.resolve();
     }
     const merged = mergeState(localState(), remote);
-    store.set("seen", merged.seen);
-    store.set("quiz", merged.quiz);
-    store.set("pyq",  merged.pyq);
+    for(const e of SYNC_KEYS) store.set(e.k, merged[e.k]);
     store.set("owner", user.uid);
     S.seen = merged.seen;
     /* the merged result goes straight back up, so both sides agree */
@@ -194,8 +203,7 @@ function mountAccount(){
              back into this account when it signs in again. Clearing is a
              person leaving, not a token expiring, so it belongs here and
              not in the onAuthChange backstop. */
-          store.del("seen"); store.del("quiz"); store.del("pyq"); store.del("owner");
-          S.seen = [];
+          wipeLocal();
           render();
           toast("Signed out");
         }).catch(() => toast("Could not sign out"));
@@ -1535,14 +1543,15 @@ document.addEventListener("click", e => {
          remove. */
       clearTimeout(_pushTimer); _pushTimer = null; _pushUser = null;
       store.del("quiz"); store.del("pyq"); render(); toast("Progress cleared");
-      /* {merge:true} never removes a Firestore field, so a plain merge write
-         of the emptied state would leave the old answers sitting in the
-         remote document for the next pullAndMerge to bring straight back.
-         A non-merge set replaces the document instead. seen is preserved —
-         this button clears quiz and past-paper progress only. */
       if(authUser()){
         loadFirebase().then(function(fb){
-          return userDoc(fb, authUser()).set({seen: S.seen, quiz: {}, pyq: {}});
+          /* Non-merge, so the cleared answers cannot come back — but built
+             from the full local state with only quiz and pyq emptied, or
+             this button would also wipe notes and the streak, which it
+             never promised to touch. */
+          const kept = localState();
+          kept.quiz = {}; kept.pyq = {};
+          return userDoc(fb, authUser()).set(kept);
         }).catch(function(){});
       }
     }
