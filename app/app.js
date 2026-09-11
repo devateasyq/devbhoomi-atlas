@@ -32,6 +32,30 @@ const PLACE_REC = new Map((D.features || []).map(r => [r.pid, r.id]));
 /* Facts are a projection of the records, built once at load like SEARCH. */
 const FACTS = buildFacts(D);
 
+/* Every marker's district, resolved once at load. A record's own
+   `districts` list wins where it has one — it is curated, and it is right
+   for border cases like Shipki La, which sits outside the simplified
+   outline. Geometry answers the rest, and the nearest centroid catches
+   the handful on a boundary. */
+const MK_DIST = (() => {
+  const byMap = {};
+  D.districts.forEach(d => { if(d.map) byMap[d.map] = d.id; });
+  const out = {};
+  for(const [pid, p] of Object.entries(MAP.places)){
+    const rec = PLACE_REC.has(pid) ? IDX.get(PLACE_REC.get(pid)).r : null;
+    if(rec && rec.districts && rec.districts.length){ out[pid] = rec.districts.slice(); continue; }
+    const hit = districtAt(p.x, p.y, MAP.paths) || nearestDistrict(p.x, p.y, MAP.centroids);
+    out[pid] = hit && byMap[hit] ? [byMap[hit]] : [];
+  }
+  return out;
+})();
+/* rivers declare the districts they flow through */
+const RIVER_DIST = (() => {
+  const out = {};
+  (D.rivers || []).forEach(r => { out[r.id] = (r.districts || []).slice(); });
+  return out;
+})();
+
 const nameOf = o => o.r.name || o.r.t || o.r.title;
 const eraOf  = o => o.r.era ? ERA[o.r.era] : null;
 const rels   = r => (r.rel || []).filter(id => IDX.has(id));
@@ -73,7 +97,7 @@ function factsList(pairs){
 
 /* ---------- app state ---------- */
 const S = {
-  view:"home", sel:null, trail:[], seen:[],
+  view:"home", sel:null, trail:[], seen:[], legendOpen:true, focus:"",
   era:"all", battleFilter:"all", topicSec:"all",
   revMode:"papers",
   qIdx:0, qSec:"all", qAnswered:null,
@@ -453,7 +477,15 @@ function viewMap(){
      district polygons) are the map itself, not an overlay, so they are
      not listed and cannot be hidden. */
   const shownKinds = LAYERS.filter(l => !l.base).map(l => l.k);
-  const legend = '<div class="maplegend"><div class="lt">Layers</div><ul>'+
+  const focusSel = '<div class="mapfocus"><label class="vh" for="focusd">Focus a district</label>'+
+    '<select id="focusd"><option value="">All 12 districts</option>'+
+    D.districts.slice().sort((x,y) => x.name.localeCompare(y.name)).map(d =>
+      '<option value="'+d.id+'"'+(S.focus === d.id ? ' selected' : '')+'>'+d.name+'</option>').join('')+
+    '</select></div>';
+  const legend = '<div class="maplegend'+(S.legendOpen ? '' : ' shut')+'">'+
+    '<button class="lgtoggle" type="button" id="lgtoggle" aria-expanded="'+S.legendOpen+'">'+
+      '<span class="lt">Layers</span><span class="chev" aria-hidden="true"></span></button>'+
+    '<div class="lgbody"><ul>'+
     shownKinds.map(k => {
       const l = LAYER_BY_KIND[k], off = S.mapOff.includes(k);
       return '<li><button type="button" class="lgi'+(off ? " off" : "")+'" data-lk="'+k+'" '+
@@ -462,8 +494,9 @@ function viewMap(){
     }).join('')+
     '</ul>'+
     (S.mapOff.length ? '<button type="button" class="lgall" id="lgall">Show all</button>' : '')+
+    focusSel+
     '<div class="lghint">Click a district or marker to open its record</div>'+
-    '</div>';
+    '</div></div>';
   return '<div id="mapview">'+
     '<div class="mapcanvas" id="mapcanvas">'+
       '<svg id="hpsvg" viewBox="0 0 '+MAP.w+' '+MAP.h+'" preserveAspectRatio="xMidYMid meet" '+
@@ -494,7 +527,7 @@ const LABEL_PRI = {district:9, peak:4, pass:3, glacier:2, lake:1,
                    state:3, temple:2, battle:2};
 function relabel(){
   const g = document.getElementById("mapg"); if(!g) return;
-  const marks = [...g.querySelectorAll(".mk:not(.hid),.dl")];
+  const marks = [...g.querySelectorAll(".mk:not(.hid):not(.dim),.dl")];
   if(!marks.length) return;
   const inv = 1/ZT.k;
   const items = marks.map((m,i) => {
@@ -525,6 +558,21 @@ function relabel(){
 /* Hiding sets a class rather than re-rendering, so a toggle is instant.
    Labels must be laid out again afterwards: hiding twenty lakes frees
    room that peak labels can now use. */
+/* Focus mode: one district stays lit, everything else recedes. Markers and
+   rivers outside it are dimmed rather than removed, so the district keeps
+   its place in the state rather than floating alone. */
+function applyFocus(){
+  const g = document.getElementById("mapg"); if(!g) return;
+  const on = !!S.focus;
+  g.classList.toggle("focusing", on);
+  g.querySelectorAll(".dist").forEach(p =>
+    p.classList.toggle("dim", on && p.dataset.d !== S.focus));
+  g.querySelectorAll(".mk").forEach(m =>
+    m.classList.toggle("dim", on && !(MK_DIST[m.dataset.p] || []).includes(S.focus)));
+  g.querySelectorAll(".river").forEach(r =>
+    r.classList.toggle("dim", on && !(RIVER_DIST[r.dataset.river] || []).includes(S.focus)));
+  relabel();
+}
 function applyLayers(){
   document.querySelectorAll(".mk").forEach(m =>
     m.classList.toggle("hid", S.mapOff.includes(m.dataset.k)));
@@ -556,13 +604,48 @@ function mountMap(){
   };
   let down = null, dragging = false;
 
+  /* Two-finger pinch. Pointer events give one call per finger, so the live
+     ones are tracked and a second finger switches from panning to zooming.
+     Without this a phone could only use the +/- buttons. */
+  const pts = new Map();
+  let pinch = null;
+  const centre = () => {
+    const v = [...pts.values()];
+    return {x:(v[0].x + v[1].x)/2, y:(v[0].y + v[1].y)/2,
+            d:Math.hypot(v[0].x - v[1].x, v[0].y - v[1].y)};
+  };
   svg.addEventListener("pointerdown", e => {
     if(e.button && e.button !== 0) return;
+    pts.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if(pts.size === 2){
+      const c = centre(), r = svg.getBoundingClientRect(), sc = MAP.w/r.width;
+      pinch = {d:c.d, k:ZT.k,
+               px:(c.x - r.left)*sc, py:(c.y - r.top)*sc, ox:ZT.x, oy:ZT.y};
+      down = null; dragging = false; svg.classList.remove("grabbing");
+      return;
+    }
     down = {x:e.clientX, y:e.clientY, ox:ZT.x, oy:ZT.y, id:e.pointerId,
             target:e.target.closest(".mk") || e.target.closest(".river") || e.target.closest(".dist")};
     dragging = false;
   });
   svg.addEventListener("pointermove", e => {
+    if(pts.has(e.pointerId)) pts.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if(pinch && pts.size >= 2){
+      e.preventDefault();
+      const c = centre();
+      if(pinch.d > 0){
+        /* scale about the point between the fingers, so the map grows from
+           where they are rather than from the centre of the viewport */
+        const nk = Math.min(9, Math.max(1, pinch.k * (c.d / pinch.d)));
+        const r = nk / pinch.k;
+        ZT.k = nk;
+        ZT.x = pinch.px - (pinch.px - pinch.ox) * r;
+        ZT.y = pinch.py - (pinch.py - pinch.oy) * r;
+        if(ZT.k === 1){ ZT.x = 0; ZT.y = 0; }
+        applyZoom();
+      }
+      return;
+    }
     if(down && e.pointerId === down.id){
       const r = svg.getBoundingClientRect(), sc = MAP.w/r.width;
       const dx = e.clientX-down.x, dy = e.clientY-down.y;
@@ -593,6 +676,8 @@ function mountMap(){
     } else tip.classList.remove("on");
   });
   const release = e => {
+    pts.delete(e.pointerId);
+    if(pts.size < 2 && pinch){ pinch = null; down = null; dragging = false; return; }
     if(!down || e.pointerId !== down.id) return;
     const wasDragging = dragging;
     if(dragging){ try{ svg.releasePointerCapture(e.pointerId); }catch(err){} }
@@ -612,7 +697,7 @@ function mountMap(){
     }
   };
   svg.addEventListener("pointerup", release);
-  svg.addEventListener("pointercancel", e => { down = null; dragging = false; svg.classList.remove("grabbing"); });
+  svg.addEventListener("pointercancel", e => { pts.delete(e.pointerId); pinch = null; down = null; dragging = false; svg.classList.remove("grabbing"); });
   svg.addEventListener("pointerleave", () => tip.classList.remove("on"));
   svg.addEventListener("wheel", e => {
     e.preventDefault();
@@ -653,6 +738,7 @@ function mountMap(){
         else legendEl.appendChild(all);
       } else if(!S.mapOff.length && all) all.remove();
       applyLayers();
+      applyFocus();
     };
     legendEl.addEventListener("click", e => {
       /* Show all must also drop pending toggles, or one fires just after
@@ -681,7 +767,22 @@ function mountMap(){
       commit();
     });
   }
+  const lgt = document.getElementById("lgtoggle");
+  if(lgt) lgt.addEventListener("click", () => {
+    S.legendOpen = !S.legendOpen;
+    store.set("legendopen", S.legendOpen);
+    lgt.setAttribute("aria-expanded", String(S.legendOpen));
+    lgt.closest(".maplegend").classList.toggle("shut", !S.legendOpen);
+  });
+  const fsel = document.getElementById("focusd");
+  if(fsel) fsel.addEventListener("change", () => {
+    S.focus = fsel.value;
+    applyFocus();
+    if(S.focus && IDX.has(S.focus)) openRec(S.focus);
+  });
+
   applyLayers();
+  applyFocus();
 }
 
 /* ============================================================
@@ -1286,6 +1387,7 @@ applyTheme();
 /* The old boolean rivers toggle is now two legend layers. Migrate it so
    a returning visitor who had rivers off does not see them reappear. */
 S.seen   = store.get("seen", []);
+S.legendOpen = store.get("legendopen", true);
 S.mapOff = store.get("mapoff", null) ||
   (store.get("rivers", true) ? [] : ["river1","river2"]);
 store.del("rivers");

@@ -220,6 +220,43 @@ window.addEventListener("load", async () => {
   check("the mobile bar is Overview, Map, Rounds, Revise",
     ["home","map","rounds","revise"].every(id => mtabs.includes(id)), mtabs.join(","));
 
+  ev('S.view="map"; render();');
+  await wait(350);
+  const lg = doc.querySelector(".maplegend");
+  check("the legend has a collapse toggle", !!doc.getElementById("lgtoggle"));
+  if(lg){
+    const body = lg.querySelector(".lgbody");
+    const openH = body.getBoundingClientRect().height;
+    doc.getElementById("lgtoggle").click();
+    await wait(120);
+    check("collapsing the legend hides its body",
+      body.getBoundingClientRect().height < openH);
+    doc.getElementById("lgtoggle").click();
+    await wait(120);
+    check("expanding it brings the body back",
+      body.getBoundingClientRect().height > 0);
+  }
+
+  const fsel = doc.getElementById("focusd");
+  check("a district focus picker exists", !!fsel);
+  if(fsel){
+    check("the picker lists every district",
+      fsel.options.length === 13, fsel.options.length + " options");
+    const shown = () => doc.querySelectorAll("#mapg .mk:not(.dim):not(.hid)").length;
+    const all = shown();
+    fsel.value = "d-kinnaur";
+    fsel.dispatchEvent(new win.Event("change"));
+    await wait(200);
+    const focused = shown();
+    check("focusing a district dims markers outside it", focused < all,
+      focused + " of " + all + " markers remain");
+    check("focusing leaves that district's own markers lit", focused > 0);
+    fsel.value = "";
+    fsel.dispatchEvent(new win.Event("change"));
+    await wait(200);
+    check("clearing focus restores every marker", shown() === all);
+  }
+
   out.innerHTML += "\n" + pass + " passed, " + fail + " failed";
   document.title = fail ? "FAIL (" + fail + ")" : "PASS";
 });

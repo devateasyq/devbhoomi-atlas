@@ -87,6 +87,59 @@ function layerIsolate(hidden, k, visibleKinds){
   return isolated ? keep : keep.concat(others);
 }
 
+/* Which district a point falls in. The district paths are plain M/L
+   polylines, so they parse into rings and a ray cast answers it. Needed
+   because a marker knows its coordinates but not its district, and focus
+   mode has to hide everything outside one. */
+function parseRings(d){
+  var parts = String(d).split(/(?=M)/), rings = [];
+  for(var i = 0; i < parts.length; i++){
+    var nums = parts[i].match(/-?\d+(?:\.\d+)?/g);
+    if(!nums || nums.length < 6) continue;
+    var ring = [];
+    for(var j = 0; j + 1 < nums.length; j += 2) ring.push([+nums[j], +nums[j+1]]);
+    rings.push(ring);
+  }
+  return rings;
+}
+function pointInRings(x, y, rings){
+  var inside = false;
+  for(var r = 0; r < rings.length; r++){
+    var ring = rings[r];
+    for(var i = 0, j = ring.length - 1; i < ring.length; j = i++){
+      var xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+      if(((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi))
+        inside = !inside;
+    }
+  }
+  return inside;
+}
+/* paths: the MAP.paths object. Returns the district name, or null when a
+   point falls outside every one — which happens for markers drawn just
+   off the simplified boundary. */
+function districtAt(x, y, paths){
+  for(var name in paths){
+    if(!Object.prototype.hasOwnProperty.call(paths, name)) continue;
+    if(pointInRings(x, y, parseRings(paths[name]))) return name;
+  }
+  return null;
+}
+
+/* A few markers sit on the state border, where the simplified outline runs
+   inside them, so no polygon contains them. Fall back to the closest
+   district centroid rather than leaving them in no district at all. */
+function nearestDistrict(x, y, centroids){
+  var best = null, bd = Infinity;
+  for(var name in centroids){
+    if(!Object.prototype.hasOwnProperty.call(centroids, name)) continue;
+    var c = centroids[name];
+    var d = (c[0] - x) * (c[0] - x) + (c[1] - y) * (c[1] - y);
+    if(d < bd){ bd = d; best = name; }
+  }
+  return best;
+}
+
 if(typeof module !== "undefined" && module.exports){
-  module.exports = {LAYERS: LAYERS, LAYER_BY_KIND: LAYER_BY_KIND, mkGlyph: mkGlyph, placeLabels: placeLabels, LABEL_DY: LABEL_DY, layerToggle: layerToggle, layerIsolate: layerIsolate};
+  module.exports = {LAYERS: LAYERS, parseRings: parseRings,
+                  pointInRings: pointInRings, districtAt: districtAt, nearestDistrict: nearestDistrict, LAYER_BY_KIND: LAYER_BY_KIND, mkGlyph: mkGlyph, placeLabels: placeLabels, LABEL_DY: LABEL_DY, layerToggle: layerToggle, layerIsolate: layerIsolate};
 }

@@ -135,3 +135,54 @@ test("isolating a different kind switches the isolation", () => {
   assert.ok(!hidden.includes("lake"));
   assert.ok(hidden.includes("pass"));
 });
+
+/* ---------- district membership, for focus mode ---------- */
+const {loadData} = require("./load");
+const {MAP} = loadData();
+
+test("parseRings turns a district path into closed rings of points", () => {
+  const rings = kit.parseRings(MAP.paths["Bilaspur"]);
+  assert.ok(rings.length >= 1, "no rings parsed");
+  assert.ok(rings[0].length > 20, "ring looks truncated: " + rings[0].length + " points");
+  for(const [x, y] of rings[0]){
+    assert.ok(Number.isFinite(x) && Number.isFinite(y), "non-numeric point");
+  }
+});
+
+test("a district's own centroid falls inside that district", () => {
+  let hits = 0, total = 0;
+  for(const [name, c] of Object.entries(MAP.centroids)){
+    total++;
+    if(kit.districtAt(c[0], c[1], MAP.paths) === name) hits++;
+  }
+  /* a couple of centroids of concave districts legitimately sit outside
+     their own outline, so this is a strong majority rather than all */
+  assert.ok(hits >= total - 2, hits + " of " + total + " centroids matched");
+});
+
+test("interior markers resolve to the right district", () => {
+  const cases = [["renuka","Sirmaur"], ["chandratal","Lahaul and Spiti"],
+                 ["kangra","Kangra"], ["rohtang","Lahaul and Spiti"]];
+  for(const [pid, want] of cases){
+    const p = MAP.places[pid];
+    assert.equal(kit.districtAt(p.x, p.y, MAP.paths), want,
+      pid + " resolved to the wrong district");
+  }
+});
+
+test("only border markers fail to resolve, and nearestDistrict catches them", () => {
+  /* Shipki La, Reo Purgyil and Parang La sit on the Tibet border, where the
+     simplified outline runs inside them; Tharoch sits on a district edge. */
+  const orphans = Object.entries(MAP.places)
+    .filter(([, p]) => !kit.districtAt(p.x, p.y, MAP.paths)).map(([pid]) => pid);
+  assert.ok(orphans.length <= 6, "too many unresolved markers: " + orphans.join(", "));
+  for(const pid of orphans){
+    const p = MAP.places[pid];
+    assert.ok(kit.nearestDistrict(p.x, p.y, MAP.centroids),
+      pid + " has no nearest district either");
+  }
+});
+
+test("a point far outside the state belongs to no district", () => {
+  assert.equal(kit.districtAt(5, 5, MAP.paths), null);
+});
