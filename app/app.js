@@ -72,7 +72,7 @@ function factsList(pairs){
 /* ---------- app state ---------- */
 const S = {
   view:"home", sel:null, trail:[],
-  mapMode:"districts", rivers:true, era:"all", battleFilter:"all", topicSec:"all",
+  mapMode:"districts", era:"all", battleFilter:"all", topicSec:"all",
   revMode:"cards", cardIdx:0, cardFlip:false, cardSec:"all",
   qIdx:0, qSec:"all", qAnswered:null,
   pyYear:"all", pyHP:true, pyIdx:0, pyAnswered:null
@@ -401,7 +401,7 @@ function viewMap(){
   const rLabels = rEntries.filter(([,r]) => r.lp).map(([n,r]) =>
       '<text class="rlab t'+r.t+'" dy="-3.5"><textPath href="#rp-'+n+'" startOffset="50%" '+
       'text-anchor="middle">'+D.rivers.find(x => x.id === n).name+'</textPath></text>').join('');
-  const rivers = '<g class="rivers'+(S.rivers ? '' : ' off')+'" clip-path="url(#'+clipId+')">'+
+  const rivers = '<g class="rivers" clip-path="url(#'+clipId+')">'+
     rPaths+'<g class="rlabels">'+rLabels+'</g></g>';
   const marks = Object.entries(MAP.places)
     .filter(([,p]) => mode.kinds.includes(p.k))
@@ -410,25 +410,24 @@ function viewMap(){
       'transform="translate('+p.x+','+p.y+')">'+
       '<g class="gly" style="fill:'+LAYER_BY_KIND[p.k].c+'">'+mkGlyph(LAYER_BY_KIND[p.k].glyph)+'</g>'+
       '<text y="-9">'+p.n+'</text></g>').join('');
-  const riverKey = S.rivers
-    ? '<li><i style="background:var(--water)"></i>Major river</li>'+
-      '<li><i style="background:var(--water-soft)"></i>Tributary</li>'
-    : '';
-  const legend = mode.kinds.length
-    ? '<div class="maplegend"><div class="lt">'+
-      (mode.id==="states" ? "Seats of the hill states, c. 1815" : "Showing")+'</div><ul>'+
-      mode.kinds.map(k => '<li><i style="background:'+LAYER_BY_KIND[k].c+'"></i>'+LAYER_BY_KIND[k].lb+'</li>').join('')+
-      riverKey+'</ul></div>'
-    : '<div class="maplegend"><div class="lt">Base map</div><ul>'+
-      '<li>Click a district to open its record</li>'+
-      '<li>Drag to pan · scroll to zoom</li>'+riverKey+'</ul></div>';
+  const shownKinds = mode.kinds.concat(["river1","river2"]);
+  const legend = '<div class="maplegend"><div class="lt">'+
+    (mode.id === "states" ? "Seats of the hill states, c. 1815" : "Layers")+'</div><ul>'+
+    shownKinds.map(k => {
+      const l = LAYER_BY_KIND[k], off = S.mapOff.includes(k);
+      return '<li><button type="button" class="lgi'+(off ? " off" : "")+'" data-lk="'+k+'" '+
+        'aria-pressed="'+(!off)+'" title="Click to hide · double click to show only this">'+
+        '<i style="background:'+l.c+'"></i>'+l.lb+'</button></li>';
+    }).join('')+
+    '</ul>'+
+    (S.mapOff.length ? '<button type="button" class="lgall" id="lgall">Show all</button>' : '')+
+    (mode.kinds.length ? '' : '<div class="lghint">Click a district to open its record</div>')+
+    '</div>';
   return '<div id="mapview">'+
     '<div class="maptools"><div class="seg">'+
       MAP_MODES.map(m => '<button type="button" data-mm="'+m.id+'" aria-pressed="'+(m.id===S.mapMode)+'">'+
         m.lb+'</button>').join('')+
     '</div>'+
-    '<button class="tog" type="button" id="rivtog" aria-pressed="'+S.rivers+'">'+
-      '<i class="dot" style="background:var(--water)"></i>Rivers</button>'+
     '</div>'+
     '<div class="mapcanvas" id="mapcanvas">'+
       '<svg id="hpsvg" viewBox="0 0 '+MAP.w+' '+MAP.h+'" preserveAspectRatio="xMidYMid meet" '+
@@ -476,6 +475,19 @@ function relabel(){
   });
   const keep = placeLabels(items);
   marks.forEach((m,i) => m.classList.toggle("nolabel", !keep.has(i)));
+}
+/* Hiding sets a class rather than re-rendering, so a toggle is instant.
+   Labels must be laid out again afterwards: hiding twenty lakes frees
+   room that peak labels can now use. */
+function applyLayers(){
+  document.querySelectorAll(".mk").forEach(m =>
+    m.classList.toggle("hid", S.mapOff.includes(m.dataset.k)));
+  const rv = document.querySelector(".rivers");
+  if(rv){
+    rv.classList.toggle("off1", S.mapOff.includes("river1"));
+    rv.classList.toggle("off2", S.mapOff.includes("river2"));
+  }
+  relabel();
 }
 function zoomBy(dir){
   if(dir === 0){ ZT = {k:1,x:0,y:0}; applyZoom(); return; }
@@ -565,6 +577,52 @@ function mountMap(){
     applyZoom();
   }, {passive:false});
   relabel();
+
+  /* A double click fires two clicks first, so the single-click action is
+     deferred and cancelled if the second click lands. Same approach
+     Plotly's legend uses; the cost is a barely perceptible lag. */
+  const legendEl = document.querySelector(".maplegend");
+  if(legendEl){
+    let clickTimer = null;
+    const kindsHere = () => [...legendEl.querySelectorAll(".lgi")].map(b => b.dataset.lk);
+    const commit = () => {
+      store.set("mapoff", S.mapOff);
+      legendEl.querySelectorAll(".lgi").forEach(b => {
+        const off = S.mapOff.includes(b.dataset.lk);
+        b.classList.toggle("off", off);
+        b.setAttribute("aria-pressed", String(!off));
+      });
+      let all = document.getElementById("lgall");
+      if(S.mapOff.length && !all){
+        all = document.createElement("button");
+        all.type = "button"; all.className = "lgall"; all.id = "lgall";
+        all.textContent = "Show all";
+        legendEl.appendChild(all);
+      } else if(!S.mapOff.length && all) all.remove();
+      applyLayers();
+    };
+    legendEl.addEventListener("click", e => {
+      if(e.target.closest("#lgall")){ S.mapOff = []; commit(); return; }
+      const b = e.target.closest(".lgi"); if(!b) return;
+      clearTimeout(clickTimer);
+      clickTimer = setTimeout(() => { S.mapOff = layerToggle(S.mapOff, b.dataset.lk); commit(); }, 250);
+    });
+    legendEl.addEventListener("dblclick", e => {
+      const b = e.target.closest(".lgi"); if(!b) return;
+      clearTimeout(clickTimer);
+      S.mapOff = layerIsolate(S.mapOff, b.dataset.lk, kindsHere());
+      commit();
+    });
+    legendEl.addEventListener("keydown", e => {
+      const b = e.target.closest(".lgi"); if(!b || e.key !== "Enter") return;
+      e.preventDefault(); clearTimeout(clickTimer);
+      S.mapOff = e.shiftKey
+        ? layerIsolate(S.mapOff, b.dataset.lk, kindsHere())
+        : layerToggle(S.mapOff, b.dataset.lk);
+      commit();
+    });
+  }
+  applyLayers();
 }
 
 /* ============================================================
@@ -1010,7 +1068,6 @@ document.addEventListener("click", e => {
   const tr  = hit("[data-trail]");  if(tr){ goTo(tr.dataset.trail); return; }
   const mm  = hit("[data-mm]");     if(mm){ S.mapMode = mm.dataset.mm; render(); return; }
   const zm  = hit("[data-zoom]");   if(zm){ zoomBy(+zm.dataset.zoom); return; }
-  if(hit("#rivtog")){ S.rivers = !S.rivers; store.set("rivers", S.rivers); render(); return; }
   const era = hit("[data-era]");    if(era){ S.era = era.dataset.era; render(); return; }
   const ev  = hit(".ev");           if(ev){ openRec(ev.dataset.e); return; }
   const card= hit("[data-c]");      if(card){ openRec(card.dataset.c); return; }
@@ -1109,7 +1166,11 @@ function applyTheme(){
 
 /* ---------- boot ---------- */
 applyTheme();
-S.rivers = store.get("rivers", true);
+/* The old boolean rivers toggle is now two legend layers. Migrate it so
+   a returning visitor who had rivers off does not see them reappear. */
+S.mapOff = store.get("mapoff", null) ||
+  (store.get("rivers", true) ? [] : ["river1","river2"]);
+store.del("rivers");
 buildNav();
 document.getElementById("brandmark").innerHTML = logoMark(26);
 document.getElementById("brandmarkm").innerHTML = logoMark(24);

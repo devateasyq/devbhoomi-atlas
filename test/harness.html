@@ -93,6 +93,34 @@ window.addEventListener("load", async () => {
   check("no two visible labels overlap at zoom 1", overlaps === 0, overlaps + " overlapping pairs");
   check("some labels are drawn", boxes.length > 3, boxes.length + " labels");
 
+  const legendBtn = k => doc.querySelector('.lgi[data-lk="' + k + '"]');
+  const visible = k => doc.querySelectorAll('.mk[data-k="' + k + '"]:not(.hid)').length;
+
+  ev("S.mapOff = []; render();"); await wait(200);
+  const basePeaks = visible("peak"), baseLakes = visible("lake");
+  check("all peaks visible by default", basePeaks > 0);
+
+  legendBtn("peak").dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(400);
+  check("single click hides that layer", visible("peak") === 0);
+  check("single click leaves other layers alone", visible("lake") === baseLakes);
+
+  legendBtn("peak").dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(400);
+  check("clicking again restores the layer", visible("peak") === basePeaks);
+
+  legendBtn("pass").dispatchEvent(new MouseEvent("dblclick", {bubbles:true}));
+  await wait(200);
+  check("double click isolates that layer",
+    visible("pass") > 0 && visible("peak") === 0 && visible("lake") === 0);
+
+  legendBtn("pass").dispatchEvent(new MouseEvent("dblclick", {bubbles:true}));
+  await wait(200);
+  check("double click again restores everything",
+    visible("peak") === basePeaks && visible("lake") === baseLakes);
+
+  check("Show all button is absent when nothing is hidden", !doc.getElementById("lgall"));
+
   out.innerHTML += "\n" + pass + " passed, " + fail + " failed";
   document.title = fail ? "FAIL (" + fail + ")" : "PASS";
 });
