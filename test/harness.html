@@ -1,0 +1,88 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Devbhoomi Atlas — interaction harness</title>
+<style>
+ body{font:13px/1.5 system-ui;margin:0;padding:16px;background:#111614;color:#E9ECE5}
+ #out{font-family:ui-monospace,monospace;white-space:pre-wrap}
+ .pass{color:#69B487} .fail{color:#E08872;font-weight:700}
+ iframe{width:1000px;height:760px;border:1px solid #333;background:#fff}
+</style>
+<h1>Interaction harness</h1>
+<div id="out">running…</div>
+<iframe id="app" src="../index.html"></iframe>
+<script>
+const out = document.getElementById("out");
+let pass = 0, fail = 0;
+function check(name, cond, detail){
+  const ok = !!cond;
+  ok ? pass++ : fail++;
+  out.innerHTML += '<div class="' + (ok ? "pass" : "fail") + '">' +
+    (ok ? "PASS  " : "FAIL  ") + name + (ok || !detail ? "" : "  — " + detail) + "</div>";
+}
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+/* Synthetic pointer sequences. The real bug this guards against: taking
+   pointer capture on pointerdown retargets the click to the <svg>, so
+   every marker click is silently swallowed. */
+function pointerAt(el, type, x, y){
+  el.dispatchEvent(new PointerEvent(type, {
+    clientX:x, clientY:y, pointerId:1, button:0, bubbles:true, cancelable:true
+  }));
+}
+function clickEl(win, el){
+  const r = el.getBoundingClientRect();
+  const x = r.left + r.width/2, y = r.top + r.height/2;
+  pointerAt(el, "pointerdown", x, y);
+  pointerAt(el, "pointerup", x, y);
+}
+function dragEl(win, el){
+  const r = el.getBoundingClientRect();
+  const x = r.left + r.width/2, y = r.top + r.height/2;
+  pointerAt(el, "pointerdown", x, y);
+  pointerAt(el, "pointermove", x + 40, y + 40);
+  pointerAt(el, "pointerup", x + 40, y + 40);
+}
+
+window.addEventListener("load", async () => {
+  out.innerHTML = "";
+  const f = document.getElementById("app");
+  const win = f.contentWindow, doc = f.contentDocument;
+  await wait(700);
+
+  /* app.js declares `const S`, which is script-scoped and therefore NOT a
+     property of window — `win.S` is undefined and every assertion against
+     it would silently pass. Indirect eval runs in the frame's global scope,
+     where top-level const IS visible. Function declarations (render,
+     openRec, runSearch) do land on window, so those are called directly. */
+  const ev = src => win.eval(src);
+
+  ev('S.view="map"; S.mapMode="geo"; render();');
+  await wait(300);
+
+  for(const kind of ["peak","pass","lake","glacier"]){
+    const mk = doc.querySelector('.mk[data-k="' + kind + '"]');
+    check(kind + " marker exists", mk);
+    if(!mk) continue;
+    const expect = mk.dataset.rec;
+    check(kind + " marker is wired to its own record",
+      expect && /^(pk|ps|lk|gl)-/.test(expect), "data-rec=" + expect);
+    doc.getElementById("panel").hidden = true;
+    clickEl(win, mk);
+    await wait(120);
+    check(kind + " click opens the panel", !doc.getElementById("panel").hidden);
+    check(kind + " click opens the right record", ev("S.sel") === expect,
+      "got " + ev("S.sel") + ", wanted " + expect);
+  }
+
+  const mk = doc.querySelector(".mk");
+  doc.getElementById("panel").hidden = true;
+  ev("S.sel = null");
+  dragEl(win, mk);
+  await wait(120);
+  check("a drag across a marker does NOT open the panel",
+    doc.getElementById("panel").hidden);
+
+  out.innerHTML += "\n" + pass + " passed, " + fail + " failed";
+  document.title = fail ? "FAIL (" + fail + ")" : "PASS";
+});
+</script>

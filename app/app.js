@@ -1,5 +1,5 @@
 /* ============================================================
-   Devbhoomi Atlas — application
+   Parikrama Path — application
    Every view is a projection of the single D object in /data.
    ============================================================ */
 "use strict";
@@ -13,13 +13,22 @@ const KINDS = {
   battle:  {lb:"Battle / Treaty", pl:"Battles & treaties",c:"var(--e7)", view:"battles"},
   person:  {lb:"Person",          pl:"People",           c:"var(--e9)",  view:"people"},
   topic:   {lb:"Topic",           pl:"Topic notes",      c:"var(--accent)",view:"topics"},
-  river:   {lb:"River",           pl:"Rivers",           c:"var(--water)", view:"map"}
+  river:   {lb:"River",           pl:"Rivers",           c:"var(--water)", view:"map"},
+  peak:    {lb:"Peak",            pl:"Peaks",            c:"var(--ink-2)", view:"map"},
+  pass:    {lb:"Pass",            pl:"Passes",           c:"var(--e2)",    view:"map"},
+  lake:    {lb:"Lake",            pl:"Lakes & reservoirs",c:"var(--indigo)",view:"map"},
+  glacier: {lb:"Glacier",         pl:"Glaciers",         c:"var(--e3)",    view:"map"}
 };
-const KIND_ORDER = ["district","river","state","person","event","battle","topic"];
+const KIND_ORDER = ["district","river","peak","pass","lake","glacier",
+                    "state","person","event","battle","topic"];
 const IDX = new Map();
 [[D.districts,"district"],[D.states,"state"],[D.events,"event"],
  [D.battles,"battle"],[D.people,"person"],[D.topics,"topic"],[D.rivers,"river"]]
   .forEach(([arr,k]) => arr.forEach(r => IDX.set(r.id, {r, kind:k})));
+/* Features carry their own kind on the record, so they cannot use the
+   fixed array-to-kind mapping above. */
+(D.features || []).forEach(r => IDX.set(r.id, {r, kind:r.k}));
+const PLACE_REC = new Map((D.features || []).map(r => [r.pid, r.id]));
 
 const nameOf = o => o.r.name || o.r.t || o.r.title;
 const eraOf  = o => o.r.era ? ERA[o.r.era] : null;
@@ -313,6 +322,7 @@ function goTo(id){
     if(o.kind === "event" && o.r.era) S.era = o.r.era;
     if(o.kind === "state") S.mapMode = "states";
     if(o.kind === "district") S.mapMode = "districts";
+    if(["peak","pass","lake","glacier"].includes(o.kind)) S.mapMode = "geo";
     setView(v, true);
   }
   openRec(id);
@@ -362,6 +372,7 @@ const PLACE_LINK = {
 };
 function placeTarget(pid){
   const p = MAP.places[pid]; if(!p) return null;
+  if(PLACE_REC.has(pid)) return PLACE_REC.get(pid);
   if(p.k === "state"){ const s = D.states.find(x => x.seat === pid); if(s) return s.id; }
   const b = D.battles.find(x => x.place === pid); if(b) return b.id;
   if(PLACE_LINK[pid]) return PLACE_LINK[pid];
@@ -398,7 +409,7 @@ function viewMap(){
     rPaths+'<g class="rlabels">'+rLabels+'</g></g>';
   const marks = Object.entries(MAP.places)
     .filter(([,p]) => mode.kinds.includes(p.k))
-    .map(([id,p]) => '<g class="mk" data-p="'+id+'" data-rec="'+(placeTarget(id)||"")+'" '+
+    .map(([id,p]) => '<g class="mk" data-p="'+id+'" data-rec="'+(placeTarget(id)||"")+'" data-k="'+p.k+'" '+
       'transform="translate('+p.x+','+p.y+')">'+
       '<circle r="5.5" fill="'+MK_COLOR[p.k]+'"/><text y="-10">'+p.n+'</text></g>').join('');
   const riverKey = S.rivers
@@ -1011,7 +1022,7 @@ function surpriseMe(){
 async function shareCurrent(){
   if(!S.sel) return;
   const url = location.href;
-  const title = nameOf(IDX.get(S.sel))+" — Devbhoomi Atlas";
+  const title = nameOf(IDX.get(S.sel))+" — Parikrama Path";
   try{
     if(navigator.share && matchMedia("(max-width:1000px)").matches){
       await navigator.share({title, url}); return;
