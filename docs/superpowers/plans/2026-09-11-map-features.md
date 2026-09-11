@@ -1799,7 +1799,7 @@ git commit -m "feat: index feature heights and attributes for search"
 
 **Interfaces:**
 - Consumes: `D.features`, `D.rivers`.
-- Produces: additional `{sec:"Geography", q, a, id}` cards — 124 from the 62 features, plus cards for each of the 29 river records (a record missing an optional field simply yields fewer cards).
+- Produces: additional `{sec:"Geography", q, a, id}` cards — 112 from the 62 features (two each for passes, peaks and lakes; one combined card per glacier), plus cards for each of the 29 river records (a record missing an optional field simply yields fewer cards).
 
 - [ ] **Step 1: Write the failing test**
 
