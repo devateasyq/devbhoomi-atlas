@@ -863,7 +863,7 @@ function viewHome(){
   ];
   const prog  = store.get("quiz",{});
   const done  = Object.keys(prog).length;
-  const right = Object.values(prog).filter(Boolean).length;
+  const right = Object.values(prog).filter(v => answerValue(v) === 1).length;
   const seen  = (S.seen || []).length;
 
   const cover = COVERS[Math.floor(Math.random()*COVERS.length)];
@@ -1041,8 +1041,8 @@ function papersUI(){
   const pool = pyPool();
   const prog = store.get("pyq",{});
   const key = q => q.y+"|"+q.q.slice(0,60);
-  const attempted = pool.filter(q => prog[key(q)] !== undefined).length;
-  const correct = pool.filter(q => prog[key(q)] === 1).length;
+  const attempted = pool.filter(q => answerValue(prog[key(q)]) !== undefined).length;
+  const correct = pool.filter(q => answerValue(prog[key(q)]) === 1).length;
   const pct = attempted ? Math.round(correct/attempted*100) : 0;
   if(!pool.length) return '<div class="qcard">No questions match this filter.</div>';
   if(S.pyIdx >= pool.length) S.pyIdx = 0;
@@ -1079,8 +1079,8 @@ function pyAnswer(i){
   const q = pyPool()[S.pyIdx]; if(!q) return;
   S.pyAnswered = i;
   const prog = store.get("pyq",{});
-  prog[q.y+"|"+q.q.slice(0,60)] = i === q.a ? 1 : 0;
-  store.set("pyq", prog); render();
+  store.set("pyq", recordAnswer(prog, q.y+"|"+q.q.slice(0,60), i === q.a));
+  render();
 }
 function pyStep(d){
   const pool = pyPool();
@@ -1090,11 +1090,11 @@ function pyStep(d){
 }
 function quizUI(){
   const pool = quizPool(), prog = store.get("quiz",{});
-  const attempted = pool.filter(q => prog[q.q] !== undefined).length;
-  const correct = pool.filter(q => prog[q.q] === 1).length;
+  const attempted = pool.filter(q => answerValue(prog[q.q]) !== undefined).length;
+  const correct = pool.filter(q => answerValue(prog[q.q]) === 1).length;
   const pct = attempted ? Math.round(correct/attempted*100) : 0;
   const weak = {};
-  pool.forEach(q => { if(prog[q.q] === 0) weak[q.t] = (weak[q.t]||0)+1; });
+  pool.forEach(q => { if(answerValue(prog[q.q]) === 0) weak[q.t] = (weak[q.t]||0)+1; });
   const weakList = Object.entries(weak).sort((a,b) => b[1]-a[1]).slice(0,6);
   if(S.qIdx >= pool.length) S.qIdx = 0;
   const q = pool[S.qIdx];
@@ -1131,7 +1131,7 @@ function answer(i){
   if(S.qAnswered !== null) return;
   const q = quizPool()[S.qIdx]; if(!q) return;
   S.qAnswered = i;
-  const prog = store.get("quiz",{}); prog[q.q] = i === q.a ? 1 : 0; store.set("quiz", prog);
+  const prog = store.get("quiz",{}); store.set("quiz", recordAnswer(prog, q.q, i === q.a));
   render();
 }
 function stepQ(d){

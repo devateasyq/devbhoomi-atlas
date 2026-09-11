@@ -100,3 +100,42 @@ test("mergeState never syncs device preferences", () => {
   for(const k of ["theme", "mapoff", "legendopen"])
     assert.ok(!(k in m), k + " is a device preference and must not be merged");
 });
+
+/* normaliseAnswers must only accept a legacy value that is exactly 0 or 1 —
+   NaN and negative numbers are not legitimate stored answers and must be
+   dropped as corrupt rather than silently coerced. */
+test("normaliseAnswers drops corrupt legacy numbers instead of coercing them", () => {
+  const out = sync.normaliseAnswers({"Q1": NaN, "Q2": -1, "Q3": 2, "Q4": 1});
+  assert.ok(!("Q1" in out), "NaN must be dropped, not coerced to 0");
+  assert.ok(!("Q2" in out), "-1 must be dropped, not coerced to 1");
+  assert.ok(!("Q3" in out), "2 must be dropped");
+  assert.deepEqual(out["Q4"], {v: 1, t: 0});
+});
+
+/* The app must read both shapes through one accessor, or old progress
+   silently reads as "unattempted" and someone's history disappears. */
+test("answerValue reads both the legacy and the timestamped shape", () => {
+  assert.equal(sync.answerValue(1), 1);
+  assert.equal(sync.answerValue(0), 0);
+  assert.equal(sync.answerValue({v: 1, t: 99}), 1);
+  assert.equal(sync.answerValue({v: 0, t: 99}), 0);
+});
+
+test("answerValue returns undefined for an unattempted question", () => {
+  assert.equal(sync.answerValue(undefined), undefined);
+  assert.equal(sync.answerValue(null), undefined);
+  assert.equal(sync.answerValue("nonsense"), undefined);
+});
+
+test("recordAnswer stamps the time it was answered", () => {
+  const before = Date.now();
+  const out = sync.recordAnswer({}, "Q1", 1);
+  assert.equal(out["Q1"].v, 1);
+  assert.ok(out["Q1"].t >= before, "answer was not stamped with a real time");
+});
+
+test("recordAnswer does not mutate the map it is given", () => {
+  const prog = {};
+  sync.recordAnswer(prog, "Q1", 1);
+  assert.deepEqual(prog, {}, "recordAnswer mutated its input");
+});

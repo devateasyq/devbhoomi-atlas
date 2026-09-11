@@ -1,9 +1,9 @@
 /* Parikrama Path — offline cache.
    Bump CACHE when any asset changes; old caches are purged on activate. */
-const CACHE = "parikrama-v29";
+const CACHE = "parikrama-v30";
 const ASSETS = [
   "./", "index.html",
-  "app/tokens.css", "app/layout.css", "app/components.css", "app/app.js", "app/trends.js", "app/logo.js", "app/mapkit.js", "app/credits.js", "app/rounds.js",
+  "app/tokens.css", "app/layout.css", "app/components.css", "app/app.js", "app/trends.js", "app/logo.js", "app/mapkit.js", "app/credits.js", "app/rounds.js", "app/sync.js",
   "data/geo.js", "data/places.js", "data/history.js", "data/topics.js", "data/rivers.js", "data/features.js", "data/quiz.js", "data/pyq.js",
   "icon.svg", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png", "manifest.webmanifest",
   "img/chenab.webp", "img/d-lahaul.webp", "img/district.webp", "img/event.webp", "img/glacier.webp", "img/lake.webp", "img/lk-gobindsagar.webp", "img/lk-khajjiar.webp", "img/lk-manimahesh.webp", "img/lk-nako.webp", "img/lk-prashar.webp", "img/lk-renuka.webp", "img/lk-rewalsar.webp", "img/lk-surajtal.webp", "img/pass.webp", "img/peak.webp", "img/pk-chaudhar.webp", "img/pk-hanumantibba.webp", "img/pk-manimaheshkailash.webp", "img/pk-reopurgyil.webp", "img/ps-baralacha.webp", "img/ps-hamta.webp", "img/ps-jalori.webp", "img/ps-rohtang.webp", "img/ps-sach.webp", "img/ps-shipkila.webp", "img/ravi.webp", "img/river.webp", "img/s-sirmaur.webp", "img/state.webp", "img/sutlej.webp", "img/t-monasteries.webp", "img/topic.webp", "img/yamuna.webp"

@@ -15,9 +15,9 @@ function normaliseAnswers(obj){
   for(var k in obj){
     if(!Object.prototype.hasOwnProperty.call(obj, k)) continue;
     var v = obj[k];
-    if(typeof v === "number") out[k] = {v: v ? 1 : 0, t: 0};
-    else if(v && typeof v === "object" && typeof v.v === "number")
-      out[k] = {v: v.v ? 1 : 0, t: typeof v.t === "number" ? v.t : 0};
+    if(typeof v === "number" && (v === 0 || v === 1)) out[k] = {v: v, t: 0};
+    else if(v && typeof v === "object" && (v.v === 0 || v.v === 1))
+      out[k] = {v: v.v, t: typeof v.t === "number" ? v.t : 0};
     /* anything else is corrupt and is dropped rather than propagated */
   }
   return out;
@@ -57,7 +57,22 @@ function mergeState(local, remote){
   };
 }
 
+/* One reader for both shapes. Every call site must go through this, or old
+   saved progress reads as unattempted and a user's history vanishes. */
+function answerValue(x){
+  if(typeof x === "number") return x ? 1 : 0;
+  if(x && typeof x === "object" && typeof x.v === "number") return x.v ? 1 : 0;
+  return undefined;
+}
+function recordAnswer(prog, key, correct){
+  var out = {}, k;
+  for(k in prog) if(Object.prototype.hasOwnProperty.call(prog, k)) out[k] = prog[k];
+  out[key] = {v: correct ? 1 : 0, t: Date.now()};
+  return out;
+}
+
 if(typeof module !== "undefined" && module.exports){
   module.exports = {normaliseAnswers: normaliseAnswers, mergeAnswers: mergeAnswers,
-                    mergeSeen: mergeSeen, mergeStreak: mergeStreak, mergeState: mergeState};
+                    mergeSeen: mergeSeen, mergeStreak: mergeStreak, mergeState: mergeState,
+                    answerValue: answerValue, recordAnswer: recordAnswer};
 }
