@@ -207,6 +207,9 @@ function bumpStreak(st, kind, id, today){
   } else if(kind === "facts" || kind === "quiz" || kind === "pyq"){
     s[kind] += 1;
   }
+  /* Any other kind — e.g. a typo like noteActivity("fact", id) — falls
+     through both branches above and counts nothing. That is deliberate,
+     not an oversight: this comment is the only record of it. */
   if(s.last === day) return s;            /* already counted today */
   if(!qualified(s)) return s;
 

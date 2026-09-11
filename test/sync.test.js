@@ -74,13 +74,25 @@ test("mergeSeen never mutates its inputs", () => {
 });
 
 /* ---------- the whole state ---------- */
-test("mergeState applies all three rules together", () => {
-  const local  = {seen: ["f1"], quiz: {"Q1": {v: 1, t: 10}}, pyq: {}};
-  const remote = {seen: ["f2"], quiz: {"Q1": {v: 0, t: 99}}, pyq: {"P1": {v: 1, t: 5}}};
+/* SYNC_KEYS now carries five entries (seen, quiz, pyq, notes, streak), not
+   the three this fixture originally covered — the fixture is extended so
+   "everything together" actually exercises everything (review cheap-extras
+   list, test/sync.test.js:77). */
+test("mergeState applies all five rules together", () => {
+  const local  = {seen: ["f1"], quiz: {"Q1": {v: 1, t: 10}}, pyq: {},
+                  notes: {"d-kangra": {text: "older note", t: 10}},
+                  streak: {n: 2, best: 2, last: "2026-01-05", grace: 1, day: "2026-01-05",
+                           facts: 20, quiz: 0, pyq: 0, recs: []}};
+  const remote = {seen: ["f2"], quiz: {"Q1": {v: 0, t: 99}}, pyq: {"P1": {v: 1, t: 5}},
+                  notes: {"d-kangra": {text: "newer note", t: 900}},
+                  streak: {n: 1, best: 3, last: "2026-01-04", grace: 0, day: "2026-01-04",
+                           facts: 5, quiz: 1, pyq: 0, recs: []}};
   const m = sync.mergeState(local, remote);
   assert.deepEqual(m.seen, ["f1", "f2"]);
   assert.equal(m.quiz["Q1"].v, 0);
   assert.equal(m.pyq["P1"].v, 1);
+  assert.equal(m.notes["d-kangra"].text, "newer note", "the more recent note should win");
+  assert.equal(m.streak.best, 3, "the higher best should win");
 });
 
 test("mergeState handles a brand-new account with nothing on the server", () => {

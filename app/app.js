@@ -166,13 +166,32 @@ function pullAndMerge(user){
    older answer clobber a newer one from another device. Read the remote
    document inside a transaction and run it through the same merge rules
    the pull uses, so a push can only add progress, never erase it. */
+/* Real headroom under Firestore's 1 MB document limit is thinner than the
+   1,000-character note cap alone suggests: 270 records at the cap is
+   270 KB in ASCII but roughly 810 KB in Devanagari, plus ~60 KB of
+   progress. Warn before the document is ever rejected outright, rather
+   than relying only on the generic push-failed toast for the rare student
+   who gets there. Toasted at most once per return to over-size, not on
+   every 4-second debounce tick while it stays that way. */
+let _oversizeWarned = false;
 function pushSnapshot(user, local){
   return loadFirebase().then(function(fb){
     const ref = userDoc(fb, user);
     return fb.firestore().runTransaction(function(tx){
       return tx.get(ref).then(function(snap){
         const remote = snap.exists ? (snap.data() || {}) : {};
-        tx.set(ref, mergeState(local, remote));
+        const merged = mergeState(local, remote);
+        const bytes = new TextEncoder().encode(JSON.stringify(merged)).length;
+        if(bytes > 800000){
+          console.error("[parikrama] push skipped: payload too large (" + bytes + " bytes)");
+          if(!_oversizeWarned){
+            _oversizeWarned = true;
+            toast("Too much to sync — shorten or remove a note");
+          }
+          return;
+        }
+        _oversizeWarned = false;
+        tx.set(ref, merged);
       });
     });
   });
@@ -240,8 +259,17 @@ function mountAccount(){
 
   /* The button always opens the profile now, signed in or out — sign-out
      lives on the profile's own button (mountProfile), and the dialog opens
-     from the profile's "Sign in to sync" or from #acctdlg directly. */
-  btn.addEventListener("click", () => { go("profile"); });
+     from the profile's "Sign in to sync" or from #acctdlg directly.
+     A record panel left open here stays open underneath — S.sel survives
+     the view change, so writeHash appends it to the profile's own hash
+     (#/profile/d-kangra) and, on a phone, the panel is a bottom sheet that
+     covers three-quarters of the profile the account button is the only
+     door to. Close it first, the same way a direct hash navigation to
+     #/profile already does in applyHash. */
+  btn.addEventListener("click", () => {
+    if(S.sel){ flushNote(); S.sel = null; $("#panel").hidden = true; }
+    go("profile");
+  });
   document.getElementById("acctclose").addEventListener("click", shut);
   dlg.addEventListener("click", e => { if(e.target === dlg) shut(); });
   document.getElementById("acctgoogle").addEventListener("click", () => {
@@ -1663,6 +1691,10 @@ function deleteAccount(){
     "until they sign out.\n\nThis cannot be undone. Type DELETE to confirm.");
   if(typed !== "DELETE"){ toast("Not deleted"); return; }
 
+  /* Same reasoning as the reset handler: a pending debounced push firing
+     after wipeLocal() below would push an empty local snapshot back up to
+     a uid that is about to stop existing (or already has). */
+  clearTimeout(_pushTimer); _pushTimer = null; _pushUser = null;
   loadFirebase().then(fb =>
     userDoc(fb, u).delete()
       .then(() => u.delete())
