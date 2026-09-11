@@ -69,9 +69,24 @@ const store = {
   del(k){ try{ localStorage.removeItem("hpatlas:"+k); }catch(e){} }
 };
 let toastTimer = null;
+const _toastQ = [];
 function toast(msg){
-  const t = $("#toast"); t.textContent = msg; t.classList.add("on");
-  clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.classList.remove("on"), 2200);
+  const t = $("#toast");
+  /* Two things can land in one action — a note flushed and a streak
+     advanced in the same openRec. Clobbering would drop the first, and
+     "Note saved" is the only signal that writing the user may have spent
+     minutes on was actually persisted. Queue rather than overwrite. An
+     identical message still just resets the timer, as it always did. */
+  if(t.classList.contains("on") && t.textContent !== msg){
+    if(_toastQ.indexOf(msg) < 0) _toastQ.push(msg);
+    return;
+  }
+  t.textContent = msg; t.classList.add("on");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){
+    t.classList.remove("on");
+    if(_toastQ.length) setTimeout(function(){ toast(_toastQ.shift()); }, 180);
+  }, 2200);
 }
 
 /* The control only appears when Firebase is configured: with no project set
@@ -164,7 +179,12 @@ function noteActivity(kind, id){
   const before = store.get("streak", emptyStreak());
   const after = bumpStreak(before, kind, id, dayKey());
   store.set("streak", after);
-  if(after.n !== before.n && after.n > 0) toast("Day " + after.n + " — streak going");
+  /* Fires exactly once per newly qualified day. Comparing the run count
+     instead would go silent whenever the new run happens to land on the
+     same number as the old one — which is precisely what happens when a
+     broken 1-day streak restarts at 1, so the day a user comes back would
+     pass without a word. The qualifying date changes exactly once a day. */
+  if(after.last !== before.last && after.n > 0) toast("Day " + after.n + " — streak going");
   if(authUser()) pushStateSoon();
   return after;
 }
