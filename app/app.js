@@ -237,6 +237,23 @@ const FEATURE_FACTS = {
             ["Retreat","retreat"]]
 };
 
+/* The forward direction lives in each feature's own `rel`; the reverse
+   direction is generated here so the two can never disagree. */
+const TOPIC_FEATURES = {"t-peaks":["peak","glacier"], "t-passes":["pass"], "t-lakes":["lake"]};
+function featureChips(kinds){
+  return kinds.map(k => {
+    const list = (D.features || []).filter(f => f.k === k);
+    if(!list.length) return "";
+    return '<div class="blk"><h5>All '+list.length+' '+KINDS[k].pl.toLowerCase()+'</h5><div class="rel">'+
+      list.map(f => '<button class="relchip" type="button" data-go="'+f.id+'">'+
+        '<i class="k" style="background:'+KINDS[k].c+'"></i>'+f.name+'</button>').join('')+
+      '</div></div>';
+  }).join('');
+}
+function featuresIn(did){
+  return (D.features || []).filter(f => (f.districts || []).includes(did));
+}
+
 /* ---------- detail panel ---------- */
 function openRec(id, headerNote, fromHash){
   const o = IDX.get(id); if(!o) return;
@@ -261,6 +278,11 @@ function openRec(id, headerNote, fromHash){
         '<i class="k" style="background:'+KINDS.state.c+'"></i>'+IDX.get(x).r.name+'</button>').join('')+'</div></div>';
     }
     body += renderBlocks(r.blocks);
+    const fs = featuresIn(id);
+    if(fs.length) body += '<div class="blk"><h5>Features in this district — '+fs.length+'</h5><div class="rel">'+
+      fs.map(f => '<button class="relchip" type="button" data-go="'+f.id+'">'+
+        '<i class="k" style="background:'+KINDS[f.k].c+'"></i>'+f.name+'</button>').join('')+
+      '</div></div>';
   }
   else if(k === "state"){
     body += factsList([
@@ -326,6 +348,7 @@ function openRec(id, headerNote, fromHash){
   else if(k === "topic"){
     body += factsList([["Section", r.sec], ["Covers", r.kw]]);
     body += renderBlocks(r.blocks);
+    if(TOPIC_FEATURES[id]) body += featureChips(TOPIC_FEATURES[id]);
   }
   body += relBlock(rels(r));
 

@@ -137,6 +137,19 @@ window.addEventListener("load", async () => {
   check("glacier panel names the river it feeds",
     /Chenab|Chandra/.test(doc.getElementById("pbody").textContent));
 
+  win.openRec("t-passes"); await wait(150);
+  check("t-passes lists all 18 passes",
+    doc.querySelectorAll('#pbody .relchip[data-go^="ps-"]').length === 18);
+
+  win.openRec("t-peaks"); await wait(150);
+  check("t-peaks lists peaks and glaciers",
+    doc.querySelectorAll('#pbody .relchip[data-go^="pk-"]').length === 12 &&
+    doc.querySelectorAll('#pbody .relchip[data-go^="gl-"]').length === 12);
+
+  win.openRec("d-kinnaur"); await wait(150);
+  check("a district lists its own features",
+    doc.querySelectorAll('#pbody .relchip[data-go^="pk-"], #pbody .relchip[data-go^="ps-"]').length > 0);
+
   out.innerHTML += "\n" + pass + " passed, " + fail + " failed";
   document.title = fail ? "FAIL (" + fail + ")" : "PASS";
 });
