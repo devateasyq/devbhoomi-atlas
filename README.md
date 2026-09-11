@@ -121,6 +121,36 @@ Sansar Chand, the Gurkha wars and the Praja Mandal leaders never surface in the 
 Adding hooks to those records is the highest-value content work available; it needs no
 code change.
 
+## Notes, streak and your profile
+
+- **One note per record.** Every record's panel carries a plain-text note at the foot,
+  capped at 1,000 characters with a live counter that stops accepting input at the cap
+  rather than silently truncating on save. The cap exists because notes share the same
+  Firestore document as the rest of your synced progress, and that document has a hard
+  1 MB limit — an unbounded note is the one field a person could grow large enough to
+  hit it, and doing so would reject the *whole* write, silently breaking quiz and
+  past-paper sync along with the note. There is no public/private toggle: a note is
+  always just yours.
+- **A daily streak, counted generously.** A day qualifies the moment you clear *any one*
+  of four thresholds — 20 facts scrolled in Rounds, 5 quiz answers, 5 past-paper answers,
+  or opening 5 distinct records — so a bus-ride Rounds session and a sit-down past paper
+  both count as revision. Days are your device's local calendar days, not a rolling
+  24 hours and not UTC. Missing a single day costs nothing: one grace day is banked at
+  all times and absorbs a one-day gap without breaking the run, and it recharges after
+  every 7 consecutive qualifying days. Miss two days in a row with no grace in hand and
+  the run restarts at 1 — but your best-ever run is never reduced. Across two signed-in
+  devices the streak merges generously: every field takes whichever side is ahead rather
+  than whichever synced most recently.
+- **Your profile, at `#/profile`.** Reached from the account button in the header —
+  it is not in the nav — the profile shows who you are signed in as (or that you are
+  not), the current and best streak, today's progress against the four thresholds above,
+  quiz accuracy, past papers attempted, and an index of every note you have written, each
+  linking back to its record.
+- **Export and delete.** The profile can export everything the app holds about you —
+  notes, streak and all synced progress — as one JSON file, and, for a signed-in account,
+  delete the account and its stored data outright. Both are described in
+  [Accounts and sync](#accounts-and-sync-optional) below.
+
 ## Editing the content
 
 Everything is one object. A record looks like this:
@@ -218,44 +248,59 @@ Signing in is entirely optional. **The app is fully usable, with every view and 
 feature, from the moment you open it — nothing is gated behind an account.** Sign-in
 exists for one reason: to carry your progress between devices.
 
-- **Nothing works until the Firebase project is configured.** `app/firebase-config.js`
-  ships with four empty strings (`apiKey`, `authDomain`, `projectId`, `appId`). Left
-  empty, `FB_READY` evaluates to `false`, the sign-in control never renders, and the app
-  behaves exactly as it always has — this is the default, working state. To turn sign-in
-  on, create a Firebase project, enable the Google and Email link providers, and paste
-  the four web-app keys from Project settings → Your apps → Web app into that file.
+- **Sign-in itself needs the Firebase project configured; the app does not.**
+  `app/firebase-config.js` ships with four empty strings (`apiKey`, `authDomain`,
+  `projectId`, `appId`). Left empty, `FB_READY` evaluates to `false` and the actual
+  sign-in affordances — the Google and email-link buttons, and the profile's "Sign in
+  to sync" — never render, so nothing offers a sign-in that cannot work. The header
+  account button itself is always visible regardless: it opens your profile (see
+  [Notes, streak and your profile](#notes-streak-and-your-profile)) whether or not
+  Firebase is configured, since the streak and notes it shows are local and useful
+  either way. To turn sign-in on, create a Firebase project, enable the Google and
+  Email link providers, and paste the four web-app keys from Project settings → Your
+  apps → Web app into that file.
 - **`firestore.rules` must be published before any account is created.** Firebase
   Database → Rules → paste the contents of `firestore.rules` → Publish. Firebase's own
   default rules let any signed-in user read every document in the project, including
   other people's progress — publishing the rules in this repo, which restrict each
   document at `users/{uid}` to that same `uid`, is not optional. Nothing else in the
   database is reachable from a client at all.
-- **What syncs.** Only three keys, all progress, none of it identifying beyond the
-  account itself: `seen` (the Rounds spaced-repetition set), `quiz` and `pyq` (per-question
-  answers with a timestamp, so the merge on sign-in can take the most recent answer and
-  the higher streak instead of guessing). Merging is a union — signing in on a second
-  device adds that device's progress to the account rather than replacing either side.
+- **What syncs.** Five keys, all progress, none of it identifying beyond the account
+  itself: `seen` (the Rounds spaced-repetition set), `quiz` and `pyq` (per-question
+  answers with a timestamp, so the merge on sign-in can take the most recent answer),
+  `notes` (your per-record notes, most-recent-wins per note), and `streak` (the daily
+  streak, merged so every field takes whichever device is ahead). Merging is generous
+  throughout — signing in on a second device adds that device's progress to the account
+  rather than replacing either side, and no field is ever reduced by a sync.
 - **What never syncs.** Theme, the map legend's hidden-layer set, and any other device
   preference stay in `localStorage` on that device only. They are not sent anywhere and
   are not part of the merge.
+- **Export and delete.** The profile can export everything above as one JSON file at
+  any time, signed in or not. A signed-in account can also be deleted outright from the
+  profile, behind a typed confirmation — this removes the Firestore document and the
+  Firebase Auth user, so the account and everything synced to it are gone for good. It
+  recovers on its own from Firebase's `auth/requires-recent-login` by asking you to
+  sign in again before retrying, rather than failing with a cryptic error.
 - **The offline, single-file build (`hp-revision.html`) is guest-only.** It runs from
   `file://`, where Firebase's popup and redirect sign-in flows do not work, so the build
-  forces `FB_READY` to `false` and the sign-in control never appears in it, regardless of
-  whether `app/firebase-config.js` has been filled in. Use the hosted copy (or a local
-  static server) to sign in; the downloaded file is for offline guest revision.
+  forces `FB_READY` to `false`, meaning none of the sign-in affordances — including the
+  profile's sign-in card — ever appear in it, regardless of whether
+  `app/firebase-config.js` has been filled in. The profile itself, the streak and notes
+  all still work there, entirely locally. Use the hosted copy (or a local static server)
+  to sign in; the downloaded file is for offline guest revision.
 
 ### Privacy
 
 If you sign in, Firebase Auth holds your **email address** and **display name** (from
 Google, or from the email link you used) separately, to know it's you. The Firestore
-document scoped to your account stores only the three progress keys above — `seen`,
-`quiz` and `pyq` — and nothing else. No analytics, no tracking, no third-party sharing.
+document scoped to your account stores only the five progress keys above — `seen`,
+`quiz`, `pyq`, `notes` and `streak` — and nothing else. No analytics, no tracking, no
+third-party sharing.
 
-**Account deletion is not yet built.** There is no in-app control to delete your account
-or its stored data, and none is planned in this repository yet. This is a real gap, not
-an oversight: until it exists, removing your data means asking whoever administers the
-Firebase project to delete your document and your Firebase Auth user by hand. Signing in
-at all should be treated as opting into that limitation for now.
+**You can leave at any time.** The profile's export gives you everything the app holds
+about you as one file, and its delete control removes your account, its Firestore
+document and its Firebase Auth user outright. There is no need to ask anyone to do it
+by hand.
 
 ## Licence
 
