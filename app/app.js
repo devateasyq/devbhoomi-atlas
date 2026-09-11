@@ -1600,8 +1600,9 @@ function deleteAccount(){
   const u = authUser();
   if(!u) return;
   const typed = window.prompt(
-    "This deletes your account and everything in it, on every device. " +
-    "It cannot be undone.\n\nType DELETE to confirm.");
+    "This deletes your account, everything stored with it, and the copy on " +
+    "this device. Other devices you are signed in on keep their local copy " +
+    "until they sign out.\n\nThis cannot be undone. Type DELETE to confirm.");
   if(typed !== "DELETE"){ toast("Not deleted"); return; }
 
   loadFirebase().then(fb =>

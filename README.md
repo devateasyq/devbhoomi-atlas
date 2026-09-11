@@ -140,9 +140,9 @@ code change.
   of four thresholds — 20 facts scrolled in Rounds, 5 quiz answers, 5 past-paper answers,
   or opening 5 distinct records — so a bus-ride Rounds session and a sit-down past paper
   both count as revision. Days are your device's local calendar days, not a rolling
-  24 hours and not UTC. Missing a single day costs nothing: one grace day is banked at
-  all times and absorbs a one-day gap without breaking the run, and it recharges after
-  every 7 consecutive qualifying days. Miss two days in a row with no grace in hand and
+  24 hours and not UTC. You start with one grace day, which absorbs a
+  one-day gap without breaking the run and then has to be earned back — it recharges on
+  every 7th consecutive qualifying day. Miss two days in a row with no grace in hand and
   the run restarts at 1 — but your best-ever run is never reduced. Across two signed-in
   devices the streak merges generously: every field takes whichever side is ahead rather
   than whichever synced most recently.
