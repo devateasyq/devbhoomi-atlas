@@ -33,6 +33,31 @@ var GLYPHS = {
 };
 function mkGlyph(shape){ return GLYPHS[shape] || GLYPHS.circle; }
 
+/* Greedy de-collision. Labels sit above the marker, offset by LABEL_DY,
+   matching the `y="-10"` the marker <text> already uses. Highest
+   priority wins the space; everything else that collides is simply not
+   drawn — the marker itself stays visible and still shows a tooltip. */
+var LABEL_DY = 9;
+function placeLabels(items){
+  var placed = [], keep = new Set();
+  var sorted = items.slice().sort(function(a, b){ return b.pri - a.pri; });
+  for(var i = 0; i < sorted.length; i++){
+    var it = sorted[i];
+    var box = {x1: it.x - it.w/2, x2: it.x + it.w/2,
+               y1: it.y - LABEL_DY - it.h, y2: it.y - LABEL_DY};
+    var clash = false;
+    for(var j = 0; j < placed.length; j++){
+      var p = placed[j];
+      if(!(box.x2 <= p.x1 || box.x1 >= p.x2 || box.y2 <= p.y1 || box.y1 >= p.y2)){
+        clash = true; break;
+      }
+    }
+    if(clash) continue;
+    placed.push(box); keep.add(it.id);
+  }
+  return keep;
+}
+
 if(typeof module !== "undefined" && module.exports){
-  module.exports = {LAYERS: LAYERS, LAYER_BY_KIND: LAYER_BY_KIND, mkGlyph: mkGlyph};
+  module.exports = {LAYERS: LAYERS, LAYER_BY_KIND: LAYER_BY_KIND, mkGlyph: mkGlyph, placeLabels: placeLabels, LABEL_DY: LABEL_DY};
 }
