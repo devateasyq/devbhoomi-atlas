@@ -485,23 +485,23 @@ test("mergeStreak copes with either side missing", () => {
    "streak" key yet, i.e. exactly emptyStreak(). Check both argument
    orders, since the bug was order-dependent. */
 test("mergeStreak preserves a real streak's date and today's counters against a fresh emptyStreak", () => {
-  const real = {n: 4, best: 6, last: "2026-01-05", grace: 1, day: "2026-01-05",
+  /* grace is deliberately 0 here: a fresh streak carries 1, and the merge
+     rule is generous in every field, so the merged result should be 1.
+     That is intentional forgiveness, not the bug this test guards. */
+  const real = {n: 4, best: 6, last: "2026-01-05", grace: 0, day: "2026-01-05",
                 facts: 12, quiz: 3, pyq: 2, recs: ["d-kangra", "d-shimla"]};
   const fresh = sync.emptyStreak();
 
-  const a = sync.mergeStreak(real, fresh);
-  assert.equal(a.last, "2026-01-05", "real merged first must keep its date");
-  assert.equal(a.day, "2026-01-05");
-  assert.equal(a.facts, 12);
-  assert.equal(a.quiz, 3);
-  assert.equal(a.pyq, 2);
-  assert.deepEqual(a.recs, ["d-kangra", "d-shimla"]);
-
-  const b = sync.mergeStreak(fresh, real);
-  assert.equal(b.last, "2026-01-05", "real merged second must keep its date");
-  assert.equal(b.day, "2026-01-05");
-  assert.equal(b.facts, 12);
-  assert.equal(b.quiz, 3);
-  assert.equal(b.pyq, 2);
-  assert.deepEqual(b.recs, ["d-kangra", "d-shimla"]);
+  for(const [m, where] of [[sync.mergeStreak(real, fresh), "merged first"],
+                           [sync.mergeStreak(fresh, real), "merged second"]]){
+    assert.equal(m.last, "2026-01-05", "real " + where + " must keep its date");
+    assert.equal(m.day, "2026-01-05", where);
+    assert.equal(m.facts, 12, where);
+    assert.equal(m.quiz, 3, where);
+    assert.equal(m.pyq, 2, where);
+    assert.deepEqual(m.recs, ["d-kangra", "d-shimla"], where);
+    assert.equal(m.n, 4, "the run must survive " + where);
+    assert.equal(m.best, 6, "the best must survive " + where);
+    assert.equal(m.grace, 1, "the more forgiving grace wins " + where);
+  }
 });
