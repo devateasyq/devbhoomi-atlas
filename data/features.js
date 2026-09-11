@@ -339,6 +339,208 @@ D.features = [
   ["p","Churdhar, <b>3,647 m</b> in Sirmaur, is the <b>highest peak of the outer Himalaya in Himachal Pradesh</b> — the Shivalik zone along the state's southern fringe, far lower than the Zanskar, Great Himalayan, Pir Panjal or Dhauladhar peaks in this roster."],
   ["p","It carries a temple to <b>Shirgul Devta</b> at its summit, and is the lowest peak in this list by a wide margin, standing under 3,700 m against a state high of 6,816 m at Reo Purgyil."],
   ["note","Exam hook","3,647 m · Shivalik (Outer Himalaya) · Sirmaur · the highest peak of the outer Himalaya in HP; Shirgul Devta temple."]],
- rel:["t-peaks","d-sirmaur","pk-reopurgyil"]}
+ rel:["t-peaks","d-sirmaur","pk-reopurgyil"]},
+
+/* ---------- LAKES ---------- */
+{id:"lk-renuka", k:"lake", pid:"renuka", name:"Renuka Lake",
+ type:"Natural",
+ sacred:"Renuka and the sage Parshuram — the Renukaji fair",
+ ramsar:"Ramsar site, 2005",
+ districts:["d-sirmaur"],
+ blocks:[
+  ["p","Renuka, in Sirmaur, is the <b>largest natural lake in Himachal Pradesh</b> — the one fact about this roster every candidate must have cold. Seen from above it is said to trace the outline of a <b>reclining woman</b>, and the lake is identified with Renuka herself, mother of the sage Parshuram."],
+  ["p","It draws the <b>Renukaji fair every November</b>, when the meeting of Renuka and Parshuram is re-enacted at the water's edge, and it was designated a <b>Ramsar site in 2005</b> — one of only three the state holds."],
+  ["note","Exam hook","Sirmaur · <b>largest natural lake in HP</b> · shaped like a reclining woman · Renukaji fair, November · <b>Ramsar 2005</b>."]],
+ rel:["t-lakes","t-fairs","d-sirmaur"]},
+
+{id:"lk-rewalsar", k:"lake", pid:"rewalsar", name:"Rewalsar (Tso Pema)",
+ type:"Natural",
+ sacred:"Hindus, Buddhists and Sikhs alike",
+ districts:["d-mandi"],
+ blocks:[
+  ["p","Rewalsar, in Mandi, is unusual among the state's lakes for being held sacred by <b>three faiths at once</b> — Hindus, Buddhists and Sikhs. Its Buddhist name, <b>Tso Pema</b>, ties it to <b>Padmasambhava</b>, who is said to have left from here for Tibet."],
+  ["p","The lake carries <b>floating islands</b> of vegetation, and it is counted, together with Paonta Sahib, among the state's <b>principal Sikh sites</b>."],
+  ["note","Exam hook","Mandi · Tso Pema · sacred to Hindus, Buddhists and Sikhs · Padmasambhava's departure point for Tibet · floating islands."]],
+ rel:["t-lakes","t-monasteries","t-shaktipeeth","d-mandi"]},
+
+{id:"lk-prashar", k:"lake", pid:"prashar", name:"Prashar Lake",
+ type:"Natural",
+ alt:"2,730 m",
+ sacred:"The sage Prashar",
+ districts:["d-mandi"],
+ blocks:[
+  ["p","Prashar, at <b>2,730 m</b> in Mandi, is known for the <b>three-tiered pagoda-style temple</b> standing on its bank, dedicated to the sage Prashar."],
+  ["p","The lake also carries a small <b>floating island</b> on its surface — a detail that, with the pagoda temple, is the pair of facts any question on Prashar is built around."],
+  ["note","Exam hook","Mandi · 2,730 m · three-tiered pagoda temple · floating island."]],
+ rel:["t-lakes","d-mandi"]},
+
+{id:"lk-kamrunag", k:"lake", pid:"kamrunag", name:"Kamrunag Lake",
+ type:"Natural",
+ sacred:"Kamru Nag",
+ districts:["d-mandi"],
+ blocks:[
+  ["p","Kamrunag, in Mandi, is a small high-altitude lake associated with the deity <b>Kamru Nag</b>, worshipped across the district."],
+  ["p","Devotees cast <b>offerings of gold into the water</b> rather than leaving them at a shrine — the distinctive practice that identifies this lake in any question."],
+  ["note","Exam hook","Mandi · devotees cast offerings of gold into the lake, to Kamru Nag."]],
+ rel:["t-lakes","d-mandi"]},
+
+{id:"lk-sareolsar", k:"lake", pid:"sareolsar", name:"Sareolsar Lake",
+ type:"Natural",
+ sacred:"Budhi Nagin",
+ districts:["d-kullu"],
+ blocks:[
+  ["p","Sareolsar lies in Kullu, above the <b>Jalori Pass</b>, and is dedicated to <b>Budhi Nagin</b>, whose temple stands by the water."],
+  ["p","It is the one of the district's high lakes in this roster named for a temple rather than for the peak or pass nearest it, unlike Bhrigu and Dashair."],
+  ["note","Exam hook","Kullu, above Jalori Pass · Budhi Nagin temple."]],
+ rel:["t-lakes","d-kullu","ps-jalori"]},
+
+{id:"lk-chandratal", k:"lake", pid:"chandratal", name:"Chandra Tal",
+ type:"Natural",
+ alt:"about 4,300 m",
+ river:"Chandra — rises here",
+ ramsar:"Ramsar site, 2005",
+ districts:["d-lahaul"],
+ blocks:[
+  ["p","Chandra Tal, <b>about 4,300 m</b> in Lahaul, is the <b>source of the Chandra</b>, the eastern headwater of the Chenab, and lies just off <b>Kunzum La</b>, the pass between the Chandra valley and Spiti."],
+  ["p","It was designated a <b>Ramsar site in 2005</b> — one of the state's three, with Renuka and Pong — and is paired in this roster with Suraj Tal, on the far side of Baralacha La, as the source lakes of the Chandra and the Bhaga."],
+  ["note","Exam hook","Lahaul · ~4,300 m · source of the Chandra · just off Kunzum La · <b>Ramsar 2005</b>."]],
+ rel:["t-lakes","Chandra","ps-kunzum","d-lahaul"]},
+
+{id:"lk-surajtal", k:"lake", pid:"surajtal", name:"Suraj Tal",
+ type:"Natural",
+ river:"Bhaga — rises here",
+ districts:["d-lahaul"],
+ blocks:[
+  ["p","Suraj Tal sits just below <b>Baralacha La</b> on its Lahaul side and is the <b>source of the Bhaga</b>, the western headwater of the Chenab — the counterpart, on the opposite side of the same pass, to Chandra Tal and the Chandra."],
+  ["p","It is counted among the <b>highest lakes in India</b>, and the pairing to remember is exact: Baralacha La, two lakes on its two sides, two rivers, one confluence at Tandi."],
+  ["note","Exam hook","Lahaul · below Baralacha La · source of the Bhaga · among the highest lakes in India · pairs with Chandra Tal across the same pass."]],
+ rel:["t-lakes","Bhaga","ps-baralacha","d-lahaul"]},
+
+{id:"lk-bhrigu", k:"lake", pid:"bhrigu", name:"Bhrigu Lake",
+ type:"Natural",
+ sacred:"The sage Bhrigu",
+ districts:["d-kullu"],
+ blocks:[
+  ["p","Bhrigu Lake, above <b>Gulaba</b> in Kullu, takes its name from the sage <b>Bhrigu</b>, said to have meditated on its bank."],
+  ["p","It is one of three high-altitude Kullu lakes in this roster, alongside Dashair and Sareolsar, all reached on foot rather than by road."],
+  ["note","Exam hook","Kullu, above Gulaba · sage Bhrigu's meditation lake."]],
+ rel:["t-lakes","d-kullu"]},
+
+{id:"lk-dashair", k:"lake", pid:"dashair", name:"Dashair Lake",
+ type:"Natural",
+ districts:["d-kullu"],
+ blocks:[
+  ["p","Dashair Lake lies in Kullu near <b>Rohtang</b>, in the same high cluster as Bhrigu Lake above Gulaba."],
+  ["p","What this roster asks of it is mainly its location, so as not to confuse it with Bhrigu or Sareolsar, the district's other two named high lakes."],
+  ["note","Exam hook","Kullu · near Rohtang · one of the district's three named high lakes, with Bhrigu and Sareolsar."]],
+ rel:["t-lakes","d-kullu","ps-rohtang"]},
+
+{id:"lk-manimahesh", k:"lake", pid:"manimahesh", name:"Manimahesh Lake",
+ type:"Natural",
+ sacred:"Shiva — the Manimahesh yatra",
+ districts:["d-chamba"],
+ blocks:[
+  ["p","Manimahesh Lake, in Chamba, lies directly below <b>Manimahesh Kailash</b>, the peak held sacred as Shiva's abode and, unlike the state's other high peaks, never climbed."],
+  ["p","The lake is the destination of the <b>Manimahesh yatra</b>, held in <b>August–September</b> — pilgrims bathe in the lake with the peak as backdrop, the mountain itself being the object of worship rather than an ascent."],
+  ["note","Exam hook","Chamba · below Manimahesh Kailash (never climbed) · the Manimahesh yatra, August–September."]],
+ rel:["t-lakes","t-shaktipeeth","pk-manimaheshkailash","d-chamba"]},
+
+{id:"lk-lamadal", k:"lake", pid:"lamadal", name:"Lama Dal",
+ type:"Natural",
+ districts:["d-chamba"],
+ blocks:[
+  ["p","Lama Dal, in Chamba, is the <b>largest of the Dhauladhar's high lakes</b> named in this roster, ranking above the district's other named glacial lakes, Ghadasaru and Khajjiar among them."],
+  ["p","Beyond its size, no separate legend is attached to it in the record — worth remembering precisely because it is easy to confuse with Manimahesh, the district's lake that does carry a yatra."],
+  ["note","Exam hook","Chamba · the largest of the Dhauladhar's high lakes."]],
+ rel:["t-lakes","d-chamba"]},
+
+{id:"lk-ghadasaru", k:"lake", pid:"ghadasaru", name:"Ghadasaru Lake",
+ type:"Natural",
+ districts:["d-chamba"],
+ blocks:[
+  ["p","Ghadasaru is one of Chamba's small named lakes in this roster, grouped alongside Lama Dal and Khajjiar as lakes distinct from Manimahesh, the district's pilgrimage lake."],
+  ["p","No separate legend attaches to it beyond its district and its kind — a natural lake of Chamba, to be told apart from the other three named here."],
+  ["note","Exam hook","Chamba · one of the district's named natural lakes, alongside Lama Dal and Khajjiar."]],
+ rel:["t-lakes","d-chamba"]},
+
+{id:"lk-khajjiar", k:"lake", pid:"khajjiar", name:"Khajjiar Lake",
+ type:"Natural",
+ districts:["d-chamba"],
+ blocks:[
+  ["p","Khajjiar, in Chamba, sits at the centre of a saucer-shaped meadow popularly called the <b>'mini Switzerland'</b> of Himachal — the standard identifying hook for this lake."],
+  ["p","It is grouped with Lama Dal and Ghadasaru as one of Chamba's named natural lakes, though its fame rests on the meadow around it rather than on any pilgrimage, unlike Manimahesh in the same district."],
+  ["note","Exam hook","Chamba · the saucer meadow called the 'mini Switzerland' of Himachal."]],
+ rel:["t-lakes","t-nationalparks","d-chamba"]},
+
+{id:"lk-nako", k:"lake", pid:"nako", name:"Nako Lake",
+ type:"Natural",
+ sacred:"Beside Nako monastery, a Rinchen Zangpo foundation",
+ districts:["d-kinnaur"],
+ blocks:[
+  ["p","Nako Lake lies in the <b>Hangrang valley</b> of Kinnaur, beside <b>Nako village and its monastery</b> — one of the Rinchen Zangpo foundations named alongside Tabo, Key and Dhankar in the state's Buddhist heritage."],
+  ["p","It is the one lake in this roster that sits in the cold-desert tract of upper Kinnaur, close to the Spiti border."],
+  ["note","Exam hook","Kinnaur, Hangrang valley · beside Nako monastery, a Rinchen Zangpo foundation."]],
+ rel:["t-lakes","t-monasteries","d-kinnaur"]},
+
+{id:"lk-dallake", k:"lake", pid:"dallake", name:"Dal Lake, Dharamshala",
+ type:"Natural",
+ districts:["d-kangra"],
+ blocks:[
+  ["p","This Dal Lake, in Kangra above <b>McLeodganj</b>, takes its name from the far more famous one in Srinagar but is otherwise unrelated to it — the two are easy to confuse in an objective question and should not be."],
+  ["p","It sits close to <b>Tsuglagkhang and Namgyal Monastery</b>, the residence of the 14th Dalai Lama and seat of the Central Tibetan Administration since 1960, the institutions that give McLeodganj its wider significance."],
+  ["note","Exam hook","Kangra, above McLeodganj · not to be confused with the Dal Lake of Srinagar."]],
+ rel:["t-lakes","t-monasteries","d-kangra"]},
+
+{id:"lk-gobindsagar", k:"lake", pid:"gobindsagar", name:"Gobind Sagar",
+ type:"Reservoir",
+ river:"Sutlej",
+ districts:["d-bilaspur"],
+ blocks:[
+  ["p","Gobind Sagar, formed by the <b>Bhakra dam</b> on the <b>Sutlej</b> at Bilaspur, is the <b>largest man-made lake in Himachal Pradesh</b>. The dam is a straight gravity structure about <b>226 m high</b>, its foundation stone laid in 1948 and the project completed and dedicated in 1963."],
+  ["p","The old town of <b>Bilaspur was submerged</b> by the rising reservoir and rebuilt on higher ground — the standard case cited whenever a question asks about development-induced displacement in the state. <b>Naina Devi temple</b> overlooks the lake from above."],
+  ["note","Exam hook","Sutlej · Bhakra, Bilaspur · <b>largest man-made lake in HP</b> · old Bilaspur town submerged and rebuilt · overlooked by Naina Devi temple."]],
+ rel:["t-lakes","t-bhakra","t-hydel","Sutlej","d-bilaspur"]},
+
+{id:"lk-pong", k:"lake", pid:"pong", name:"Pong / Maharana Pratap Sagar",
+ type:"Reservoir",
+ river:"Beas",
+ ramsar:"Ramsar site, 2002",
+ districts:["d-kangra"],
+ blocks:[
+  ["p","Pong, formally <b>Maharana Pratap Sagar</b>, is the reservoir behind the dam on the <b>Beas</b> in Kangra, completed in <b>1974</b> and generating <b>396 MW</b>. It was designated a <b>Ramsar site in 2002</b> and is a major <b>bird sanctuary</b>."],
+  ["p","Its construction displaced a very large number of families from the Beas valley, many resettled in Rajasthan's command area — a rehabilitation grievance that, together with Gobind Sagar, is the state's standard case study in development-induced displacement."],
+  ["note","Exam hook","Beas · Kangra · completed 1974 · 396 MW · <b>Ramsar 2002</b> · major bird sanctuary · Beas-valley oustees resettled largely in Rajasthan."]],
+ rel:["t-lakes","t-bhakra","t-nationalparks","t-hydel","Beas","d-kangra"]},
+
+{id:"lk-chamera", k:"lake", pid:"chamera", name:"Chamera Lake",
+ type:"Reservoir",
+ river:"Ravi",
+ districts:["d-chamba"],
+ blocks:[
+  ["p","Chamera Lake is the reservoir of the Chamera hydel projects on the <b>Ravi</b> in Chamba — the district's own river, and the one on which NHPC commissioned its very first project anywhere in India, <b>Baira Siul</b>."],
+  ["p","Among the five named reservoirs of this roster — Gobind Sagar, Pong, Chamera, Pandoh and Kol Dam — it is the only one built on the Ravi rather than the Sutlej or the Beas."],
+  ["note","Exam hook","Ravi · Chamba · the only named HP reservoir in this roster on the Ravi."]],
+ rel:["t-lakes","t-hydel","Ravi","d-chamba"]},
+
+{id:"lk-pandoh", k:"lake", pid:"pandoh", name:"Pandoh Dam",
+ type:"Reservoir",
+ river:"Beas",
+ districts:["d-mandi"],
+ blocks:[
+  ["p","Pandoh, on the <b>Beas</b> in Mandi, is the diversion dam that feeds the <b>Beas–Sutlej Link</b> — Beas water is carried through the <b>Pandoh–Baggi tunnel</b> to the Sutlej side, generating power at <b>Dehar</b> along the way."],
+  ["p","It exists to move water between basins rather than to hold a lake in its own right, which sets it apart from the other reservoirs named in this roster."],
+  ["note","Exam hook","Beas · Mandi · feeds the Beas–Sutlej Link, through the Pandoh–Baggi tunnel to Dehar."]],
+ rel:["t-lakes","t-hydel","Beas","d-mandi"]},
+
+{id:"lk-koldam", k:"lake", pid:"koldam", name:"Kol Dam",
+ type:"Reservoir",
+ river:"Sutlej",
+ districts:["d-bilaspur","d-mandi"],
+ blocks:[
+  ["p","Kol Dam, on the <b>Sutlej</b> across the Bilaspur–Mandi border, is an <b>800 MW</b> project operated by <b>NTPC</b>, one of the four major Sutlej hydel projects named together in this roster — Bhakra, Nathpa Jhakri, Karcham Wangtoo and Kol Dam."],
+  ["p","With Gobind Sagar, it is one of only two named lakes on the Sutlej within Himachal Pradesh in this roster."],
+  ["note","Exam hook","Sutlej · Bilaspur/Mandi · 800 MW · NTPC."]],
+ rel:["t-lakes","t-hydel","Sutlej","d-bilaspur","d-mandi"]}
 
 ];
+

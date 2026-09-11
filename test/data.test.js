@@ -134,3 +134,27 @@ test("Reo Purgyil is recorded as the highest point in the state", () => {
   assert.ok(r, "pk-reopurgyil missing");
   assert.match(JSON.stringify(r), /highest/i);
 });
+
+test("all 20 lakes are recorded and typed", () => {
+  const lakes = (D.features || []).filter(f => f.k === "lake");
+  assert.equal(lakes.length, 20);
+  for(const l of lakes){
+    assert.match(l.type, /^(Natural|Reservoir)$/, l.id + " has bad type: " + l.type);
+  }
+});
+
+test("every lake marker on the map has a record", () => {
+  const have = new Set((D.features || []).filter(f => f.k === "lake").map(f => f.pid));
+  for(const [pid, p] of Object.entries(MAP.places)){
+    if(p.k === "lake") assert.ok(have.has(pid), "lake marker " + pid + " has no record");
+  }
+});
+
+test("exactly three lakes are Ramsar sites, with the right years", () => {
+  const r = (D.features || []).filter(f => f.k === "lake" && f.ramsar);
+  assert.equal(r.length, 3, "HP has exactly three Ramsar sites");
+  const byId = Object.fromEntries(r.map(f => [f.id, String(f.ramsar)]));
+  assert.match(byId["lk-pong"] || "", /2002/);
+  assert.match(byId["lk-renuka"] || "", /2005/);
+  assert.match(byId["lk-chandratal"] || "", /2005/);
+});
