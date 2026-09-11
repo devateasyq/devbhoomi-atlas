@@ -119,9 +119,9 @@ test("isolating the already-isolated kind restores everything", () => {
   assert.deepEqual(hidden, [], "second isolate must restore all layers");
 });
 
-test("a layer hidden in another map mode survives isolate and restore", () => {
-  /* `visibleKinds` is only what the current legend shows. A layer hidden
-     in a different mode is not in it, and must not be silently dropped. */
+test("a hidden layer the caller does not list survives isolate and restore", () => {
+  /* `visibleKinds` is only what the current legend shows. A hidden layer
+     not in it must not be silently dropped. */
   let hidden = ["river1"];
   hidden = kit.layerIsolate(hidden, "pass", KINDS4);
   assert.ok(hidden.includes("river1"), "isolate dropped an out-of-scope hidden layer");

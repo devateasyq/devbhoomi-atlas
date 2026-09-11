@@ -228,11 +228,11 @@ function renderTrail(){
    so a record that omits an optional field simply loses that row. */
 const FEATURE_FACTS = {
   peak:    [["Height","alt"],["Range","range"],["Also called","alias"],
-            ["First ascent","ascent"],["Known for","fame"]],
+            ["Known for","fame"]],
   pass:    [["Height","alt"],["Range","range"],["Connects","connects"],
             ["Status","status"],["On the route to","route"]],
   lake:    [["Type","type"],["Altitude","alt"],["On river","river"],
-            ["Area","area"],["Sacred to","sacred"],["Ramsar site","ramsar"]],
+            ["Sacred to","sacred"],["Ramsar site","ramsar"]],
   glacier: [["Size","size"],["Valley / basin","valley"],["Feeds","feeds"],
             ["Retreat","retreat"]]
 };
@@ -412,9 +412,6 @@ function placeTarget(pid){
   const b = D.battles.find(x => x.place === pid); if(b) return b.id;
   if(PLACE_LINK[pid]) return PLACE_LINK[pid];
   if(p.k === "temple") return MONASTERIES.has(pid) ? "t-monasteries" : "t-temples";
-  if(p.k === "peak") return "t-peaks";
-  if(p.k === "pass") return "t-passes";
-  if(p.k === "lake") return "t-lakes";
   if(p.k === "state") return "t-colonial-admin";
   return null;
 }
@@ -506,9 +503,15 @@ function relabel(){
     const n = isDist ? (m.textContent || "") : (m.dataset.n || "");
     /* district labels are 13px and centred on the label itself, marker
        labels 10.5px and sitting above the glyph */
-    return {id:i, x:xy[0], y:xy[1],
-            w:(n.length*(isDist ? 7.2 : 5.6)+6)*inv, h:(isDist ? 16 : 13)*inv,
+    const w = (n.length*(isDist ? 7.2 : 5.6)+6)*inv, h = (isDist ? 16 : 13)*inv;
+    const item = {id:i, x:xy[0], y:xy[1], w:w, h:h, dy:LABEL_DY*inv,
             pri:(LABEL_PRI[isDist ? "district" : m.dataset.k] || 1)*1000 - n.length};
+    /* .distlabel has no dy/dominant-baseline, so its ink actually sits
+       roughly y-13..y+3 — centred on the text, not sitting above it like a
+       marker label. Model that box explicitly rather than reusing the
+       above-the-glyph box placeLabels() builds for marker labels. */
+    if(isDist) item.box = {x1: xy[0] - w/2, x2: xy[0] + w/2, y1: xy[1] - h*0.8, y2: xy[1] + h*0.2};
+    return item;
   });
   const keep = placeLabels(items);
   marks.forEach((m,i) => m.classList.toggle("nolabel", !keep.has(i)));
@@ -639,7 +642,9 @@ function mountMap(){
         all = document.createElement("button");
         all.type = "button"; all.className = "lgall"; all.id = "lgall";
         all.textContent = "Show all";
-        legendEl.appendChild(all);
+        const hint = legendEl.querySelector(".lghint");
+        if(hint) legendEl.insertBefore(all, hint);
+        else legendEl.appendChild(all);
       } else if(!S.mapOff.length && all) all.remove();
       applyLayers();
     };
@@ -869,8 +874,12 @@ function buildCards(){
         " · "+(f.districts || []).map(d => IDX.has(d) ? IDX.get(d).r.name : d).join(", "), f.id);
       if(f.ramsar) push("Geography", "When was "+f.name+" designated a Ramsar site?",
         "<b>"+f.ramsar+"</b>", f.id);
-      else push("Geography", f.name+" — what is it known for?",
-        f.sacred || f.river || f.area || f.type, f.id);
+      /* Skip the "what is it known for?" card entirely when neither sacred
+         nor river status is on record — the fallback would otherwise answer
+         with the bare word `type` ("Natural"/"Reservoir"), which is already
+         shown on the card above and useless as a recall prompt on its own. */
+      else if(f.sacred || f.river) push("Geography", f.name+" — what is it known for?",
+        f.sacred || f.river, f.id);
     } else if(f.k === "glacier"){
       push("Geography", f.name+" — which valley, and which river does it feed?",
         "<b>"+f.valley+"</b><br>Feeds the <b>"+f.feeds+"</b>", f.id);

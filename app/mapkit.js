@@ -33,18 +33,24 @@ var GLYPHS = {
 };
 function mkGlyph(shape){ return GLYPHS[shape] || GLYPHS.circle; }
 
-/* Greedy de-collision. Labels sit above the marker, offset by LABEL_DY,
-   matching the `y="-10"` the marker <text> already uses. Highest
+/* Greedy de-collision. Marker labels sit above the marker, offset by
+   LABEL_DY, matching the `y="-9"` the marker <text> already uses. Highest
    priority wins the space; everything else that collides is simply not
-   drawn — the marker itself stays visible and still shows a tooltip. */
+   drawn — the marker itself stays visible and still shows a tooltip.
+   An item may pass its own `box` (e.g. a district label, whose ink is not
+   above-the-glyph like a marker's) — when present it is used as-is instead
+   of the default above-the-glyph box, keeping this function a pure
+   projection of its arguments. An item may also pass its own `dy` (the
+   caller's zoom-scaled LABEL_DY) to override the module default below. */
 var LABEL_DY = 9;
 function placeLabels(items){
   var placed = [], keep = new Set();
   var sorted = items.slice().sort(function(a, b){ return b.pri - a.pri; });
   for(var i = 0; i < sorted.length; i++){
     var it = sorted[i];
-    var box = {x1: it.x - it.w/2, x2: it.x + it.w/2,
-               y1: it.y - LABEL_DY - it.h, y2: it.y - LABEL_DY};
+    var dy = it.dy != null ? it.dy : LABEL_DY;
+    var box = it.box || {x1: it.x - it.w/2, x2: it.x + it.w/2,
+               y1: it.y - dy - it.h, y2: it.y - dy};
     var clash = false;
     for(var j = 0; j < placed.length; j++){
       var p = placed[j];
@@ -69,10 +75,12 @@ function layerToggle(hidden, k){
 }
 function layerIsolate(hidden, k, visibleKinds){
   var others = visibleKinds.filter(function(x){ return x !== k; });
-  /* Anything hidden that this legend does not show belongs to another map
-     mode — hide peaks in geo mode, switch to Heritage, and "peak" is still
-     in `hidden` but absent from `visibleKinds`. It must survive BOTH
-     isolating and restoring, so restoring returns `keep`, not []. */
+  /* `keep` preserves any hidden layer the caller did not list in
+     `visibleKinds` — it must survive BOTH isolating and restoring, so
+     restoring returns `keep`, not []. With the current single-legend
+     caller, `visibleKinds` is always every non-base layer, so this set is
+     always empty in practice; the filter is kept because it costs nothing
+     and protects a caller that one day passes a narrower list. */
   var keep = hidden.filter(function(x){ return visibleKinds.indexOf(x) < 0 && x !== k; });
   var isolated = others.every(function(x){ return hidden.indexOf(x) >= 0; })
               && hidden.indexOf(k) < 0;

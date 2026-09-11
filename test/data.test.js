@@ -2,6 +2,7 @@
 const test = require("node:test");
 const assert = require("node:assert");
 const {loadData} = require("./load");
+const kit = require("../app/mapkit.js");
 
 const {D, MAP} = loadData();
 
@@ -199,4 +200,15 @@ test("no field is a bare placeholder instead of being omitted", () => {
     }
   }
   assert.deepStrictEqual(offenders, [], "bare placeholder fields (should be omitted): " + offenders.join(", "));
+});
+
+/* viewMap() does LAYER_BY_KIND[p.k].c unguarded — a marker kind added to
+   data/geo.js without a matching LAYERS row in app/mapkit.js would throw
+   there and blank the whole map view. Catch that in Node before it ever
+   reaches a browser. */
+test("every marker kind on the map has a LAYERS entry", () => {
+  const kinds = new Set(Object.values(MAP.places).map(p => p.k));
+  for(const k of kinds){
+    assert.ok(kit.LAYER_BY_KIND[k], "MAP.places has kind " + k + " with no matching LAYERS entry in app/mapkit.js");
+  }
 });

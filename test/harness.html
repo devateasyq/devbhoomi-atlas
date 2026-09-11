@@ -21,9 +21,12 @@ function check(name, cond, detail){
 }
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
-/* Synthetic pointer sequences. The real bug this guards against: taking
-   pointer capture on pointerdown retargets the click to the <svg>, so
-   every marker click is silently swallowed. */
+/* Synthetic pointer sequences. These drive the app's pointerdown/pointermove/
+   pointerup handlers directly — clickEl() never dispatches a `click` event,
+   and the app never listens for one, so this does not exercise (and cannot
+   guard) click retargeting from pointer capture. What it does verify: a
+   plain pointerdown+pointerup opens a record, and a pointerdown followed by
+   a pointermove past the drag threshold does not. */
 function pointerAt(el, type, x, y){
   el.dispatchEvent(new PointerEvent(type, {
     clientX:x, clientY:y, pointerId:1, button:0, bubbles:true, cancelable:true
@@ -114,13 +117,26 @@ window.addEventListener("load", async () => {
   await wait(400);
   check("clicking again restores the layer", visible("peak") === basePeaks);
 
-  legendBtn("pass").dispatchEvent(new MouseEvent("dblclick", {bubbles:true}));
-  await wait(200);
+  /* A real double click always fires click, click, dblclick in that order.
+     Dispatching a bare dblclick skips the two clicks whose deferred toggle
+     the dblclick handler's clearTimer() must cancel — so a regression that
+     dropped clearTimer() from the dblclick handler would still pass this
+     test if it were left out. The wait must exceed the 250ms single-click
+     deferral, or a leaked toggle firing just after 250ms would land after
+     the assertion instead of before it. */
+  const passBtn1 = legendBtn("pass");
+  passBtn1.dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  passBtn1.dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  passBtn1.dispatchEvent(new MouseEvent("dblclick", {bubbles:true}));
+  await wait(400);
   check("double click isolates that layer",
     visible("pass") > 0 && visible("peak") === 0 && visible("lake") === 0);
 
-  legendBtn("pass").dispatchEvent(new MouseEvent("dblclick", {bubbles:true}));
-  await wait(200);
+  const passBtn2 = legendBtn("pass");
+  passBtn2.dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  passBtn2.dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  passBtn2.dispatchEvent(new MouseEvent("dblclick", {bubbles:true}));
+  await wait(400);
   check("double click again restores everything",
     visible("peak") === basePeaks && visible("lake") === baseLakes);
 

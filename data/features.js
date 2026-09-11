@@ -199,14 +199,14 @@ D.features = [
 
 {id:"ps-thamsar", k:"pass", pid:"thamsar", name:"Thamsar Pass",
  alt:"4,572 m", range:"Dhauladhar",
- connects:"Bara Bhangal ⇄ Bara Bangahal, Kangra",
+ connects:"Chhota Bhangal (Mandi) ⇄ Bara Bhangal (Kangra)",
  status:"A seasonal Himalayan crossing, closed under snow for much of the year",
- route:"Bara Bhangal — Thamsar — Bara Bangahal (Kangra)",
- districts:["d-kangra"],
+ route:"Chhota Bhangal (Mandi) — Thamsar — Bara Bhangal (Kangra)",
+ districts:["d-kangra","d-mandi"],
  blocks:[
-  ["p","Thamsar Pass, <b>4,572 m</b> in the <b>Dhauladhar</b>, is the route into the headwaters of the <b>Ravi</b> — it leads from Bara Bhangal towards <b>Bara Bangahal</b> in Kangra, the same Bara Bangahal where the Bhadal and the Tantgari meet to form the Ravi itself."],
-  ["note","Exam hook","4,572 m · Dhauladhar · Bara Bhangal to Bara Bangahal, Kangra · the route into the Ravi's headwaters."]],
- rel:["t-passes","Ravi","d-kangra"]},
+  ["p","Thamsar Pass, <b>4,572 m</b> in the <b>Dhauladhar</b>, crosses between <b>Bara Bhangal</b> in Kangra, in the upper Ravi basin, and <b>Chhota Bhangal</b> in Mandi, on the Uhl side of the range."],
+  ["note","Exam hook","4,572 m · Dhauladhar · Bara Bhangal (Kangra) to Chhota Bhangal (Mandi)."]],
+ rel:["t-passes","Ravi","d-kangra","d-mandi"]},
 
 {id:"ps-bashleo", k:"pass", pid:"bashleo", name:"Bashleo Pass",
  alt:"3,300 m",
