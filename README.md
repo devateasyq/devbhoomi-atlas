@@ -212,6 +212,51 @@ Map geometry is real: GADM district boundaries for Himachal Pradesh, equirectang
 the state's mid-latitude and Douglas–Peucker simplified. Place markers are lat/long run through the
 same transform.
 
+## Accounts and sync (optional)
+
+Signing in is entirely optional. **The app is fully usable, with every view and every
+feature, from the moment you open it — nothing is gated behind an account.** Sign-in
+exists for one reason: to carry your progress between devices.
+
+- **Nothing works until the Firebase project is configured.** `app/firebase-config.js`
+  ships with four empty strings (`apiKey`, `authDomain`, `projectId`, `appId`). Left
+  empty, `FB_READY` evaluates to `false`, the sign-in control never renders, and the app
+  behaves exactly as it always has — this is the default, working state. To turn sign-in
+  on, create a Firebase project, enable the Google and Email link providers, and paste
+  the four web-app keys from Project settings → Your apps → Web app into that file.
+- **`firestore.rules` must be published before any account is created.** Firebase
+  Database → Rules → paste the contents of `firestore.rules` → Publish. Firebase's own
+  default rules let any signed-in user read every document in the project, including
+  other people's progress — publishing the rules in this repo, which restrict each
+  document at `users/{uid}` to that same `uid`, is not optional. Nothing else in the
+  database is reachable from a client at all.
+- **What syncs.** Only three keys, all progress, none of it identifying beyond the
+  account itself: `seen` (the Rounds spaced-repetition set), `quiz` and `pyq` (per-question
+  answers with a timestamp, so the merge on sign-in can take the most recent answer and
+  the higher streak instead of guessing). Merging is a union — signing in on a second
+  device adds that device's progress to the account rather than replacing either side.
+- **What never syncs.** Theme, the map legend's hidden-layer set, and any other device
+  preference stay in `localStorage` on that device only. They are not sent anywhere and
+  are not part of the merge.
+- **The offline, single-file build (`hp-revision.html`) is guest-only.** It runs from
+  `file://`, where Firebase's popup and redirect sign-in flows do not work, so the build
+  forces `FB_READY` to `false` and the sign-in control never appears in it, regardless of
+  whether `app/firebase-config.js` has been filled in. Use the hosted copy (or a local
+  static server) to sign in; the downloaded file is for offline guest revision.
+
+### Privacy
+
+If you sign in, Firebase stores your **email address** and **display name** (from Google
+or from the email link you used), plus the three progress keys above, in a Firestore
+document scoped to your account. Nothing else is collected — no analytics, no tracking,
+no third-party sharing.
+
+**Account deletion is not yet built.** There is no in-app control to delete your account
+or its stored data, and none is planned in this repository yet. This is a real gap, not
+an oversight: until it exists, removing your data means asking whoever administers the
+Firebase project to delete your document and your Firebase Auth user by hand. Signing in
+at all should be treated as opting into that limitation for now.
+
 ## Licence
 
 Content is compiled from public sources for personal exam preparation. Reuse freely; verify before
