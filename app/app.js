@@ -263,9 +263,9 @@ function mountAccount(){
      A record panel left open here stays open underneath — S.sel survives
      the view change, so writeHash appends it to the profile's own hash
      (#/profile/d-kangra) and, on a phone, the panel is a bottom sheet that
-     covers three-quarters of the profile the account button is the only
-     door to. Close it first, the same way a direct hash navigation to
-     #/profile already does in applyHash. */
+     covers three-quarters of the profile, and the account button is the
+     only door to it. Close the panel first, the same way a direct hash
+     navigation to #/profile already does in applyHash. */
   btn.addEventListener("click", () => {
     if(S.sel){ flushNote(); S.sel = null; $("#panel").hidden = true; }
     go("profile");
