@@ -89,14 +89,18 @@ function toast(msg){
   }, 2200);
 }
 
-/* The control only appears when Firebase is configured: with no project set
-   up, offering a sign-in that cannot work would be worse than offering none. */
+/* The button is always visible now: it opens the profile, which shows the
+   local streak, local notes and local progress — all of which exist and
+   matter without an account. Only its label tracks auth state: the signed-in
+   name or email; "Sign in" when signed out and Firebase is configured; a
+   neutral "You" when it isn't. The sign-in dialog itself stays gated on
+   authAvailable() (see mountProfile) — offering a sign-in that cannot work
+   would still be worse than offering none. */
 function renderAccount(user){
   const btn = document.getElementById("acctbtn");
   if(!btn) return;
-  btn.hidden = !authAvailable();
-  if(!authAvailable()) return;
-  btn.textContent = user ? (user.displayName || user.email || "Account") : "Sign in";
+  btn.textContent = user ? (user.displayName || user.email || "Account")
+                    : authAvailable() ? "Sign in" : "You";
   btn.classList.toggle("in", !!user);
 }
 /* One document per user holds the progress that belongs to the person.
@@ -218,28 +222,12 @@ function mountAccount(){
   const msg = document.getElementById("acctmsg");
   if(!btn || !dlg) return;
   const say = t => { msg.textContent = t; };
-  const open = () => { dlg.hidden = false; say(""); };
   const shut = () => { dlg.hidden = true; };
 
-  btn.addEventListener("click", () => {
-    if(authUser()){
-      /* Flush before signing out, and wait for it: onAuthChange fires after
-         the token is already cleared, so a push queued from in there goes
-         out unauthenticated and firestore.rules silently discards it. */
-      flushPendingPush(function(){
-        signOutUser().then(() => {
-          /* A shared device must not hand the next guest this account's
-             progress, and must not let a guest's later additions merge
-             back into this account when it signs in again. Clearing is a
-             person leaving, not a token expiring, so it belongs here and
-             not in the onAuthChange backstop. */
-          wipeLocal();
-          render();
-          toast("Signed out");
-        }).catch(() => toast("Could not sign out"));
-      });
-    } else open();
-  });
+  /* The button always opens the profile now, signed in or out — sign-out
+     lives on the profile's own button (mountProfile), and the dialog opens
+     from the profile's "Sign in to sync" or from #acctdlg directly. */
+  btn.addEventListener("click", () => { go("profile"); });
   document.getElementById("acctclose").addEventListener("click", shut);
   dlg.addEventListener("click", e => { if(e.target === dlg) shut(); });
   document.getElementById("acctgoogle").addEventListener("click", () => {
@@ -326,6 +314,10 @@ const SUB = {home:"Start here", map:"12 districts · "+D.states.length+" hill st
              revise:"Past papers and quiz"};
 const TITLE = {home:"Overview", map:"Atlas", timeline:"Timeline", battles:"Battles & Treaties",
                topics:"Topics", people:"People", trends:"Question Trends", rounds:"Rounds", revise:"Revise"};
+/* Not in NAV: the rail already carries nine entries and the phone bar is
+   deliberately four. The header account button is the way in. */
+TITLE.profile = "Your profile";
+SUB.profile = "Streak, notes and your data";
 
 /* ---------- router: #/view or #/view/record-id ---------- */
 function currentHash(){ return "#/"+S.view+(S.sel ? "/"+S.sel : ""); }
@@ -1579,6 +1571,85 @@ function mountRounds(){
   });
 }
 
+function viewProfile(){
+  const u = authUser();
+  const st = store.get("streak", emptyStreak());
+  const notes = store.get("notes", {});
+  const quiz = store.get("quiz", {});
+  const done = Object.keys(quiz).length;
+  const right = Object.values(quiz).filter(v => answerValue(v) === 1).length;
+  const papers = Object.keys(store.get("pyq", {})).length;
+  const seen = (S.seen || []).length;
+
+  const ids = Object.keys(notes).filter(id => IDX.has(id));
+  const noteList = ids.length
+    ? ids.map(id => '<button class="noterow2" type="button" data-go="'+id+'">'+
+        '<span class="nr-t">'+nameOf(IDX.get(id))+'</span>'+
+        '<span class="nr-x">'+notes[id].text.slice(0, 90).replace(/&/g,"&amp;").replace(/</g,"&lt;")+
+        (notes[id].text.length > 90 ? "…" : "")+'</span></button>').join('')
+    : '<p class="pmuted">No notes yet. Open any record and write one at the foot of the panel.</p>';
+
+  /* The sign-in dialog stays gated on authAvailable() — with no Firebase
+     project configured, offering a sign-in that cannot work would be worse
+     than offering none, same reasoning renderAccount used to apply to the
+     whole button. */
+  const acct = u
+    ? '<div class="pcard"><div class="pident"><b>'+(u.displayName || u.email || "Signed in")+'</b>'+
+      (u.email && u.displayName ? '<span>'+u.email+'</span>' : '')+'</div>'+
+      '<button class="btn sm" type="button" id="psignout">Sign out</button></div>'
+    : '<div class="pcard"><div class="pident"><b>Not signed in</b>'+
+      '<span>Your streak and notes are on this device only.</span></div>'+
+      (authAvailable() ? '<button class="btn sm primary" type="button" id="psignin">Sign in to sync</button>' : '')+
+      '</div>';
+
+  return '<div class="profile">'+acct+
+    '<div class="pstats">'+
+      '<div class="pstat"><b>'+st.n+'</b>day streak</div>'+
+      '<div class="pstat"><b>'+st.best+'</b>best ever</div>'+
+      '<div class="pstat"><b>'+num(seen)+'</b>facts seen</div>'+
+      '<div class="pstat"><b>'+(done ? Math.round(right/done*100)+"%" : "—")+'</b>quiz accuracy</div>'+
+      '<div class="pstat"><b>'+num(papers)+'</b>past papers attempted</div>'+
+    '</div>'+
+    '<div class="ptoday">Today: '+st.facts+' facts · '+st.quiz+' quiz · '+
+      st.pyq+' past paper · '+st.recs.length+' records'+
+      (st.last === dayKey() ? ' — <b>today counts</b>' :
+       ' — reach '+DAY_GOAL.facts+' facts, '+DAY_GOAL.quiz+' quiz, '+
+       DAY_GOAL.pyq+' past paper or '+DAY_GOAL.recs+' records')+'</div>'+
+    '<div class="syllabus"><div class="secthead"><h3>Your notes — '+ids.length+'</h3></div>'+
+      noteList+'</div>'+
+    '<div class="syllabus" style="margin-top:26px">'+
+      '<div class="secthead"><h3>Your data</h3></div>'+
+      '<div class="pdata"><button class="btn" type="button" id="pexport">Export everything</button>'+
+      (u ? '<button class="btn danger" type="button" id="pdelete">Delete my account</button>' : '')+
+      '</div></div>'+
+  '</div>';
+}
+function mountProfile(){
+  const so = document.getElementById("psignout");
+  if(so) so.addEventListener("click", () => {
+    /* Flush before signing out, and wait for it: onAuthChange fires after
+       the token is already cleared, so a push queued from in there goes
+       out unauthenticated and firestore.rules silently discards it. */
+    flushPendingPush(function(){
+      signOutUser().then(() => {
+        /* A shared device must not hand the next guest this account's
+           progress, and must not let a guest's later additions merge
+           back into this account when it signs in again. Clearing is a
+           person leaving, not a token expiring, so it belongs here and
+           not in the onAuthChange backstop. */
+        wipeLocal();
+        render();
+        toast("Signed out");
+      }).catch(() => toast("Could not sign out"));
+    });
+  });
+  const si = document.getElementById("psignin");
+  if(si) si.addEventListener("click", () => { document.getElementById("acctdlg").hidden = false; });
+  /* [data-go] clicks are handled by the document-level delegated listener
+     already (see the click handler below); the notes index needs no mount
+     wiring of its own. */
+}
+
 /* ---------- render dispatcher ---------- */
 function render(){
   const s = $("#stage");
@@ -1594,6 +1665,7 @@ function render(){
   else if(S.view === "trends")    s.innerHTML = viewTrends();
   else if(S.view === "rounds")  { s.innerHTML = viewRounds(); mountRounds(); }
   else if(S.view === "revise")    s.innerHTML = viewRevise();
+  else if(S.view === "profile") { s.innerHTML = viewProfile(); mountProfile(); }
 }
 
 /* ============================================================

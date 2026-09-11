@@ -313,12 +313,14 @@ window.addEventListener("load", async () => {
       doc.getElementById("vbtitle").textContent);
   }
 
-  /* With no Firebase project configured the control must stay hidden:
-     offering a sign-in that cannot work is worse than offering none. */
+  /* The button is always visible — it is the way into the profile, which
+     shows the local streak, local notes and local progress, all of which
+     exist and matter without an account. Only the sign-in affordance inside
+     the profile stays gated on Firebase availability (checked below). */
   const ab = doc.getElementById("acctbtn");
   check("the account control exists", !!ab);
-  check("the account button's visibility tracks Firebase availability",
-    ab && ab.hidden === !ev("authAvailable()"),
+  check("the account button is visible regardless of Firebase availability",
+    ab && ab.hidden === false,
     "hidden=" + (ab && ab.hidden) + " available=" + ev("authAvailable()"));
   check("renderAccount filled the account button's label",
     ab && ab.textContent.trim().length > 0, "label=" + JSON.stringify(ab && ab.textContent));
@@ -368,6 +370,37 @@ window.addEventListener("load", async () => {
     check("an emptied note is removed, not stored blank",
       !Object.prototype.hasOwnProperty.call(stored, "d-kangra"),
       JSON.stringify(stored));
+
+    /* The block above deliberately ends with d-kangra's note removed, to
+       cover the removal path. Write it back so the profile checks below
+       have a real note to find. */
+    win.openRec("d-kangra"); await wait(200);
+    const t4 = doc.getElementById("notetext");
+    t4.value = "Kangra fort fell to Jahangir in 1620";
+    t4.dispatchEvent(new win.Event("input"));
+    doc.getElementById("notesave").click();
+    await wait(150);
+  }
+
+  doc.getElementById("acctbtn").click();
+  await wait(250);
+  check("the header button opens the profile",
+    /Your profile/.test(doc.getElementById("vbtitle").textContent),
+    doc.getElementById("vbtitle").textContent);
+  const prof = doc.querySelector(".profile");
+  check("the profile lists the note just written",
+    !!prof && /Kangra/.test(prof.textContent));
+  check("the sign-in affordance is gated on Firebase availability",
+    !doc.getElementById("psignin"),
+    "authAvailable=" + ev("authAvailable()"));
+  const nrow = doc.querySelector("[data-go]");
+  check("the notes index links to its record", !!nrow);
+  if(nrow){
+    nrow.click();
+    await wait(300);
+    check("following a note opens its record",
+      doc.getElementById("ptitle").textContent.indexOf("Kangra") >= 0,
+      doc.getElementById("ptitle").textContent);
   }
 
   out.innerHTML += "\n" + pass + " passed, " + fail + " failed";
