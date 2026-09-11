@@ -327,3 +327,19 @@ button.brow:hover .blab{color:var(--accent)}
   .brow,.bars.wide .brow{grid-template-columns:128px 1fr 30px;gap:8px}
   .cols{height:126px}
 }
+
+/* ---------- brand mark ---------- */
+.brand{flex-direction:row;align-items:center;gap:9px}
+.brandtext{display:flex;flex-direction:column;gap:2px;min-width:0}
+.logowrap{display:grid;place-items:center;flex:0 0 auto;line-height:0}
+.logo{display:block}
+.logowrap.mobonly{display:none}
+@media (max-width:1000px){ .logowrap.mobonly{display:grid;margin-right:2px} }
+
+/* ---------- rivers ---------- */
+.river{fill:none;stroke:var(--water);stroke-linecap:round;stroke-linejoin:round;
+  vector-effect:non-scaling-stroke;pointer-events:stroke;cursor:pointer}
+.river.t1{stroke-width:2.1}
+.river.t2{stroke-width:1.15;stroke:var(--water-soft)}
+.river:hover{stroke-width:3.4;stroke:var(--water)}
+.rivers.off{display:none}

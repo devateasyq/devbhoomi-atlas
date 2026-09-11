@@ -62,7 +62,7 @@ function factsList(pairs){
 /* ---------- app state ---------- */
 const S = {
   view:"home", sel:null, trail:[],
-  mapMode:"districts", era:"all", battleFilter:"all", topicSec:"all",
+  mapMode:"districts", rivers:true, era:"all", battleFilter:"all", topicSec:"all",
   revMode:"cards", cardIdx:0, cardFlip:false, cardSec:"all",
   qIdx:0, qSec:"all", qAnswered:null,
   pyYear:"all", pyHP:true, pyIdx:0, pyAnswered:null
@@ -356,28 +356,42 @@ function viewMap(){
   }).join('');
   const labels = Object.entries(MAP.centroids).map(([n,c]) =>
     '<g class="dl" transform="translate('+c[0]+','+c[1]+')"><text class="distlabel">'+n+'</text></g>').join('');
+  const clipId = "hpclip";
+  const clip = '<clipPath id="'+clipId+'">'+
+    Object.values(MAP.paths).map(d => '<path d="'+d+'"/>').join('')+'</clipPath>';
+  const rivers = '<g class="rivers'+(S.rivers ? '' : ' off')+'" clip-path="url(#'+clipId+')">'+
+    Object.entries(MAP.rivers).sort((a,b) => b[1].t - a[1].t).map(([n,r]) =>
+      '<path class="river t'+r.t+'" d="'+r.d+'" data-river="'+n+'"><title>'+n+
+      (r.t === 1 ? '' : ' (tributary)')+'</title></path>').join('')+'</g>';
   const marks = Object.entries(MAP.places)
     .filter(([,p]) => mode.kinds.includes(p.k))
     .map(([id,p]) => '<g class="mk" data-p="'+id+'" data-rec="'+(placeTarget(id)||"")+'" '+
       'transform="translate('+p.x+','+p.y+')">'+
       '<circle r="5.5" fill="'+MK_COLOR[p.k]+'"/><text y="-10">'+p.n+'</text></g>').join('');
+  const riverKey = S.rivers
+    ? '<li><i style="background:var(--water)"></i>Major river</li>'+
+      '<li><i style="background:var(--water-soft)"></i>Tributary</li>'
+    : '';
   const legend = mode.kinds.length
     ? '<div class="maplegend"><div class="lt">'+
       (mode.id==="states" ? "Seats of the hill states, c. 1815" : "Showing")+'</div><ul>'+
       mode.kinds.map(k => '<li><i style="background:'+MK_COLOR[k]+'"></i>'+MK_LABEL[k]+'</li>').join('')+
-      '</ul></div>'
+      riverKey+'</ul></div>'
     : '<div class="maplegend"><div class="lt">Base map</div><ul>'+
       '<li>Click a district to open its record</li>'+
-      '<li>Drag to pan · scroll to zoom</li></ul></div>';
+      '<li>Drag to pan · scroll to zoom</li>'+riverKey+'</ul></div>';
   return '<div id="mapview">'+
     '<div class="maptools"><div class="seg">'+
       MAP_MODES.map(m => '<button type="button" data-mm="'+m.id+'" aria-pressed="'+(m.id===S.mapMode)+'">'+
         m.lb+'</button>').join('')+
-    '</div></div>'+
+    '</div>'+
+    '<button class="tog" type="button" id="rivtog" aria-pressed="'+S.rivers+'">'+
+      '<i class="dot" style="background:var(--water)"></i>Rivers</button>'+
+    '</div>'+
     '<div class="mapcanvas" id="mapcanvas">'+
       '<svg id="hpsvg" viewBox="0 0 '+MAP.w+' '+MAP.h+'" preserveAspectRatio="xMidYMid meet" '+
         'role="img" aria-label="Map of Himachal Pradesh — click a district or marker">'+
-        '<g id="mapg">'+paths+(showLabels?labels:"")+marks+'</g></svg>'+
+        '<defs>'+clip+'</defs><g id="mapg">'+paths+rivers+(showLabels?labels:"")+marks+'</g></svg>'+
       '<div id="maptip"></div>'+legend+
       '<div class="zoomer">'+
         '<button type="button" data-zoom="1" aria-label="Zoom in">+</button>'+
@@ -419,7 +433,7 @@ function mountMap(){
   svg.addEventListener("pointerdown", e => {
     if(e.button && e.button !== 0) return;
     down = {x:e.clientX, y:e.clientY, ox:ZT.x, oy:ZT.y, id:e.pointerId,
-            target:e.target.closest(".mk") || e.target.closest(".dist")};
+            target:e.target.closest(".mk") || e.target.closest(".river") || e.target.closest(".dist")};
     dragging = false;
   });
   svg.addEventListener("pointermove", e => {
@@ -433,12 +447,14 @@ function mountMap(){
       if(dragging){ ZT.x = down.ox+dx*sc; ZT.y = down.oy+dy*sc; applyZoom(); }
       return;
     }
-    const hit = e.target.closest(".mk") || e.target.closest(".dist");
+    const hit = e.target.closest(".mk") || e.target.closest(".river") || e.target.closest(".dist");
     if(hit && !dragging){
       const rect = canvas.getBoundingClientRect();
       let title, sub;
       if(hit.classList.contains("mk")){
         const p = MAP.places[hit.dataset.p]; title = p.n; sub = MK_LABEL[p.k];
+      } else if(hit.classList.contains("river")){
+        title = hit.dataset.river; sub = MAP.rivers[hit.dataset.river].t === 1 ? "Major river" : "Tributary";
       } else {
         const rec = hit.dataset.d && IDX.get(hit.dataset.d);
         title = hit.dataset.name;
@@ -458,7 +474,9 @@ function mountMap(){
     const t = down.target;
     down = null; dragging = false;
     if(wasDragging || !t) return;
-    if(t.classList.contains("mk")){
+    if(t.classList.contains("river")){
+      openRec("t-rivers", t.dataset.river);
+    } else if(t.classList.contains("mk")){
       const rec = t.dataset.rec;
       if(rec && IDX.has(rec)) openRec(rec, MAP.places[t.dataset.p].n);
       else toast("No note linked to this place yet");
@@ -919,6 +937,7 @@ document.addEventListener("click", e => {
   const tr  = hit("[data-trail]");  if(tr){ goTo(tr.dataset.trail); return; }
   const mm  = hit("[data-mm]");     if(mm){ S.mapMode = mm.dataset.mm; render(); return; }
   const zm  = hit("[data-zoom]");   if(zm){ zoomBy(+zm.dataset.zoom); return; }
+  if(hit("#rivtog")){ S.rivers = !S.rivers; store.set("rivers", S.rivers); render(); return; }
   const era = hit("[data-era]");    if(era){ S.era = era.dataset.era; render(); return; }
   const ev  = hit(".ev");           if(ev){ openRec(ev.dataset.e); return; }
   const card= hit("[data-c]");      if(card){ openRec(card.dataset.c); return; }
@@ -1017,7 +1036,10 @@ function applyTheme(){
 
 /* ---------- boot ---------- */
 applyTheme();
+S.rivers = store.get("rivers", true);
 buildNav();
+document.getElementById("brandmark").innerHTML = logoMark(26);
+document.getElementById("brandmarkm").innerHTML = logoMark(24);
 if(location.hash && readHash().view) applyHash();
 else setView("home", true);
 

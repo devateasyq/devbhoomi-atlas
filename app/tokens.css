@@ -15,7 +15,8 @@
   --shadow:0 1px 2px rgba(23,32,29,.06), 0 8px 24px -12px rgba(23,32,29,.18);
   --shadow-lg:0 2px 4px rgba(23,32,29,.07), 0 24px 48px -20px rgba(23,32,29,.28);
   --map-land:#E2E7DB; --map-line:#B9C2B4; --map-sel:#C7DCD4;
-  --rail:236px; --panel:400px;
+  --water:#3E7FA8; --water-soft:#7FAFC9;
+  --rail:246px; --panel:400px;
   --f-display:"Petrona",ui-serif,Georgia,"Times New Roman",serif;
   --f-body:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -40,10 +41,9 @@
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
     --shadow-lg:0 2px 4px rgba(0,0,0,.5), 0 24px 48px -20px rgba(0,0,0,.75);
     --map-land:#212A26; --map-line:#3D4A44; --map-sel:#28453D;
+    --water:#5FA8CE; --water-soft:#3D6B84;
     --s1:#00a089; --s2:#d95b54; --s3:#5b83e9; --s4:#aa8300; --s5:#bd60b6; --s6:#47a03f;
     --grid:#28312C; --axis:#3D4A44;
-    --s1:#00a089; --s2:#d95b54; --s3:#5b83e9; --s4:#aa8300; --s5:#bd60b6; --s6:#47a03f;
-  --grid:#28312C; --axis:#3D4A44;
   --e1:#7A8BB5; --e2:#6FA0BE; --e3:#5FAFAA; --e4:#63BC90; --e5:#A5B663;
     --e6:#C9A445; --e7:#DE8B5E; --e8:#D97068; --e9:#C46C8B; --e10:#9A7ED0;
   }
@@ -59,6 +59,9 @@
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
   --shadow-lg:0 2px 4px rgba(0,0,0,.5), 0 24px 48px -20px rgba(0,0,0,.75);
   --map-land:#212A26; --map-line:#3D4A44; --map-sel:#28453D;
+  --water:#5FA8CE; --water-soft:#3D6B84;
+  --s1:#00a089; --s2:#d95b54; --s3:#5b83e9; --s4:#aa8300; --s5:#bd60b6; --s6:#47a03f;
+  --grid:#28312C; --axis:#3D4A44;
   --e1:#7A8BB5; --e2:#6FA0BE; --e3:#5FAFAA; --e4:#63BC90; --e5:#A5B663;
   --e6:#C9A445; --e7:#DE8B5E; --e8:#D97068; --e9:#C46C8B; --e10:#9A7ED0;
 }

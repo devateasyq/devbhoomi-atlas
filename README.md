@@ -43,6 +43,10 @@ Nothing is origin-specific — relative paths throughout, so it works from a sub
   can be sent to a study group.
 - **Installable and offline.** A web app manifest plus `sw.js` cache every asset on first visit,
   so it works on a phone with no signal. "Add to Home Screen" gives it an icon and no browser chrome.
+- **Rivers on the map.** 29 named rivers — the five major systems plus the Chandra and Bhaga
+  headwaters and 22 tributaries — drawn from OpenStreetMap centrelines, projected through the same
+  transform as the districts and clipped to the state outline. Toggleable, and clicking any river
+  opens the River Systems note.
 - **Question trends.** A Trends view computes, from the past-paper bank itself, how many Himachal
   questions each paper carries, which subjects they come from, how each subject moves year to year,
   and which topic notes are examined most — every bar links back into the atlas.
@@ -60,8 +64,9 @@ app/tokens.css             colour, type and spacing tokens, both themes
 app/layout.css             app shell and responsive rules
 app/components.css         map, timeline, cards, panel, revise, search
 app/app.js                 the application
+app/logo.js                the brand mark, drawn from theme tokens
 app/trends.js              the Trends view — all figures computed from D.pyq at run time
-data/geo.js                map geometry: district paths, centroids, 107 place markers
+data/geo.js                map geometry: district paths, centroids, 107 place markers, 29 rivers
 data/places.js             D.eras, D.districts, D.states
 data/history.js            D.events, D.battles, D.people
 data/topics.js             D.topics
