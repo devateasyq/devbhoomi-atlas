@@ -317,7 +317,7 @@ function applyHash(){
     setView(view, true);
     openRec(id, null, true);
   } else {
-    if(S.sel){ S.sel = null; $("#panel").hidden = true; }
+    if(S.sel){ flushNote(); S.sel = null; $("#panel").hidden = true; }
     setView(view, true);
   }
 }
@@ -398,7 +398,11 @@ function locatorFor(id){
    rather than the cap being enforced silently at save. */
 function noteBlock(id){
   const notes = store.get("notes", {});
-  const cur = notes[id] && notes[id].text ? notes[id].text : "";
+  /* Clamped on the way out as well as on the way in: a note that arrived
+     over-length from an older build would otherwise render in full and the
+     counter would read "1250 / 1000", showing a cap that is not being kept. */
+  const has = Object.prototype.hasOwnProperty.call(notes, id) && notes[id];
+  const cur = (has && typeof notes[id].text === "string" ? notes[id].text : "").slice(0, NOTE_MAX);
   return '<div class="blk noteblk"><h5>Your note</h5>'+
     '<textarea id="notetext" maxlength="'+NOTE_MAX+'" rows="3" '+
       'placeholder="Anything you want to remember about this…">'+
@@ -407,16 +411,36 @@ function noteBlock(id){
       cur.length+' / '+NOTE_MAX+'</span>'+
       '<button class="btn sm" type="button" id="notesave">Save</button></div></div>';
 }
+/* The editor lives inside #pbody, which openRec replaces wholesale. When a
+   focused textarea is removed that way the browser clears focus WITHOUT
+   firing blur — so a note typed and then left via the Back button, or any
+   hash navigation, vanished without a word. The mounted editor registers
+   itself here and every path that replaces or hides the panel flushes it
+   first. Writing only when the text actually changed also makes the save
+   idempotent, so the Save button's click (which follows its own blur) does
+   not save, push and toast a second time. */
+let _note = null;
+
+function flushNote(){
+  if(!_note) return;
+  const id = _note.id, el = _note.el;
+  if(!el.isConnected){ _note = null; return; }
+  const notes = store.get("notes", {});
+  const had = Object.prototype.hasOwnProperty.call(notes, id) && notes[id] &&
+              typeof notes[id].text === "string" ? notes[id].text : "";
+  const now = el.value;
+  if(now === had) return;
+  store.set("notes", setNote(notes, id, now));
+  if(authUser()) pushStateSoon();
+  toast(now.trim() ? "Note saved" : "Note removed");
+}
+
 function mountNote(id){
   const ta = document.getElementById("notetext");
   if(!ta) return;
+  _note = {id: id, el: ta};
   const count = document.getElementById("notecount");
-  const save = () => {
-    const next = setNote(store.get("notes", {}), id, ta.value);
-    store.set("notes", next);
-    if(authUser()) pushStateSoon();
-    toast(ta.value.trim() ? "Note saved" : "Note removed");
-  };
+  const save = flushNote;
   ta.addEventListener("input", () => {
     count.textContent = ta.value.length + " / " + NOTE_MAX;
   });
@@ -490,6 +514,7 @@ function featuresIn(did){
 /* ---------- detail panel ---------- */
 function openRec(id, headerNote, fromHash){
   const o = IDX.get(id); if(!o) return;
+  flushNote();              /* before #pbody is replaced out from under it */
   S.sel = id;
   pushTrail(id);
   const r = o.r, k = o.kind, era = eraOf(o);
@@ -595,6 +620,7 @@ function openRec(id, headerNote, fromHash){
   if(!fromHash) writeHash();
 }
 function closePanel(){
+  flushNote();
   S.sel = null; S.trail = [];
   $("#panel").hidden = true;
   renderTrail(); paintSelection(); writeHash();
@@ -1683,7 +1709,10 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(()=>{}));
 }
 
-/* A pending debounced push would otherwise die with the page. */
+/* A pending debounced push would otherwise die with the page. The note is
+   flushed first, so a note still being typed when the tab closes is part of
+   that final push rather than being left behind by it. */
 window.addEventListener("pagehide", function(){
+  flushNote();
   flushPendingPush();
 });

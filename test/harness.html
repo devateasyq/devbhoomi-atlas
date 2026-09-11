@@ -345,6 +345,29 @@ window.addEventListener("load", async () => {
       JSON.stringify(doc.getElementById("notetext").value));
     check("the textarea enforces the cap",
       doc.getElementById("notetext").getAttribute("maxlength") === "1000");
+
+    /* The path that actually lost notes: #pbody is replaced while the
+       textarea still has focus, and the browser clears focus WITHOUT
+       firing blur. Typing here and navigating away must still save. */
+    const t2 = doc.getElementById("notetext");
+    t2.focus();
+    t2.value = "typed but never blurred";
+    win.openRec("d-shimla"); await wait(150);
+    win.openRec("d-kangra"); await wait(200);
+    check("a note typed and navigated away from is not lost",
+      doc.getElementById("notetext").value === "typed but never blurred",
+      JSON.stringify(doc.getElementById("notetext").value));
+
+    /* Emptying a note must remove it, not store a blank one — otherwise
+       every record ever opened would carry an empty note to the server. */
+    const t3 = doc.getElementById("notetext");
+    t3.value = "   ";
+    doc.getElementById("notesave").click();
+    await wait(150);
+    const stored = JSON.parse(win.localStorage.getItem("hpatlas:notes") || "{}");
+    check("an emptied note is removed, not stored blank",
+      !Object.prototype.hasOwnProperty.call(stored, "d-kangra"),
+      JSON.stringify(stored));
   }
 
   out.innerHTML += "\n" + pass + " passed, " + fail + " failed";
