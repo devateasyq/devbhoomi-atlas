@@ -2019,3 +2019,129 @@ git commit -m "chore: bundle features and mapkit into the offline build, bump ca
 | Generated cards for all features and all 29 rivers | 16 |
 | `sw.js` cache bump, `build-single.sh` module list | 17 |
 | Pointer-capture regression guard | 10 (harness drag test), 11, 12 |
+
+---
+
+### Task 18: Retire the map mode tabs; every layer lives in the legend
+
+Requested after Task 17: the `Peaks · Passes · Lakes · Glaciers` tab goes away, and those kinds become permanent legend layers exactly as the two river tiers already are. Confirmed with the repo owner: **all** mode tabs go — temples and battle sites move to the legend too — and every layer is **visible by default**.
+
+**Files:**
+- Modify: `app/app.js` — `MAP_MODES` and `S.mapMode` (removed), `viewMap()`, `goTo()`, `relabel()`, the `[data-mm]` click handler, state init
+- Modify: `app/components.css` — remove the now-unused tab-strip rules if nothing else uses them
+- Modify: `test/harness.html` — the harness drives `S.mapMode`; it must stop
+- Modify: `README.md`, `sw.js`
+
+**Interfaces:**
+- Consumes: `LAYERS`, `LAYER_BY_KIND`, `layerToggle`, `layerIsolate`, `placeLabels` from `app/mapkit.js`; `S.mapOff` from Task 12.
+- Produces: no new exports. `S.mapMode` ceases to exist.
+
+- [ ] **Step 1: Render every marker, always**
+
+In `viewMap()`, delete the `mode` lookup and render all places rather than a mode's subset:
+
+```js
+  const marks = Object.entries(MAP.places)
+    .map(([id,p]) => '<g class="mk" data-k="'+p.k+'" data-p="'+id+'" '+
+      'data-rec="'+(placeTarget(id)||"")+'" data-n="'+p.n+'" '+
+      'transform="translate('+p.x+','+p.y+')">'+
+      '<g class="gly" style="fill:'+LAYER_BY_KIND[p.k].c+'">'+mkGlyph(LAYER_BY_KIND[p.k].glyph)+'</g>'+
+      '<text y="-9">'+p.n+'</text></g>').join('');
+```
+
+District labels were previously shown only in `districts` mode. There is no mode now, so they are always rendered — Step 3 stops them colliding with marker labels.
+
+- [ ] **Step 2: Build the legend from every non-base layer**
+
+```js
+  /* Every layer the map can draw, in LAYERS order. `base` layers (the
+     district polygons) are the map itself, not an overlay, so they are
+     not listed and cannot be hidden. */
+  const shownKinds = LAYERS.filter(l => !l.base).map(l => l.k);
+  const legend = '<div class="maplegend"><div class="lt">Layers</div><ul>'+
+    shownKinds.map(k => {
+      const l = LAYER_BY_KIND[k], off = S.mapOff.includes(k);
+      return '<li><button type="button" class="lgi'+(off ? " off" : "")+'" data-lk="'+k+'" '+
+        'aria-pressed="'+(!off)+'" title="Click to hide · double click to show only this">'+
+        '<i style="background:'+l.c+'"></i>'+l.lb+'</button></li>';
+    }).join('')+
+    '</ul>'+
+    (S.mapOff.length ? '<button type="button" class="lgall" id="lgall">Show all</button>' : '')+
+    '<div class="lghint">Click a district or marker to open its record</div>'+
+    '</div>';
+```
+
+- [ ] **Step 3: De-collide district labels against marker labels**
+
+District names are large and must win. Extend `relabel()` to consider both groups, and give district labels the top priority band:
+
+```js
+const LABEL_PRI = {district:9, peak:4, pass:3, glacier:2, lake:1,
+                   state:3, temple:2, battle:2};
+function relabel(){
+  const g = document.getElementById("mapg"); if(!g) return;
+  const marks = [...g.querySelectorAll(".mk:not(.hid),.dl")];
+  if(!marks.length) return;
+  const inv = 1/ZT.k;
+  const items = marks.map((m,i) => {
+    const raw = m.dataset.at ||
+      ((m.getAttribute("transform") || "").match(/translate\(([^)]*)\)/) || [,""])[1];
+    const xy = raw.split(/[\s,]+/).map(Number);
+    const isDist = m.classList.contains("dl");
+    const n = isDist ? (m.textContent || "") : (m.dataset.n || "");
+    /* district labels are 13px and centred on the label itself, marker
+       labels 10.5px and sitting above the glyph */
+    return {id:i, x:xy[0], y:xy[1],
+            w:(n.length*(isDist ? 7.2 : 5.6)+6)*inv, h:(isDist ? 16 : 13)*inv,
+            pri:(LABEL_PRI[isDist ? "district" : m.dataset.k] || 1)*1000 - n.length};
+  });
+  const keep = placeLabels(items);
+  marks.forEach((m,i) => m.classList.toggle("nolabel", !keep.has(i)));
+}
+```
+
+Add a CSS rule so a suppressed district label hides too:
+
+```css
+.dl.nolabel text{display:none}
+```
+
+- [ ] **Step 4: Remove the tab strip and every reference to `S.mapMode`**
+
+- Delete the `MAP_MODES` constant.
+- Delete the `<div class="seg">…[data-mm]…</div>` block from the `maptools` markup. If `maptools` is then empty, remove the element and its CSS rule too.
+- Delete the `[data-mm]` branch from the click handler.
+- In `goTo()`, delete all three `S.mapMode = …` assignments.
+- Remove `mapMode:"districts"` from the `S` initialiser.
+- Remove any persistence of `mapMode`, and delete a stored value so a returning visitor is not left with a dead key: `store.del("mapMode")`.
+
+Then confirm nothing survives: `grep -n "mapMode\|MAP_MODES\|data-mm" app/app.js test/harness.html app/components.css` must return nothing.
+
+- [ ] **Step 5: Update the harness**
+
+`test/harness.html` currently drives the map with `ev('S.view="map"; S.mapMode="geo"; render();')`. Change it to `ev('S.view="map"; render();')`. Every marker kind is now present without selecting a mode, so the existing per-kind checks still apply. Add one assertion that all four geo kinds render without any mode being set:
+
+```js
+  for(const kind of ["peak","pass","lake","glacier","temple","battle","state"]){
+    check(kind + " markers render with no mode selected",
+      doc.querySelectorAll('.mk[data-k="' + kind + '"]').length > 0);
+  }
+```
+
+- [ ] **Step 6: Verify**
+
+Run: `node --test`
+Expected: 42 pass, 0 fail — this task changes no data.
+
+Run: `node --check app/app.js`, and `grep -n "mapMode\|MAP_MODES\|data-mm" app/app.js test/harness.html app/components.css` → no output.
+
+Then the repo owner runs `http://localhost:8765/test/harness.html` and confirms `PASS`, and eyeballs the map: no tab strip, one legend listing nine layers, all markers visible, district names still readable.
+
+- [ ] **Step 7: Ship and commit**
+
+Bump `CACHE` in `sw.js`. Update `README.md` to drop any mention of map mode tabs and describe the legend as the sole control. Re-run `./build-single.sh`.
+
+```bash
+git add app/app.js app/components.css test/harness.html sw.js README.md ../hp-revision.html
+git commit -m "feat: retire the map mode tabs; the legend controls every layer"
+```
