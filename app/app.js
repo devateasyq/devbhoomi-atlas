@@ -1577,6 +1577,50 @@ function mountRounds(){
 function esc(v){
   return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;");
 }
+/* Everything the app holds about you, as one file. Built from SYNC_KEYS so a
+   key added later is exported without anybody remembering to add it here. */
+function exportData(){
+  const out = {exportedAt: new Date().toISOString(), app: "Parikrama Path"};
+  for(const e of SYNC_KEYS) out[e.k] = store.get(e.k, e.empty());
+  const u = authUser();
+  if(u) out.account = {email: u.email || "", name: u.displayName || ""};
+  const blob = new Blob([JSON.stringify(out, null, 2)], {type: "application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "parikrama-path-" + dayKey() + ".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast("Exported");
+}
+/* Firebase refuses to delete an account on a stale session, raising
+   auth/requires-recent-login. Catch it, sign in again, retry — rather than
+   showing a cryptic error to somebody trying to leave. */
+function deleteAccount(){
+  const u = authUser();
+  if(!u) return;
+  const typed = window.prompt(
+    "This deletes your account and everything in it, on every device. " +
+    "It cannot be undone.\n\nType DELETE to confirm.");
+  if(typed !== "DELETE"){ toast("Not deleted"); return; }
+
+  loadFirebase().then(fb =>
+    userDoc(fb, u).delete()
+      .then(() => u.delete())
+      .catch(err => {
+        if(!err || err.code !== "auth/requires-recent-login") throw err;
+        toast("Confirm it is you, then it will be deleted");
+        return signInGoogle().then(() => authUser().delete());
+      })
+  ).then(() => {
+    wipeLocal();
+    render();
+    toast("Account deleted");
+  }).catch(err => {
+    console.error("[parikrama] delete failed:", err && err.code, err);
+    toast("Could not delete the account");
+  });
+}
 function viewProfile(){
   const u = authUser();
   const st = store.get("streak", emptyStreak());
@@ -1651,6 +1695,10 @@ function mountProfile(){
   });
   const si = document.getElementById("psignin");
   if(si) si.addEventListener("click", () => { document.getElementById("acctdlg").hidden = false; });
+  const ex = document.getElementById("pexport");
+  if(ex) ex.addEventListener("click", exportData);
+  const del = document.getElementById("pdelete");
+  if(del) del.addEventListener("click", deleteAccount);
   /* [data-go] clicks are handled by the document-level delegated listener
      already (see the click handler below); the notes index needs no mount
      wiring of its own. */
