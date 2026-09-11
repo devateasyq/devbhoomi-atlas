@@ -73,7 +73,6 @@ test("mergeSeen never mutates its inputs", () => {
   assert.deepEqual(b, ["b"]);
 });
 
-/* ---------- streak ---------- */
 /* ---------- the whole state ---------- */
 test("mergeState applies all three rules together", () => {
   const local  = {seen: ["f1"], quiz: {"Q1": {v: 1, t: 10}}, pyq: {}};
