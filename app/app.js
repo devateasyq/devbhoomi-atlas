@@ -12,12 +12,13 @@ const KINDS = {
   event:   {lb:"Event",           pl:"Timeline events",  c:"var(--e2)",  view:"timeline"},
   battle:  {lb:"Battle / Treaty", pl:"Battles & treaties",c:"var(--e7)", view:"battles"},
   person:  {lb:"Person",          pl:"People",           c:"var(--e9)",  view:"people"},
-  topic:   {lb:"Topic",           pl:"Topic notes",      c:"var(--accent)",view:"topics"}
+  topic:   {lb:"Topic",           pl:"Topic notes",      c:"var(--accent)",view:"topics"},
+  river:   {lb:"River",           pl:"Rivers",           c:"var(--water)", view:"map"}
 };
-const KIND_ORDER = ["district","state","person","event","battle","topic"];
+const KIND_ORDER = ["district","river","state","person","event","battle","topic"];
 const IDX = new Map();
 [[D.districts,"district"],[D.states,"state"],[D.events,"event"],
- [D.battles,"battle"],[D.people,"person"],[D.topics,"topic"]]
+ [D.battles,"battle"],[D.people,"person"],[D.topics,"topic"],[D.rivers,"river"]]
   .forEach(([arr,k]) => arr.forEach(r => IDX.set(r.id, {r, kind:k})));
 
 const nameOf = o => o.r.name || o.r.t || o.r.title;
@@ -150,6 +151,13 @@ function locatorFor(id){
   let hiName = null, mark = null, caption = "";
 
   if(o.kind === "district"){ hiName = r.map; caption = "<b>"+r.name+" district</b>"+r.hq+" · "+num(r.area)+" km²"; }
+  else if(o.kind === "river"){
+    const geo = MAP.rivers[id];
+    const paths = Object.values(MAP.paths).map(dd => '<path class="lp" d="'+dd+'"/>').join('');
+    return '<div class="locator"><svg viewBox="0 0 '+MAP.w+' '+MAP.h+'" aria-hidden="true">'+paths+
+      '<path class="lr" d="'+geo.d+'"/></svg><div class="lt"><b>'+r.name+'</b>'+
+      (r.lenHP || r.joins || "")+'</div></div>';
+  }
   else {
     const pid = r.seat || r.place;
     if(pid && MAP.places[pid]){
@@ -263,6 +271,23 @@ function openRec(id, headerNote, fromHash){
     body += locatorFor(id);
     body += renderBlocks(r.blocks);
   }
+  else if(k === "river"){
+    body += factsList([
+      ["Sanskrit", r.sans], ["Vedic name", r.vedic], ["Greek name", r.greek],
+      ["Meaning", r.meaning], ["Source", r.source], ["Enters HP", r.entry],
+      ["Leaves HP", r.exit], ["Joins", r.joins], ["Length in HP", r.lenHP],
+      ["Tributaries", r.tribs], ["Projects", r.projects]
+    ]);
+    body += locatorFor(id);
+    if(r.note) body += '<div class="blk"><p>'+r.note+'</p></div>';
+    body += renderBlocks(r.blocks);
+    if(r.districts && r.districts.length){
+      const v = r.districts.filter(x => IDX.has(x));
+      if(v.length) body += '<div class="blk"><h5>Flows through</h5><div class="rel">'+v.map(x =>
+        '<button class="relchip" type="button" data-go="'+x+'">'+
+        '<i class="k" style="background:'+KINDS.district.c+'"></i>'+IDX.get(x).r.name+'</button>').join('')+'</div></div>';
+    }
+  }
   else if(k === "topic"){
     body += factsList([["Section", r.sec], ["Covers", r.kw]]);
     body += renderBlocks(r.blocks);
@@ -359,10 +384,18 @@ function viewMap(){
   const clipId = "hpclip";
   const clip = '<clipPath id="'+clipId+'">'+
     Object.values(MAP.paths).map(d => '<path d="'+d+'"/>').join('')+'</clipPath>';
-  const rivers = '<g class="rivers'+(S.rivers ? '' : ' off')+'" clip-path="url(#'+clipId+')">'+
-    Object.entries(MAP.rivers).sort((a,b) => b[1].t - a[1].t).map(([n,r]) =>
+  const rEntries = Object.entries(MAP.rivers).sort((a,b) => b[1].t - a[1].t);
+  const rPaths = rEntries.map(([n,r]) =>
       '<path class="river t'+r.t+'" d="'+r.d+'" data-river="'+n+'"><title>'+n+
-      (r.t === 1 ? '' : ' (tributary)')+'</title></path>').join('')+'</g>';
+      (r.t === 1 ? '' : ' (tributary)')+'</title></path>').join('');
+  // label paths live in <defs>; the text rides them with textPath
+  const rDefs = rEntries.filter(([,r]) => r.lp)
+    .map(([n,r]) => '<path id="rp-'+n+'" d="'+r.lp+'"/>').join('');
+  const rLabels = rEntries.filter(([,r]) => r.lp).map(([n,r]) =>
+      '<text class="rlab t'+r.t+'" dy="-3.5"><textPath href="#rp-'+n+'" startOffset="50%" '+
+      'text-anchor="middle">'+D.rivers.find(x => x.id === n).name+'</textPath></text>').join('');
+  const rivers = '<g class="rivers'+(S.rivers ? '' : ' off')+'" clip-path="url(#'+clipId+')">'+
+    rPaths+'<g class="rlabels">'+rLabels+'</g></g>';
   const marks = Object.entries(MAP.places)
     .filter(([,p]) => mode.kinds.includes(p.k))
     .map(([id,p]) => '<g class="mk" data-p="'+id+'" data-rec="'+(placeTarget(id)||"")+'" '+
@@ -391,7 +424,7 @@ function viewMap(){
     '<div class="mapcanvas" id="mapcanvas">'+
       '<svg id="hpsvg" viewBox="0 0 '+MAP.w+' '+MAP.h+'" preserveAspectRatio="xMidYMid meet" '+
         'role="img" aria-label="Map of Himachal Pradesh — click a district or marker">'+
-        '<defs>'+clip+'</defs><g id="mapg">'+paths+rivers+(showLabels?labels:"")+marks+'</g></svg>'+
+        '<defs>'+clip+rDefs+'</defs><g id="mapg">'+paths+rivers+(showLabels?labels:"")+marks+'</g></svg>'+
       '<div id="maptip"></div>'+legend+
       '<div class="zoomer">'+
         '<button type="button" data-zoom="1" aria-label="Zoom in">+</button>'+
@@ -475,7 +508,8 @@ function mountMap(){
     down = null; dragging = false;
     if(wasDragging || !t) return;
     if(t.classList.contains("river")){
-      openRec("t-rivers", t.dataset.river);
+      if(IDX.has(t.dataset.river)) openRec(t.dataset.river);
+      else openRec("t-rivers", t.dataset.river);
     } else if(t.classList.contains("mk")){
       const rec = t.dataset.rec;
       if(rec && IDX.has(rec)) openRec(rec, MAP.places[t.dataset.p].n);
@@ -878,9 +912,12 @@ IDX.forEach((o,id) => {
   const r = o.r;
   SEARCH.push({
     id, kind:o.kind, name:nameOf(o),
-    extra:(r.kw || r.role || r.yr || r.hq || r.capital || ""),
+    extra:(r.kw || r.role || r.yr || r.hq || r.capital || r.sans || r.joins || ""),
     txt:[nameOf(o), ALIAS[id]||"", r.alias||"", r.kw||"", r.role||"", r.one||"", r.s||"",
          r.sig||"", r.capital||"", r.founder||"", r.hq||"", r.yr||"",
+         // rivers carry their classical names, which is what a candidate actually types
+         r.sans||"", r.vedic||"", r.greek||"", r.meaning||"", r.source||"",
+         r.entry||"", r.exit||"", r.joins||"", r.tribs||"", r.note||"",
          (r.sides||[]).join(" ")].join(" ").toLowerCase()
   });
 });

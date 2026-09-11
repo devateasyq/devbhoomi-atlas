@@ -45,8 +45,9 @@ Nothing is origin-specific — relative paths throughout, so it works from a sub
   so it works on a phone with no signal. "Add to Home Screen" gives it an icon and no browser chrome.
 - **Rivers on the map.** 29 named rivers — the five major systems plus the Chandra and Bhaga
   headwaters and 22 tributaries — drawn from OpenStreetMap centrelines, projected through the same
-  transform as the districts and clipped to the state outline. Toggleable, and clicking any river
-  opens the River Systems note.
+  transform as the districts and clipped to the state outline. Each is labelled on the map and
+  clicking one opens its own record: Sanskrit, Vedic and Greek names, source, entry and exit points,
+  length in the state, tributaries with their junctions, and the projects on it.
 - **Question trends.** A Trends view computes, from the past-paper bank itself, how many Himachal
   questions each paper carries, which subjects they come from, how each subject moves year to year,
   and which topic notes are examined most — every bar links back into the atlas.
@@ -123,6 +124,14 @@ node -e '
   console.log(ids.size,"records,",bad,"dangling links");
 '
 ```
+
+## A note on the river labels
+
+Labels ride a **straight chord** through the flattest stretch of each river, not the river's own
+polyline. Following the real curve looked better in principle but broke in practice: an SVG
+`textPath` places glyphs by advance along the path, so wherever the line doubles back the letters
+collide and drop — "Parvati" rendered as "P avti". The chord is chosen by scoring candidate windows
+on tilt and on how far the river strays from the chord, so the label still sits along its river.
 
 ## On the Trends view
 

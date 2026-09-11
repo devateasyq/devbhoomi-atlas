@@ -343,3 +343,11 @@ button.brow:hover .blab{color:var(--accent)}
 .river.t2{stroke-width:1.15;stroke:var(--water-soft)}
 .river:hover{stroke-width:3.4;stroke:var(--water)}
 .rivers.off{display:none}
+
+/* river names ride the river itself */
+.rlab{font-family:var(--f-body);font-weight:600;fill:var(--water);pointer-events:none;
+  paint-order:stroke;stroke:var(--ground);stroke-width:3px;stroke-linejoin:round;letter-spacing:normal}
+.rlab.t1{font-size:15px}
+.rlab.t2{font-size:11px;fill:var(--water-soft)}
+/* locator: trace the river across the state outline */
+.locator .lr{fill:none;stroke:var(--water);stroke-width:9;stroke-linecap:round;stroke-linejoin:round}
