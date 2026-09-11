@@ -102,6 +102,24 @@ function setNote(notes, id, text){
   out[id] = {text: clean, t: Date.now()};
   return out;
 }
+/* flushNote decides whether the mounted note editor's value should be
+   written to storage. Comparing the textarea's text against what is stored
+   is not enough on its own: that comparison has no memory of whether the
+   student actually typed anything, so anything else that changes
+   hpatlas:notes under an open panel — a newer note landing via
+   pullAndMerge, a wipe on sign-out — makes the comparison point at a value
+   the student never wrote, and it gets saved right back over the top
+   (review finding 1, CRITICAL). Gate on "did the student type" (dirty)
+   first; only once that is true does the stored-vs-typed comparison run,
+   which is what keeps the existing double-save suppression working (blur,
+   then the Save button's own blur, must not save/push/toast twice). */
+function shouldWriteNote(storedText, typedText, dirty){
+  if(!dirty) return false;
+  var had = typeof storedText === "string" ? storedText : "";
+  var now = typeof typedText === "string" ? typedText : "";
+  return now !== had;
+}
+
 /* A day counts when any ONE of these is reached. Several routes, because a
    bus journey scrolling Rounds and a sit-down past paper are both revision. */
 var DAY_GOAL = {facts: 20, quiz: 5, pyq: 5, recs: 5};
@@ -245,6 +263,7 @@ if(typeof module !== "undefined" && module.exports){
                     answerValue: answerValue, recordAnswer: recordAnswer,
                     SYNC_KEYS: SYNC_KEYS, NOTE_MAX: NOTE_MAX, normaliseNotes: normaliseNotes,
                     mergeNotes: mergeNotes, setNote: setNote,
+                    shouldWriteNote: shouldWriteNote,
                     DAY_GOAL: DAY_GOAL, emptyStreak: emptyStreak, dayKey: dayKey,
                     daysApart: daysApart, bumpStreak: bumpStreak};
 }

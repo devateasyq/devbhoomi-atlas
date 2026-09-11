@@ -233,6 +233,38 @@ test("setNote does not mutate the map it is given", () => {
   assert.deepEqual(notes, {});
 });
 
+/* ---------- shouldWriteNote ---------- */
+/* Finding 1 (review, CRITICAL): flushNote used to decide whether to write by
+   comparing the textarea's text against storage. That comparison has no
+   memory of whether the student actually typed — if storage changes under
+   an open panel (a sync landing, a wipe on sign-out) the "stored" side moves
+   and the stale textarea value gets written back as if it were fresh, or an
+   empty textarea deletes a note that just arrived. shouldWriteNote makes
+   "did the student type" (dirty) the gate, checked before text is ever
+   compared. */
+test("shouldWriteNote never writes when the student never typed, however storage and the box differ", () => {
+  assert.equal(sync.shouldWriteNote("old draft", "old draft", false), false);
+  assert.equal(sync.shouldWriteNote("old draft", "a newer note synced in", false), false,
+    "a stale textarea must not overwrite a note that synced in while untouched");
+  assert.equal(sync.shouldWriteNote("a note that just synced in", "", false), false,
+    "an untouched, initially-empty textarea must not delete a note that arrived after");
+});
+
+test("shouldWriteNote writes when the student typed and the value actually changed", () => {
+  assert.equal(sync.shouldWriteNote("old draft", "old draft, revised", true), true);
+});
+
+test("shouldWriteNote still suppresses the double save when dirty but unchanged", () => {
+  /* blur fires flushNote, then the Save button's own blur fires it again;
+     both see the same unchanged text, so only the first should write. */
+  assert.equal(sync.shouldWriteNote("same text", "same text", true), false);
+});
+
+test("shouldWriteNote treats a non-string stored value as no stored note", () => {
+  assert.equal(sync.shouldWriteNote(undefined, "typed", true), true);
+  assert.equal(sync.shouldWriteNote(undefined, "", true), false);
+});
+
 /* ---------- hostile record ids ----------
    Record ids are internal fixed strings (e.g. "d-kangra") and are never
    user-typed, but notes also arrive from Firestore via JSON.parse. Unlike

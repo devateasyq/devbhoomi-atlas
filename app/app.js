@@ -122,6 +122,7 @@ function wipeLocal(){
   for(const e of SYNC_KEYS) store.del(e.k);
   store.del("owner");
   S.seen = [];
+  dropMountedNote();
 }
 function userDoc(fb, user){
   return fb.firestore().collection("users").doc(user.uid);
@@ -148,6 +149,7 @@ function pullAndMerge(user){
       for(const e of SYNC_KEYS) store.set(e.k, remote[e.k] || e.empty());
       store.set("owner", user.uid);
       S.seen = store.get("seen", []);
+      dropMountedNote();
       toast("Loaded this account's progress");
       return Promise.resolve();
     }
@@ -155,6 +157,7 @@ function pullAndMerge(user){
     for(const e of SYNC_KEYS) store.set(e.k, merged[e.k]);
     store.set("owner", user.uid);
     S.seen = merged.seen;
+    dropMountedNote();
     /* the merged result goes straight back up, so both sides agree */
     return userDoc(fb, user).set(merged, {merge: true});
   }));
@@ -444,15 +447,26 @@ function noteBlock(id){
    not save, push and toast a second time. */
 let _note = null;
 
+/* Whether to write is decided by shouldWriteNote (app/sync.js), not by
+   comparing text alone: that comparison has no memory of whether the
+   student actually typed anything, so anything that changes hpatlas:notes
+   under an open panel — a newer note landing via pullAndMerge, a wipe on
+   sign-out — used to get saved right back over the top of the value that
+   actually won (review finding 1). `dirty` is the student's fingerprint;
+   only mountNote's own input listener may set it. */
 function flushNote(){
   if(!_note) return;
-  const id = _note.id, el = _note.el;
+  const id = _note.id, el = _note.el, dirty = _note.dirty;
   if(!el.isConnected){ _note = null; return; }
   const notes = store.get("notes", {});
   const had = Object.prototype.hasOwnProperty.call(notes, id) && notes[id] &&
               typeof notes[id].text === "string" ? notes[id].text : "";
   const now = el.value;
-  if(now === had) return;
+  /* Cleared unconditionally, whether or not this flush actually writes: the
+     Save button's click follows its own blur, and both must not act on the
+     same typed change twice (see shouldWriteNote's comment in sync.js). */
+  _note.dirty = false;
+  if(!shouldWriteNote(had, now, dirty)) return;
   store.set("notes", setNote(notes, id, now));
   if(authUser()) pushStateSoon();
   toast(now.trim() ? "Note saved" : "Note removed");
@@ -461,14 +475,29 @@ function flushNote(){
 function mountNote(id){
   const ta = document.getElementById("notetext");
   if(!ta) return;
-  _note = {id: id, el: ta};
+  _note = {id: id, el: ta, dirty: false};
   const count = document.getElementById("notecount");
   const save = flushNote;
   ta.addEventListener("input", () => {
     count.textContent = ta.value.length + " / " + NOTE_MAX;
+    if(_note) _note.dirty = true;
   });
   ta.addEventListener("blur", save);
   document.getElementById("notesave").addEventListener("click", save);
+}
+
+/* pullAndMerge and wipeLocal both change hpatlas:notes out from under
+   whatever is mounted. Dropping the reference stops flushNote from ever
+   writing the old value back (review finding 1) — including the
+   sign-out case: wipeLocal also clears hpatlas:owner, so if the departed
+   student's note were written back it would look like guest data and get
+   merged into the NEXT student's account on their sign-in. If the panel is
+   still open on the affected record, re-render it silently (no trail entry,
+   no streak credit, no hash write — this is a resync, not a navigation) so
+   the student sees the note that actually won rather than a stale one. */
+function dropMountedNote(){
+  _note = null;
+  if(S.sel && !$("#panel").hidden) openRec(S.sel, null, true, true);
 }
 
 /* ---------- related, grouped by kind ---------- */
@@ -535,12 +564,17 @@ function featuresIn(did){
 }
 
 /* ---------- detail panel ---------- */
-function openRec(id, headerNote, fromHash){
+function openRec(id, headerNote, fromHash, silent){
   const o = IDX.get(id); if(!o) return;
   flushNote();              /* before #pbody is replaced out from under it */
   S.sel = id;
-  noteActivity("rec", id);
-  pushTrail(id);
+  /* `silent` is set only by dropMountedNote's resync refresh: the student
+     did not navigate here, so it must not count as a visit (no streak
+     credit, no trail entry). */
+  if(!silent){
+    noteActivity("rec", id);
+    pushTrail(id);
+  }
   const r = o.r, k = o.kind, era = eraOf(o);
   $("#pkind").textContent = headerNote ? headerNote+" · "+KINDS[k].lb : KINDS[k].lb;
   $("#ptitle").textContent = nameOf(o);
