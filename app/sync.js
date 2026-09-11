@@ -181,8 +181,8 @@ function bumpStreak(st, kind, id, today){
    daysApart: daysApart returns Infinity when EITHER date is "" (a fresh
    emptyStreak's last/day, e.g. a remote that predates this feature and so
    has no "streak" key at all — normaliseStreak(undefined) above yields
-   exactly that). Infinity > 0 reads as "B is later", so an ungarded ternary
-   would pick the EMPTY side over a real date, wiping out a real streak's
+   exactly that). Infinity > 0 reads as "B is later", so an unguarded
+   ternary would pick the EMPTY side over a real date, wiping out a real streak's
    last-day and, via the day-gated counters below, today's facts/quiz/pyq/
    recs too — on every user's very first sync after this feature ships.
    Handle "one side has no date" explicitly, before daysApart is ever
