@@ -134,25 +134,26 @@ function pushState(user){
   return loadFirebase().then(fb => userDoc(fb, user).set(localState(), {merge: true}));
 }
 /* Rounds marks a fact seen on every card that settles on screen, so pushing
-   directly would mean a Firestore write per fact scrolled — hundreds in a
-   browsing session, against a free tier with a daily write quota. Coalesce
-   them: the last write within the window wins, and pushState always sends
-   the whole local state, so nothing is lost by waiting. */
-let _pushTimer = null;
+   directly would mean a Firestore write per fact scrolled. Coalesce them. */
+let _pushTimer = null, _pushUser = null;
 function pushStateSoon(){
   const u = authUser();
   if(!u) return;
+  _pushUser = u;
   clearTimeout(_pushTimer);
-  _pushTimer = setTimeout(function(){
-    _pushTimer = null;
-    pushState(u).catch(function(){});
-  }, 4000);
+  _pushTimer = setTimeout(function(){ _pushTimer = null; flushPendingPush(); }, 4000);
 }
-/* A push scheduled for the signed-in user at the time must not be allowed to
-   fire after the signed-in user changes — otherwise it lands in the wrong
-   account's document. Call this before anything else runs on any auth
-   change, sign-in or sign-out. */
-function cancelPendingPush(){ clearTimeout(_pushTimer); _pushTimer = null; }
+/* A pending push belongs to whoever scheduled it. Local state is snapshotted
+   synchronously here, before an incoming user's pull can rewrite it, so the
+   write always carries the right person's progress to the right document. */
+function flushPendingPush(){
+  clearTimeout(_pushTimer); _pushTimer = null;
+  const u = _pushUser; _pushUser = null;
+  if(!u) return;
+  const snap = localState();
+  loadFirebase().then(function(fb){ return userDoc(fb, u).set(snap, {merge: true}); })
+                .catch(function(){});
+}
 function mountAccount(){
   const btn = document.getElementById("acctbtn");
   const dlg = document.getElementById("acctdlg");
@@ -183,7 +184,7 @@ function mountAccount(){
       .catch(err => say(err && err.message ? err.message : "Could not send the link"));
   });
   onAuthChange(user => {
-    cancelPendingPush();
+    flushPendingPush();
     renderAccount(user);
     if(!user) return;
     pullAndMerge(user)
@@ -1584,5 +1585,5 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
 
 /* A pending debounced push would otherwise die with the page. */
 window.addEventListener("pagehide", function(){
-  if(_pushTimer && authUser()){ clearTimeout(_pushTimer); _pushTimer = null; pushState(authUser()).catch(function(){}); }
+  flushPendingPush();
 });
