@@ -163,3 +163,72 @@ test("device preferences still never survive a merge", () => {
   for(const k of ["theme", "mapoff", "legendopen"])
     assert.ok(!(k in m), k + " belongs to the device and must not merge");
 });
+
+/* ---------- notes ---------- */
+test("NOTE_MAX is the documented 1000 characters", () => {
+  assert.equal(sync.NOTE_MAX, 1000);
+});
+
+test("normaliseNotes clamps an over-long note rather than dropping it", () => {
+  const long = "x".repeat(1500);
+  const out = sync.normaliseNotes({"d-kangra": {text: long, t: 5}});
+  assert.equal(out["d-kangra"].text.length, 1000);
+  assert.equal(out["d-kangra"].t, 5);
+});
+
+test("a note at exactly the cap is untouched", () => {
+  const exact = "y".repeat(1000);
+  const out = sync.normaliseNotes({"d-kangra": {text: exact, t: 1}});
+  assert.equal(out["d-kangra"].text, exact);
+});
+
+test("normaliseNotes drops junk rather than propagating it", () => {
+  const out = sync.normaliseNotes({a: null, b: 42, c: {t: 1}, d: {text: "ok", t: 2}});
+  assert.deepEqual(Object.keys(out), ["d"]);
+  assert.deepEqual(sync.normaliseNotes(null), {});
+});
+
+test("normaliseNotes drops a note that is only whitespace", () => {
+  const out = sync.normaliseNotes({a: {text: "   \n ", t: 1}, b: {text: "real", t: 1}});
+  assert.deepEqual(Object.keys(out), ["b"]);
+});
+
+test("mergeNotes keeps the most recent note per record", () => {
+  const a = {"d-kangra": {text: "older", t: 100}, "d-shimla": {text: "only a", t: 5}};
+  const b = {"d-kangra": {text: "newer", t: 900}, "d-mandi":  {text: "only b", t: 5}};
+  const m = sync.mergeNotes(a, b);
+  assert.equal(m["d-kangra"].text, "newer");
+  assert.equal(m["d-shimla"].text, "only a");
+  assert.equal(m["d-mandi"].text,  "only b");
+});
+
+test("mergeNotes never mutates its inputs", () => {
+  const a = {"x": {text: "a", t: 1}};
+  const b = {"x": {text: "b", t: 2}};
+  sync.mergeNotes(a, b);
+  assert.equal(a["x"].text, "a");
+  assert.equal(b["x"].text, "b");
+});
+
+test("setNote writes and stamps a note", () => {
+  const before = Date.now();
+  const out = sync.setNote({}, "d-kangra", "Kangra fort fell in 1620");
+  assert.equal(out["d-kangra"].text, "Kangra fort fell in 1620");
+  assert.ok(out["d-kangra"].t >= before);
+});
+
+test("setNote clamps to the cap on the way in", () => {
+  const out = sync.setNote({}, "x", "z".repeat(2000));
+  assert.equal(out["x"].text.length, 1000);
+});
+
+test("setNote with empty text removes the note", () => {
+  const out = sync.setNote({"x": {text: "gone soon", t: 1}}, "x", "   ");
+  assert.ok(!("x" in out), "an emptied note should be removed, not stored blank");
+});
+
+test("setNote does not mutate the map it is given", () => {
+  const notes = {};
+  sync.setNote(notes, "x", "hello");
+  assert.deepEqual(notes, {});
+});

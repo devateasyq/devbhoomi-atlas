@@ -42,8 +42,41 @@ function mergeSeen(a, b){
   return out;
 }
 
-/* replaced in Task 2 */
-function mergeNotes(a, b){ return {}; }
+/* Notes share one Firestore document with progress, and that document has a
+   hard 1 MB limit. Exceed it and the WHOLE write is rejected — so an
+   unbounded note would silently stop quiz progress syncing too. */
+var NOTE_MAX = 1000;
+
+function normaliseNotes(obj){
+  var out = {}, k, v, text;
+  if(!obj || typeof obj !== "object") return out;
+  for(k in obj){
+    if(!Object.prototype.hasOwnProperty.call(obj, k)) continue;
+    v = obj[k];
+    if(!v || typeof v !== "object" || typeof v.text !== "string") continue;
+    text = v.text.slice(0, NOTE_MAX);
+    if(!text.trim()) continue;          /* blank is the same as no note */
+    out[k] = {text: text, t: typeof v.t === "number" ? v.t : 0};
+  }
+  return out;
+}
+
+function mergeNotes(a, b){
+  var A = normaliseNotes(a), B = normaliseNotes(b), out = {}, k;
+  for(k in A) if(Object.prototype.hasOwnProperty.call(A, k)) out[k] = A[k];
+  for(k in B){
+    if(!Object.prototype.hasOwnProperty.call(B, k)) continue;
+    if(!out[k] || B[k].t > out[k].t) out[k] = B[k];
+  }
+  return out;
+}
+
+function setNote(notes, id, text){
+  var out = normaliseNotes(notes), clean = String(text == null ? "" : text).slice(0, NOTE_MAX);
+  if(!clean.trim()) { delete out[id]; return out; }
+  out[id] = {text: clean, t: Date.now()};
+  return out;
+}
 /* replaced in Task 3 */
 function emptyStreak(){ return {}; }
 function mergeStreak(a, b){ return {}; }
@@ -86,5 +119,6 @@ if(typeof module !== "undefined" && module.exports){
   module.exports = {normaliseAnswers: normaliseAnswers, mergeAnswers: mergeAnswers,
                     mergeSeen: mergeSeen, mergeStreak: mergeStreak, mergeState: mergeState,
                     answerValue: answerValue, recordAnswer: recordAnswer,
-                    SYNC_KEYS: SYNC_KEYS};
+                    SYNC_KEYS: SYNC_KEYS, NOTE_MAX: NOTE_MAX, normaliseNotes: normaliseNotes,
+                    mergeNotes: mergeNotes, setNote: setNote};
 }
