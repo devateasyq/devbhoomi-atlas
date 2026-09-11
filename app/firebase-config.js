@@ -38,6 +38,11 @@ function loadFirebase(){
       s.onerror = function(){ reject(new Error("could not load " + s.src)); };
       document.head.appendChild(s);
     })();
+  }).catch(function(err){
+    /* a failed load must not be cached forever — clear it so the next
+       call genuinely retries instead of replaying the same rejection */
+    _fbPromise = null;
+    throw err;
   });
   return _fbPromise;
 }
