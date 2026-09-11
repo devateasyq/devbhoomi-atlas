@@ -158,6 +158,16 @@ function pushState(user){
   if(!user) return Promise.resolve();
   return pushSnapshot(user, localState());
 }
+/* Every route to a qualifying day funnels through here, so the four call
+   sites cannot drift apart in how they count. */
+function noteActivity(kind, id){
+  const before = store.get("streak", emptyStreak());
+  const after = bumpStreak(before, kind, id, dayKey());
+  store.set("streak", after);
+  if(after.n !== before.n && after.n > 0) toast("Day " + after.n + " — streak going");
+  if(authUser()) pushStateSoon();
+  return after;
+}
 /* Rounds marks a fact seen on every card that settles on screen, so pushing
    directly would mean a Firestore write per fact scrolled. Coalesce them. */
 let _pushTimer = null, _pushUser = null;
@@ -516,6 +526,7 @@ function openRec(id, headerNote, fromHash){
   const o = IDX.get(id); if(!o) return;
   flushNote();              /* before #pbody is replaced out from under it */
   S.sel = id;
+  noteActivity("rec", id);
   pushTrail(id);
   const r = o.r, k = o.kind, era = eraOf(o);
   $("#pkind").textContent = headerNote ? headerNote+" · "+KINDS[k].lb : KINDS[k].lb;
@@ -1309,6 +1320,7 @@ function pyAnswer(i){
   S.pyAnswered = i;
   const prog = store.get("pyq",{});
   store.set("pyq", recordAnswer(prog, q.y+"|"+q.q.slice(0,60), i === q.a));
+  noteActivity("pyq", q.q);
   if(authUser()) pushState(authUser()).catch(() => {});
   render();
 }
@@ -1362,6 +1374,7 @@ function answer(i){
   const q = quizPool()[S.qIdx]; if(!q) return;
   S.qAnswered = i;
   const prog = store.get("quiz",{}); store.set("quiz", recordAnswer(prog, q.q, i === q.a));
+  noteActivity("quiz", q.q);
   if(authUser()) pushState(authUser()).catch(() => {});
   render();
 }
@@ -1533,7 +1546,7 @@ function mountRounds(){
       en.target.classList.add("on");
       if(en.intersectionRatio < 0.6) continue;
       const id = en.target.dataset.fid;
-      if(S.seen.indexOf(id) < 0){ S.seen.push(id); store.set("seen", S.seen); pushStateSoon(); }
+      if(S.seen.indexOf(id) < 0){ S.seen.push(id); store.set("seen", S.seen); pushStateSoon(); noteActivity("facts", id); }
       const cards = feed.children;
       if([].indexOf.call(cards, en.target) >= cards.length - 5) extend = true;
     }
