@@ -9,7 +9,7 @@ const ROOT = path.join(__dirname, "..");
 function loadData(files){
   const D = {};
   let MAP = null;
-  const list = files || ["geo.js","places.js","history.js","topics.js","rivers.js","quiz.js","pyq.js"];
+  const list = files || ["geo.js","places.js","history.js","topics.js","rivers.js","features.js","quiz.js","pyq.js"];
   for(const f of list){
     const p = path.join(ROOT, "data", f);
     if(!fs.existsSync(p)) continue;
@@ -25,6 +25,11 @@ function loadData(files){
     // eslint-disable-next-line no-eval
     eval(src);
   }
+  /* Guard against the strip regex above silently failing to match: if it
+     ever stops matching, D stays the pre-seeded {} and every data test
+     would pass vacuously against an empty dataset. districts is the
+     earliest thing places.js assigns, so its absence means load failed. */
+  if(!D.districts || !D.districts.length) throw new Error("loadData: D.districts is empty — data files failed to load");
   return {D, MAP};
 }
 module.exports = {loadData, ROOT};

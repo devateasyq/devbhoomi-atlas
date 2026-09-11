@@ -68,3 +68,50 @@ test("glacier markers sit inside the map viewbox", () => {
     assert.ok(p.y > 0 && p.y < MAP.h, pid + " y outside viewbox");
   }
 });
+
+const PREFIX = {peak:"pk-", pass:"ps-", lake:"lk-", glacier:"gl-"};
+
+test("every feature has the required fields", () => {
+  for(const f of (D.features || [])){
+    assert.ok(f.id && f.k && f.pid && f.name, "incomplete feature: " + JSON.stringify(f.id));
+    assert.ok(PREFIX[f.k], f.id + " has unknown kind " + f.k);
+    assert.ok(f.id.startsWith(PREFIX[f.k]), f.id + " should start with " + PREFIX[f.k]);
+    assert.ok(Array.isArray(f.blocks) && f.blocks.length, f.id + " has no blocks");
+    assert.ok(Array.isArray(f.rel) && f.rel.length, f.id + " has no rel");
+  }
+});
+
+test("every feature pid resolves to a real map marker of the same kind", () => {
+  for(const f of (D.features || [])){
+    const p = MAP.places[f.pid];
+    assert.ok(p, f.id + " points at missing place " + f.pid);
+    assert.equal(p.k, f.k, f.id + " kind " + f.k + " but marker is " + p.k);
+  }
+});
+
+test("no two features share a pid", () => {
+  const seen = new Map();
+  for(const f of (D.features || [])){
+    assert.ok(!seen.has(f.pid), f.pid + " claimed by both " + seen.get(f.pid) + " and " + f.id);
+    seen.set(f.pid, f.id);
+  }
+});
+
+test("every feature carries an exam hook", () => {
+  for(const f of (D.features || [])){
+    const hook = f.blocks.some(b => b[0] === "note" && /exam hook/i.test(b[1]));
+    assert.ok(hook, f.id + " has no exam-hook note");
+  }
+});
+
+test("all 18 passes are recorded", () => {
+  const passes = (D.features || []).filter(f => f.k === "pass");
+  assert.equal(passes.length, 18);
+});
+
+test("every pass marker on the map has a record", () => {
+  const have = new Set((D.features || []).filter(f => f.k === "pass").map(f => f.pid));
+  for(const [pid, p] of Object.entries(MAP.places)){
+    if(p.k === "pass") assert.ok(have.has(pid), "pass marker " + pid + " has no record");
+  }
+});
