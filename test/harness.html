@@ -150,6 +150,15 @@ window.addEventListener("load", async () => {
   check("a district lists its own features",
     doc.querySelectorAll('#pbody .relchip[data-go^="pk-"], #pbody .relchip[data-go^="ps-"]').length > 0);
 
+  const hits = q => { win.runSearch(q);
+    return [...doc.querySelectorAll("#results .res")].map(b => b.dataset.go); };
+  check("searching a height finds the pass", hits("5,578").includes("ps-parangla") ||
+                                             hits("5578").includes("ps-parangla"));
+  check("searching a name finds the peak", hits("reo purgyil").includes("pk-reopurgyil"));
+  check("searching 'shipki' finds the pass", hits("shipki").includes("ps-shipkila"));
+  check("searching 'ramsar' finds the three sites",
+    ["lk-pong","lk-renuka","lk-chandratal"].every(id => hits("ramsar").includes(id)));
+
   out.innerHTML += "\n" + pass + " passed, " + fail + " failed";
   document.title = fail ? "FAIL (" + fail + ")" : "PASS";
 });

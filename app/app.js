@@ -1066,13 +1066,18 @@ IDX.forEach((o,id) => {
   const r = o.r;
   SEARCH.push({
     id, kind:o.kind, name:nameOf(o),
-    extra:(r.kw || r.role || r.yr || r.hq || r.capital || r.sans || r.joins || ""),
+    extra:(r.kw || r.role || r.yr || r.hq || r.capital || r.sans || r.joins || r.alt || r.type || ""),
     txt:[nameOf(o), ALIAS[id]||"", r.alias||"", r.kw||"", r.role||"", r.one||"", r.s||"",
          r.sig||"", r.capital||"", r.founder||"", r.hq||"", r.yr||"",
          // rivers carry their classical names, which is what a candidate actually types
          r.sans||"", r.vedic||"", r.greek||"", r.meaning||"", r.source||"",
          r.entry||"", r.exit||"", r.joins||"", r.tribs||"", r.note||"",
-         (r.sides||[]).join(" ")].join(" ").toLowerCase()
+         (r.sides||[]).join(" "),
+         // features are looked up by height and by what they connect
+         r.alt||"", r.range||"", r.connects||"", r.status||"", r.route||"",
+         r.valley||"", r.feeds||"", r.sacred||"", r.ramsar||"", r.fame||"",
+         r.type||"", r.river||"", r.size||"",
+         (r.alt||"").replace(/,/g, "")].join(" ").toLowerCase()
   });
 });
 function runSearch(q){
