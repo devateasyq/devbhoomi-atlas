@@ -64,8 +64,13 @@ Nothing is origin-specific — relative paths throughout, so it works from a sub
 - **Past papers.** 448 questions from the HPAS prelims papers of 2020, 2021, 2022, 2023 and 2025,
   filterable by year, with a *Himachal only* toggle that narrows them to the 109 state-specific ones.
   Where a question maps to a note in the atlas, the explanation links straight to it.
-- **Progress is local.** Quiz and past-paper results live in `localStorage` under the `hpatlas:`
-  prefix, in separate buckets. Nothing is uploaded, and there is no analytics or tracking.
+- **Progress is yours.** Quiz and past-paper results, the facts you have seen, your notes and your
+  streak live in `localStorage` under the `hpatlas:` prefix, in separate buckets. Signed out, they
+  stay on the device. Signed in, they also sync to a Firestore document that `firestore.rules`
+  makes readable and writable by that account alone, so the same progress follows you between
+  devices. Theme, hidden map layers and the legend's state are device preferences and never sync.
+  Everything can be exported, and the account and its data deleted, from the profile.
+  The page does load Vercel Analytics (`cdn.vercel-insights.com`), which counts page views.
 
 ## Structure
 
