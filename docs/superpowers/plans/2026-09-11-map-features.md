@@ -1781,7 +1781,7 @@ git commit -m "feat: index feature heights and attributes for search"
 
 **Interfaces:**
 - Consumes: `D.features`, `D.rivers`.
-- Produces: ~160 additional `{sec:"Geography", q, a, id}` cards.
+- Produces: additional `{sec:"Geography", q, a, id}` cards — 124 from the 62 features, plus cards for each of the 29 river records (a record missing an optional field simply yields fewer cards).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1905,7 +1905,7 @@ console.log("features:", D.features.length, " rivers:", D.rivers.length);
 '
 ```
 
-Expected: `features: 62  rivers: 7`. Then open the app, go to Revise → Flashcards → Geography, and confirm the deck now runs well past its old length and that pass and glacier cards appear.
+Expected: `features: 62  rivers: 29`. Then open the app, go to Revise → Flashcards → Geography, and confirm the deck now runs well past its old length and that pass and glacier cards appear.
 
 - [ ] **Step 6: Commit**
 
@@ -1998,6 +1998,6 @@ git commit -m "chore: bundle features and mapkit into the offline build, bump ca
 | `goTo` selects geo mode | 10 |
 | Generated reverse links | 14 |
 | Height indexed for search | 15 |
-| ~160 generated cards, rivers gap closed | 16 |
+| Generated cards for all features and all 29 rivers | 16 |
 | `sw.js` cache bump, `build-single.sh` module list | 17 |
 | Pointer-capture regression guard | 10 (harness drag test), 11, 12 |
