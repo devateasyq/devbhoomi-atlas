@@ -75,7 +75,7 @@ function factsList(pairs){
 const S = {
   view:"home", sel:null, trail:[], seen:[],
   era:"all", battleFilter:"all", topicSec:"all",
-  revMode:"cards", cardIdx:0, cardFlip:false, cardSec:"all",
+  revMode:"papers",
   qIdx:0, qSec:"all", qAnswered:null,
   pyYear:"all", pyHP:true, pyIdx:0, pyAnswered:null
 };
@@ -98,7 +98,7 @@ const SUB = {home:"Start here", map:"12 districts · "+D.states.length+" hill st
              timeline:"Prehistory to 1971", battles:"Wars, sieges and treaties",
              topics:"Notes by subject", people:"Rulers, rebels, builders",
              trends:"What the papers actually ask", rounds:"One fact at a time",
-             revise:"Flashcards, quiz and past papers"};
+             revise:"Past papers and quiz"};
 const TITLE = {home:"Overview", map:"Atlas", timeline:"Timeline", battles:"Battles & Treaties",
                topics:"Topics", people:"People", trends:"Question Trends", rounds:"Rounds", revise:"Revise"};
 
@@ -838,80 +838,8 @@ function viewPeople(){
 }
 
 /* ============================================================
-   REVISE — flashcards generated from the records, plus the MCQ bank
+   REVISE — the past-paper bank and the curated MCQ quiz
    ============================================================ */
-let CARDS = null;
-function buildCards(){
-  const c = []; const push = (sec,q,a,id) => c.push({sec,q,a,id});
-  D.districts.forEach(d => {
-    push("Geography", d.name+" — headquarters and division?", "<b>"+d.hq+"</b>, in the "+d.div+" division.", d.id);
-    push("Geography", "When was "+d.name+" district formed?", "<b>"+d.formed+"</b>", d.id);
-    push("Geography", d.name+" — area, population and density?",
-      "<b>"+num(d.area)+" km²</b> · population <b>"+num(d.pop)+"</b> · density <b>"+d.den+"/km²</b> (Census 2011).", d.id);
-    push("Geography", d.name+" — literacy and sex ratio?",
-      "Literacy <b>"+d.lit+"%</b> · sex ratio <b>"+d.sr+"</b> (Census 2011).", d.id);
-  });
-  D.states.forEach(s => {
-    push("History", s.name+" — founder and founding date?", "<b>"+s.founder+"</b> · "+s.founded, s.id);
-    push("History", s.name+" — capital?", "<b>"+s.capital+"</b>", s.id);
-    push("History", "How did "+s.name+" end?", "<b>"+s.merged+"</b>", s.id);
-  });
-  D.events.forEach(e => {
-    push("History", e.yr+" — what happened?", "<b>"+e.t+"</b><br>"+e.s, e.id);
-    push("History", "When: "+e.t+"?", "<b>"+e.yr+"</b>", e.id);
-  });
-  D.battles.forEach(b => {
-    push("History", b.name+" — year, sides, winner?",
-      "<b>"+b.yr+"</b><br>"+b.sides.join("  vs  ")+"<br>Won by <b>"+b.winner+"</b>.", b.id);
-    push("History", b.name+" — why does it matter?", b.sig, b.id);
-  });
-  D.people.forEach(p => push("History", "Who was "+p.name+"?",
-    "<b>"+p.role+"</b> ("+p.dates+")<br>"+p.one, p.id));
-  D.topics.forEach(t => push(t.sec, t.title+" — what must you be able to name?", t.kw, t.id));
-  /* Features and rivers: the facts a prelims paper actually asks. Every
-     card is derived from a record field, so editing the record edits the
-     card and the two cannot drift apart. */
-  (D.features || []).forEach(f => {
-    if(f.k === "peak"){
-      push("Geography", f.name+" — height and range?",
-        "<b>"+f.alt+"</b>"+(f.range ? " · "+f.range : ""), f.id);
-      push("Geography", "Which district is "+f.name+" in?",
-        "<b>"+(f.districts || []).map(d => IDX.has(d) ? IDX.get(d).r.name : d).join(", ")+"</b>", f.id);
-    } else if(f.k === "pass"){
-      push("Geography", f.name+" — height?", "<b>"+f.alt+"</b>", f.id);
-      push("Geography", f.name+" — what does it connect?",
-        "<b>"+f.connects+"</b>"+(f.range ? "<br>"+f.range : ""), f.id);
-    } else if(f.k === "lake"){
-      push("Geography", f.name+" — natural or man-made, and where?",
-        "<b>"+f.type+"</b>"+(f.alt ? " · "+f.alt : "")+
-        " · "+(f.districts || []).map(d => IDX.has(d) ? IDX.get(d).r.name : d).join(", "), f.id);
-      if(f.ramsar) push("Geography", "When was "+f.name+" designated a Ramsar site?",
-        "<b>"+f.ramsar+"</b>", f.id);
-      /* Skip the "what is it known for?" card entirely when neither sacred
-         nor river status is on record — the fallback would otherwise answer
-         with the bare word `type` ("Natural"/"Reservoir"), which is already
-         shown on the card above and useless as a recall prompt on its own. */
-      else if(f.sacred || f.river) push("Geography", f.name+" — what is it known for?",
-        f.sacred || f.river, f.id);
-    } else if(f.k === "glacier"){
-      push("Geography", f.name+" — which valley, and which river does it feed?",
-        "<b>"+f.valley+"</b><br>Feeds the <b>"+f.feeds+"</b>", f.id);
-    }
-  });
-  (D.rivers || []).forEach(r => {
-    push("Geography", r.name+" — where does it rise?", "<b>"+r.source+"</b>", r.id);
-    if(r.lenHP) push("Geography", r.name+" — length in Himachal?", "<b>"+r.lenHP+"</b>", r.id);
-    if(r.sans) push("Geography", r.name+" — Sanskrit, Vedic and Greek names?",
-      [r.sans, r.vedic, r.greek].filter(Boolean).join(" · "), r.id);
-    if(r.tribs) push("Geography", r.name+" — tributaries and where they join?", r.tribs, r.id);
-    if(r.projects) push("Geography", r.name+" — the projects on it?", r.projects, r.id);
-  });
-  return c;
-}
-const cardPool = () => {
-  if(!CARDS) CARDS = buildCards();
-  return S.cardSec === "all" ? CARDS : CARDS.filter(c => c.sec === S.cardSec);
-};
 const quizPool = () => S.qSec === "all" ? D.quiz : D.quiz.filter(q => q.s === S.qSec);
 const PY_YEARS = [...new Set(D.pyq.map(q => q.y))].sort((a,b) => b-a);
 const pyPool = () => D.pyq.filter(q =>
@@ -920,9 +848,8 @@ const pyPool = () => D.pyq.filter(q =>
 function viewRevise(){
   const secs = ["all","History","Geography","Polity","Economy","Culture"];
   const modes = '<div class="seg">'+
-    '<button type="button" data-rm="cards" aria-pressed="'+(S.revMode==="cards")+'">Flashcards</button>'+
-    '<button type="button" data-rm="quiz" aria-pressed="'+(S.revMode==="quiz")+'">Quiz</button>'+
     '<button type="button" data-rm="papers" aria-pressed="'+(S.revMode==="papers")+'">Past papers</button>'+
+    '<button type="button" data-rm="quiz" aria-pressed="'+(S.revMode==="quiz")+'">Quiz</button>'+
     '</div>';
   let filters;
   if(S.revMode === "papers"){
@@ -933,12 +860,12 @@ function viewRevise(){
       '<button class="tog" type="button" data-pyhp="1" aria-pressed="'+S.pyHP+'">'+
       '<i class="dot"></i>Himachal only</button></div>';
   } else {
-    const active = S.revMode === "cards" ? S.cardSec : S.qSec;
+    const active = S.qSec;
     filters = '<div class="chipset">'+secs.map(x =>
       '<button class="tog" type="button" data-rs="'+x+'" aria-pressed="'+(active===x)+'">'+
       (x === "all" ? "All" : x)+'</button>').join('')+'</div>';
   }
-  const body = S.revMode === "cards" ? flashUI() : S.revMode === "quiz" ? quizUI() : papersUI();
+  const body = S.revMode === "quiz" ? quizUI() : papersUI();
   return '<div class="revwrap"><div class="revtools">'+modes+filters+'</div>'+body+'</div>';
 }
 
@@ -993,26 +920,6 @@ function pyStep(d){
                          : (S.pyIdx + (+d) + pool.length) % pool.length;
   S.pyAnswered = null; render();
 }
-function flashUI(){
-  const pool = cardPool();
-  if(!pool.length) return '<div class="qcard">No cards in this section.</div>';
-  if(S.cardIdx >= pool.length) S.cardIdx = 0;
-  const c = pool[S.cardIdx];
-  return '<div class="flash'+(S.cardFlip?" flipped":"")+'" id="flash">'+
-    '<div class="flashinner">'+
-      '<div class="fface"><div class="lb">'+c.sec+' · card '+(S.cardIdx+1)+' of '+pool.length+'</div>'+
-        '<div class="q">'+c.q+'</div></div>'+
-      '<div class="fface fback"><div class="lb">Answer</div><div class="a">'+c.a+'</div>'+
-        '<div style="margin-top:auto"><button class="btn sm" type="button" data-go="'+c.id+'">'+
-        'Open the full note</button></div></div>'+
-    '</div></div>'+
-    '<div class="fhint">Tap the card to flip · <kbd>&larr;</kbd> <kbd>&rarr;</kbd> to move · <kbd>space</kbd> to flip</div>'+
-    '<div class="revnav">'+
-      '<button class="btn" type="button" data-card="-1">&larr; Back</button>'+
-      '<button class="btn" type="button" data-card="shuffle">Shuffle</button>'+
-      '<button class="btn primary" type="button" data-card="1">Next &rarr;</button>'+
-    '</div>';
-}
 function quizUI(){
   const pool = quizPool(), prog = store.get("quiz",{});
   const attempted = pool.filter(q => prog[q.q] !== undefined).length;
@@ -1051,14 +958,6 @@ function quizUI(){
       '<button class="btn" type="button" data-q="-1">&larr; Previous</button>'+
       '<button class="btn primary" type="button" data-q="1">'+
       (ans !== null ? "Next question &rarr;" : "Skip &rarr;")+'</button></div>';
-}
-function stepCard(d){
-  const pool = cardPool();
-  if(d === "shuffle"){
-    for(let i = CARDS.length-1; i > 0; i--){ const j = Math.random()*(i+1)|0; [CARDS[i],CARDS[j]] = [CARDS[j],CARDS[i]]; }
-    S.cardIdx = 0; toast("Deck shuffled");
-  } else S.cardIdx = (S.cardIdx + (+d) + pool.length) % pool.length;
-  S.cardFlip = false; render();
 }
 function answer(i){
   if(S.qAnswered !== null) return;
@@ -1283,11 +1182,8 @@ document.addEventListener("click", e => {
   const ts  = hit("[data-ts]");     if(ts){ S.topicSec = ts.dataset.ts; render(); return; }
   const rm  = hit("[data-rm]");     if(rm){ S.revMode = rm.dataset.rm; S.qAnswered = null; render(); return; }
   const rs  = hit("[data-rs]");     if(rs){
-      if(S.revMode === "cards"){ S.cardSec = rs.dataset.rs; S.cardIdx = 0; S.cardFlip = false; }
-      else { S.qSec = rs.dataset.rs; S.qIdx = 0; S.qAnswered = null; }
+      S.qSec = rs.dataset.rs; S.qIdx = 0; S.qAnswered = null;
       render(); return; }
-  const fl  = hit("#flash");        if(fl){ S.cardFlip = !S.cardFlip; fl.classList.toggle("flipped", S.cardFlip); return; }
-  const cn  = hit("[data-card]");   if(cn){ stepCard(cn.dataset.card); return; }
   const opt = hit("[data-opt]");    if(opt){ answer(+opt.dataset.opt); return; }
   const qn  = hit("[data-q]");      if(qn){ stepQ(+qn.dataset.q); return; }
   const py  = hit("[data-py]");     if(py){ S.pyYear = py.dataset.py; S.pyIdx = 0; S.pyAnswered = null; render(); return; }
@@ -1343,11 +1239,7 @@ document.addEventListener("keydown", e => {
   if(e.key === "/" && !typing){ e.preventDefault(); $("#search").focus(); $("#search").select(); return; }
   if(e.key === "Escape"){ if(!$("#panel").hidden) closePanel(); return; }
   if(typing || e.metaKey || e.ctrlKey || e.altKey) return;
-  if(S.view === "revise" && S.revMode === "cards"){
-    if(e.key === "ArrowRight"){ e.preventDefault(); stepCard("1"); }
-    else if(e.key === "ArrowLeft"){ e.preventDefault(); stepCard("-1"); }
-    else if(e.key === " "){ e.preventDefault(); S.cardFlip = !S.cardFlip; render(); }
-  } else if(S.view === "revise" && S.revMode === "quiz"){
+  if(S.view === "revise" && S.revMode === "quiz"){
     if(/^[1-4]$/.test(e.key)) answer(+e.key-1);
     else if(e.key === "ArrowRight"){ e.preventDefault(); stepQ(1); }
     else if(e.key === "ArrowLeft"){ e.preventDefault(); stepQ(-1); }

@@ -2,7 +2,7 @@
 
 An interactive revision atlas for the **Himachal Pradesh** portion of the **HPPSC HPAS** syllabus —
 a clickable map of the 12 districts and the princely hill states, a timeline from prehistory to
-statehood, battles and treaties, topic notes, generated flashcards and a question bank.
+statehood, battles and treaties, topic notes, generated a question bank.
 
 Plain static files. No build step, no framework, no backend.
 
@@ -142,7 +142,7 @@ Everything is one object. A record looks like this:
 ```
 
 Add a record to the right array and it appears automatically in its view, in search, in the
-flashcard deck and in the "Connected to" panel of anything that links to it. **Wire `rel` in both
+Rounds feed and in the "Connected to" panel of anything that links to it. **Wire `rel` in both
 directions** — the link is not inferred.
 
 A `["note", ...]` whose label contains *disputed*, *correction* or *check* renders in the
