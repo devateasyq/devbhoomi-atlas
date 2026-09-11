@@ -43,8 +43,11 @@ Nothing is origin-specific — relative paths throughout, so it works from a sub
   can be sent to a study group.
 - **Installable and offline.** A web app manifest plus `sw.js` cache every asset on first visit,
   so it works on a phone with no signal. "Add to Home Screen" gives it an icon and no browser chrome.
-- **Progress is local.** Quiz results live in `localStorage` under the `hpatlas:` prefix.
-  Nothing is uploaded, and there is no analytics or tracking of any kind.
+- **Past papers.** 448 questions from the HPAS prelims papers of 2020, 2021, 2022, 2023 and 2025,
+  filterable by year, with a *Himachal only* toggle that narrows them to the 109 state-specific ones.
+  Where a question maps to a note in the atlas, the explanation links straight to it.
+- **Progress is local.** Quiz and past-paper results live in `localStorage` under the `hpatlas:`
+  prefix, in separate buckets. Nothing is uploaded, and there is no analytics or tracking.
 
 ## Structure
 
@@ -111,6 +114,17 @@ node -e '
   console.log(ids.size,"records,",bad,"dangling links");
 '
 ```
+
+## On the previous-year questions
+
+HPPSC does not publish past papers on its own website, so `data/pyq.js` is transcribed from
+published solved papers. The correct option is the one the published answer key marks, taken from
+the source markup rather than inferred. A sample was checked against independent sources, but these
+are third-party transcriptions: **if an answer looks wrong, verify it before memorising it.**
+
+2024 was not available from the source used, so that paper is absent rather than skipped. Questions
+are tagged `hp: 1` when they are Himachal-specific, and carry a `t` field linking to the relevant
+topic note where one exists.
 
 ## On accuracy
 

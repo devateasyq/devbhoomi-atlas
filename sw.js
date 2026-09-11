@@ -1,10 +1,10 @@
 /* Devbhoomi Atlas — offline cache.
    Bump CACHE when any asset changes; old caches are purged on activate. */
-const CACHE = "devbhoomi-atlas-v1";
+const CACHE = "devbhoomi-atlas-v2";
 const ASSETS = [
   "./", "index.html",
   "app/tokens.css", "app/layout.css", "app/components.css", "app/app.js",
-  "data/geo.js", "data/places.js", "data/history.js", "data/topics.js", "data/quiz.js",
+  "data/geo.js", "data/places.js", "data/history.js", "data/topics.js", "data/quiz.js", "data/pyq.js",
   "icon.svg", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png", "manifest.webmanifest"
 ];
 self.addEventListener("install", e => {

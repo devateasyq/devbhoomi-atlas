@@ -64,7 +64,8 @@ const S = {
   view:"home", sel:null, trail:[],
   mapMode:"districts", era:"all", battleFilter:"all", topicSec:"all",
   revMode:"cards", cardIdx:0, cardFlip:false, cardSec:"all",
-  qIdx:0, qSec:"all", qAnswered:null
+  qIdx:0, qSec:"all", qAnswered:null,
+  pyYear:"all", pyHP:true, pyIdx:0, pyAnswered:null
 };
 
 const NAV = [
@@ -77,10 +78,11 @@ const NAV = [
   {id:"revise",   lb:"Revise",   ic:'<path d="M4 5.5A2.5 2.5 0 016.5 3H19v15H6.5A2.5 2.5 0 004 20.5z"/><path d="M9 8h6"/>'}
 ];
 const COUNTS = {map:D.districts.length, timeline:D.events.length, battles:D.battles.length,
-                topics:D.topics.length, people:D.people.length, revise:D.quiz.length};
+                topics:D.topics.length, people:D.people.length,
+                revise:D.quiz.length + D.pyq.length};
 const SUB = {home:"Start here", map:"12 districts · "+D.states.length+" hill states",
              timeline:"Prehistory to 1971", battles:"Wars, sieges and treaties",
-             topics:"Notes by subject", people:"Rulers, rebels, builders", revise:"Flashcards and quiz"};
+             topics:"Notes by subject", people:"Rulers, rebels, builders", revise:"Flashcards, quiz and past papers"};
 const TITLE = {home:"Overview", map:"Atlas", timeline:"Timeline", battles:"Battles & Treaties",
                topics:"Topics", people:"People", revise:"Revise"};
 
@@ -510,6 +512,7 @@ function viewHome(){
     tile(D.battles.length,"battles &amp; treaties","Bhangani to Suket","battles")+
     tile(D.topics.length,"topic note pages","5 subjects","topics")+
     tile(D.quiz.length,"practice questions",(done ? right+"/"+done+" correct so far" : "not started"),"revise")+
+    tile(D.pyq.length,"past paper questions",PY_YEARS.length+" prelims papers","revise")+
   '</div>'+
   '<div class="syllabus">'+
     '<div class="secthead"><h3>The syllabus, as eleven blocks</h3><span class="n">tap any row</span></div>'+
@@ -526,6 +529,9 @@ function viewHome(){
     'useful for sending a specific fact to a study group.</p>'+
     '<p><b>Press <kbd>/</kbd></b> to search everything, or use <b>Surprise me</b> for a random record when you want '+
     'cold recall rather than a planned pass.</p>'+
+    '<p><b>Past papers.</b> Revise &rarr; Past papers holds '+D.pyq.length+' questions from the HPAS prelims papers of '+
+    PY_YEARS.slice().reverse().join(', ')+', filterable by year, with a <b>Himachal only</b> toggle that narrows them to the '+
+    D.pyq.filter(q=>q.hp).length+' state-specific ones. Where a question maps to a note here, the explanation links straight to it.</p>'+
     '<p>Where sources genuinely disagree — the number of states merged in 1948, the wildlife-sanctuary count, '+
     'several Praja Mandal founding years — the note says so rather than picking one silently. Those are marked '+
     '<b>Disputed</b>.</p>'+
@@ -655,18 +661,85 @@ const cardPool = () => {
   return S.cardSec === "all" ? CARDS : CARDS.filter(c => c.sec === S.cardSec);
 };
 const quizPool = () => S.qSec === "all" ? D.quiz : D.quiz.filter(q => q.s === S.qSec);
+const PY_YEARS = [...new Set(D.pyq.map(q => q.y))].sort((a,b) => b-a);
+const pyPool = () => D.pyq.filter(q =>
+  (S.pyYear === "all" || q.y === +S.pyYear) && (!S.pyHP || q.hp === 1));
 
 function viewRevise(){
   const secs = ["all","History","Geography","Polity","Economy","Culture"];
-  const active = S.revMode === "cards" ? S.cardSec : S.qSec;
-  return '<div class="revwrap">'+
-    '<div class="revtools"><div class="seg">'+
-      '<button type="button" data-rm="cards" aria-pressed="'+(S.revMode==="cards")+'">Flashcards</button>'+
-      '<button type="button" data-rm="quiz" aria-pressed="'+(S.revMode==="quiz")+'">Quiz</button>'+
-    '</div><div class="chipset">'+secs.map(s =>
-      '<button class="tog" type="button" data-rs="'+s+'" aria-pressed="'+(active===s)+'">'+
-      (s === "all" ? "All" : s)+'</button>').join('')+'</div></div>'+
-    (S.revMode === "cards" ? flashUI() : quizUI())+'</div>';
+  const modes = '<div class="seg">'+
+    '<button type="button" data-rm="cards" aria-pressed="'+(S.revMode==="cards")+'">Flashcards</button>'+
+    '<button type="button" data-rm="quiz" aria-pressed="'+(S.revMode==="quiz")+'">Quiz</button>'+
+    '<button type="button" data-rm="papers" aria-pressed="'+(S.revMode==="papers")+'">Past papers</button>'+
+    '</div>';
+  let filters;
+  if(S.revMode === "papers"){
+    filters = '<div class="chipset">'+
+      ['all'].concat(PY_YEARS).map(y =>
+        '<button class="tog" type="button" data-py="'+y+'" aria-pressed="'+(String(S.pyYear)===String(y))+'">'+
+        (y === "all" ? "All years" : y)+'</button>').join('')+
+      '<button class="tog" type="button" data-pyhp="1" aria-pressed="'+S.pyHP+'">'+
+      '<i class="dot"></i>Himachal only</button></div>';
+  } else {
+    const active = S.revMode === "cards" ? S.cardSec : S.qSec;
+    filters = '<div class="chipset">'+secs.map(x =>
+      '<button class="tog" type="button" data-rs="'+x+'" aria-pressed="'+(active===x)+'">'+
+      (x === "all" ? "All" : x)+'</button>').join('')+'</div>';
+  }
+  const body = S.revMode === "cards" ? flashUI() : S.revMode === "quiz" ? quizUI() : papersUI();
+  return '<div class="revwrap"><div class="revtools">'+modes+filters+'</div>'+body+'</div>';
+}
+
+function papersUI(){
+  const pool = pyPool();
+  const prog = store.get("pyq",{});
+  const key = q => q.y+"|"+q.q.slice(0,60);
+  const attempted = pool.filter(q => prog[key(q)] !== undefined).length;
+  const correct = pool.filter(q => prog[key(q)] === 1).length;
+  const pct = attempted ? Math.round(correct/attempted*100) : 0;
+  if(!pool.length) return '<div class="qcard">No questions match this filter.</div>';
+  if(S.pyIdx >= pool.length) S.pyIdx = 0;
+  const q = pool[S.pyIdx], ans = S.pyAnswered;
+  const bar = '<div class="scorebar">'+
+    '<div class="stat"><span class="v">'+attempted+'</span><span class="l">attempted</span></div>'+
+    '<div class="stat"><span class="v">'+correct+'</span><span class="l">correct</span></div>'+
+    '<div class="stat"><span class="v">'+pct+'%</span><span class="l">accuracy</span></div>'+
+    '<div class="meter"><i style="width:'+pct+'%"></i></div></div>';
+  const opts = q.o.map((o,i) => {
+    let cls = "opt";
+    if(ans !== null){ if(i === q.a) cls += " right"; else if(i === ans) cls += " wrong"; }
+    return '<button class="'+cls+'" type="button" data-pyopt="'+i+'"'+(ans!==null?" disabled":"")+'>'+
+      '<span class="ltr">'+"ABCD"[i]+'</span><span>'+q.o[i]+'</span></button>';
+  }).join('');
+  return bar+'<div class="qcard">'+
+    '<div class="qmeta"><span class="chip py">HPAS Prelims '+q.y+'</span>'+
+      (q.hp ? '<span class="chip hp">Himachal</span>' : '')+
+      '<span class="chip">'+q.s+'</span>'+
+      '<span class="qprog">'+(S.pyIdx+1)+' / '+pool.length+'</span></div>'+
+    '<div class="qtext">'+q.q+'</div><div class="opts">'+opts+'</div>'+
+    (ans !== null ? '<div class="expl"><b>'+(ans===q.a?"Correct.":"Not quite.")+'</b> '+
+      'The official key marks <b>'+"ABCD"[q.a]+'</b>. '+(q.e ? q.e+' ' : '')+
+      (q.t && IDX.has(q.t) ? '<button class="btn sm" style="margin-left:4px" type="button" data-go="'+q.t+'">'+
+      'Read the note</button>' : '')+'</div>' : "")+
+    '</div><div class="revnav" style="margin-top:14px">'+
+      '<button class="btn" type="button" data-pyn="-1">&larr; Previous</button>'+
+      '<button class="btn" type="button" data-pyn="rand">Random</button>'+
+      '<button class="btn primary" type="button" data-pyn="1">'+
+      (ans !== null ? "Next question &rarr;" : "Skip &rarr;")+'</button></div>';
+}
+function pyAnswer(i){
+  if(S.pyAnswered !== null) return;
+  const q = pyPool()[S.pyIdx]; if(!q) return;
+  S.pyAnswered = i;
+  const prog = store.get("pyq",{});
+  prog[q.y+"|"+q.q.slice(0,60)] = i === q.a ? 1 : 0;
+  store.set("pyq", prog); render();
+}
+function pyStep(d){
+  const pool = pyPool();
+  S.pyIdx = d === "rand" ? (Math.random()*pool.length|0)
+                         : (S.pyIdx + (+d) + pool.length) % pool.length;
+  S.pyAnswered = null; render();
 }
 function flashUI(){
   const pool = cardPool();
@@ -857,13 +930,17 @@ document.addEventListener("click", e => {
   const cn  = hit("[data-card]");   if(cn){ stepCard(cn.dataset.card); return; }
   const opt = hit("[data-opt]");    if(opt){ answer(+opt.dataset.opt); return; }
   const qn  = hit("[data-q]");      if(qn){ stepQ(+qn.dataset.q); return; }
+  const py  = hit("[data-py]");     if(py){ S.pyYear = py.dataset.py; S.pyIdx = 0; S.pyAnswered = null; render(); return; }
+  const ph  = hit("[data-pyhp]");   if(ph){ S.pyHP = !S.pyHP; S.pyIdx = 0; S.pyAnswered = null; render(); return; }
+  const po  = hit("[data-pyopt]");  if(po){ pyAnswer(+po.dataset.pyopt); return; }
+  const pn  = hit("[data-pyn]");    if(pn){ pyStep(pn.dataset.pyn); return; }
 
   if(hit("#pclose")){ closePanel(); return; }
   if(hit("#pshare")){ shareCurrent(); return; }
   if(hit("#themebtn")){ cycleTheme(); return; }
   if(hit("#randbtn")){ surpriseMe(); return; }
   if(hit("#resetbtn")){
-    if(confirm("Clear saved quiz progress? This cannot be undone.")){ store.del("quiz"); render(); toast("Progress cleared"); }
+    if(confirm("Clear saved quiz and past-paper progress? This cannot be undone.")){ store.del("quiz"); store.del("pyq"); render(); toast("Progress cleared"); }
     return; }
   if(!hit(".searchwrap")) $("#results").hidden = true;
 });
@@ -914,6 +991,10 @@ document.addEventListener("keydown", e => {
     if(/^[1-4]$/.test(e.key)) answer(+e.key-1);
     else if(e.key === "ArrowRight"){ e.preventDefault(); stepQ(1); }
     else if(e.key === "ArrowLeft"){ e.preventDefault(); stepQ(-1); }
+  } else if(S.view === "revise" && S.revMode === "papers"){
+    if(/^[1-4]$/.test(e.key)) pyAnswer(+e.key-1);
+    else if(e.key === "ArrowRight"){ e.preventDefault(); pyStep(1); }
+    else if(e.key === "ArrowLeft"){ e.preventDefault(); pyStep(-1); }
   }
 });
 

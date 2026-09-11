@@ -9,6 +9,8 @@
 .tog{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:20px;font-size:11.5px;
   border:1px solid var(--line);color:var(--ink-2);background:var(--surface);font-weight:500}
 .tog[aria-pressed="true"]{border-color:var(--accent-line);background:var(--accent-soft);color:var(--accent)}
+.tog .dot{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.3;flex:0 0 7px}
+.tog[aria-pressed="true"] .dot{opacity:1}
 .mapcanvas{flex:1;min-height:0;position:relative;background:var(--ground);overflow:hidden}
 .mapcanvas svg{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
 .mapcanvas svg.grabbing{cursor:grabbing}
@@ -93,6 +95,8 @@ button.card:hover{border-color:var(--accent-line);transform:translateY(-1px)}
 .chip.out-win{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good)}
 .chip.out-loss{background:color-mix(in srgb,var(--crit) 16%,transparent);color:var(--crit)}
 .chip.out-treaty{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.chip.py{background:color-mix(in srgb,var(--indigo) 16%,transparent);color:var(--indigo)}
+.chip.hp{background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent)}
 .secthead{display:flex;align-items:baseline;gap:10px;margin:26px 0 11px;padding-bottom:7px;
   border-bottom:1px solid var(--line)}
 .secthead:first-child{margin-top:0}
