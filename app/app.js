@@ -81,15 +81,15 @@ const S = {
 };
 
 const NAV = [
-  {id:"home",     lb:"Overview", ic:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>'},
-  {id:"map",      lb:"Map",      ic:'<path d="M9 3L3 6v15l6-3 6 3 6-3V3l-6 3z"/><path d="M9 3v15M15 6v15"/>'},
+  {id:"home",     lb:"Overview", mob:1, ic:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>'},
+  {id:"map",      lb:"Map", mob:1,      ic:'<path d="M9 3L3 6v15l6-3 6 3 6-3V3l-6 3z"/><path d="M9 3v15M15 6v15"/>'},
   {id:"timeline", lb:"Timeline", ic:'<path d="M12 3v18"/><circle cx="12" cy="7" r="2"/><circle cx="12" cy="17" r="2"/><path d="M14 7h6M4 17h6"/>'},
   {id:"battles",  lb:"Battles",  ic:'<path d="M14.5 14.5L21 21M9.5 14.5L3 21"/><path d="M18 3l-9 9M6 3l9 9"/>'},
   {id:"topics",   lb:"Topics",   ic:'<path d="M4 5h16M4 12h16M4 19h10"/>'},
   {id:"people",   lb:"People",   ic:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-6 7-6s7 2.1 7 6"/>'},
   {id:"trends",   lb:"Trends",   ic:'<path d="M4 19V5"/><path d="M4 15l5-5 4 4 7-7"/><path d="M20 11V7h-4"/>'},
-  {id:"rounds",   lb:"Rounds",   ic:'<path d="M12 3a9 9 0 109 9"/><path d="M12 7a5 5 0 105 5"/><circle cx="12" cy="12" r="1.6"/>'},
-  {id:"revise",   lb:"Revise",   ic:'<path d="M4 5.5A2.5 2.5 0 016.5 3H19v15H6.5A2.5 2.5 0 004 20.5z"/><path d="M9 8h6"/>'}
+  {id:"rounds",   lb:"Rounds", mob:1,   ic:'<path d="M12 3a9 9 0 109 9"/><path d="M12 7a5 5 0 105 5"/><circle cx="12" cy="12" r="1.6"/>'},
+  {id:"revise",   lb:"Revise", mob:1,   ic:'<path d="M4 5.5A2.5 2.5 0 016.5 3H19v15H6.5A2.5 2.5 0 004 20.5z"/><path d="M9 8h6"/>'}
 ];
 const COUNTS = {map:D.districts.length, timeline:D.events.length, battles:D.battles.length,
                 topics:D.topics.length, people:D.people.length, trends:D.pyq.length,
@@ -139,7 +139,9 @@ function buildNav(){
     '<button class="navbtn" type="button" data-view="'+n.id+'">'+
     '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+n.ic+'</svg><span>'+n.lb+'</span>'+
     (COUNTS[n.id] ? '<span class="cnt">'+COUNTS[n.id]+'</span>' : '')+'</button>').join('');
-  $("#mtabs").innerHTML = NAV.map(n =>
+  /* Nine tabs clipped their own labels on a phone. The bar carries the four
+     you reach for; everything else is one tap away on the Overview. */
+  $("#mtabs").innerHTML = NAV.filter(n => n.mob).map(n =>
     '<button class="mtab" type="button" data-view="'+n.id+'">'+
     '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+n.ic+'</svg><span>'+n.lb+'</span></button>').join('');
 }
@@ -712,13 +714,19 @@ function viewHome(){
     'its rulers, the battles fought on it and the modern statistics. Click a battle and you get the state that '+
     'lost it. Nothing here is a separate page — it is one set of '+IDX.size+' records seen from six angles.</p>'+
   '</div>'+
+  '<div class="sections">'+
+    NAV.filter(n => n.id !== "home").map(n =>
+      '<button class="sect" type="button" data-view="'+n.id+'">'+
+      '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+n.ic+'</svg>'+
+      '<span class="st">'+TITLE[n.id]+'</span>'+
+      '<span class="sd">'+SUB[n.id]+'</span>'+
+      (COUNTS[n.id] ? '<span class="sc">'+num(COUNTS[n.id])+'</span>' : '')+
+      '</button>').join('')+
+  '</div>'+
   '<div class="tiles">'+
-    tile(D.events.length,"events on the timeline","Prehistory → 1971","timeline")+
-    tile(D.states.length,"hill states mapped","Chamba to Kunihar","map")+
-    tile(D.battles.length,"battles &amp; treaties","Bhangani to Suket","battles")+
-    tile(D.topics.length,"topic note pages","5 subjects","topics")+
     tile(D.quiz.length,"practice questions",(done ? right+"/"+done+" correct so far" : "not started"),"revise")+
     tile(D.pyq.length,"past paper questions",PY_YEARS.length+" prelims papers","revise")+
+    tile(FACTS.length,"facts in Rounds","one per screen","rounds")+
   '</div>'+
   '<div class="syllabus">'+
     '<div class="secthead"><h3>The syllabus, as eleven blocks</h3><span class="n">tap any row</span></div>'+

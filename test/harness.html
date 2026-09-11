@@ -205,6 +205,21 @@ window.addEventListener("load", async () => {
     check("the card names a real record", !!want && want.length > 1);
   }
 
+  ev('S.view="home"; render();');
+  await wait(250);
+  const navIds = ev('NAV.map(n => n.id).join(",")').split(",");
+  const reach = new Set([...doc.querySelectorAll("#stage [data-view]")]
+    .map(b => b.dataset.view));
+  const unreachable = navIds.filter(id => id !== "home" && !reach.has(id));
+  check("every section is reachable from the Overview",
+    unreachable.length === 0, "missing: " + unreachable.join(", "));
+
+  const mtabs = [...doc.querySelectorAll("#mtabs .mtab")].map(b => b.dataset.view);
+  check("the mobile bar carries exactly four tabs", mtabs.length === 4,
+    mtabs.length + ": " + mtabs.join(","));
+  check("the mobile bar is Overview, Map, Rounds, Revise",
+    ["home","map","rounds","revise"].every(id => mtabs.includes(id)), mtabs.join(","));
+
   out.innerHTML += "\n" + pass + " passed, " + fail + " failed";
   document.title = fail ? "FAIL (" + fail + ")" : "PASS";
 });
