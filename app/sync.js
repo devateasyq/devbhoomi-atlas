@@ -52,6 +52,16 @@ function normaliseNotes(obj){
   if(!obj || typeof obj !== "object") return out;
   for(k in obj){
     if(!Object.prototype.hasOwnProperty.call(obj, k)) continue;
+    /* "__proto__" is never a real record id (ids are internal fixed
+       strings like "d-kangra", never user-typed) but JSON.parse — unlike
+       an object literal — gives it a genuine own enumerable property, so
+       it passes the hasOwnProperty check above. Writing out[k] = ... for
+       that key would not create an own property at all; it would reassign
+       out's own [[Prototype]] to the note object, dropping the entry from
+       Object.keys(out) and leaking "text"/"t" as inherited enumerable
+       properties into any later for-in over this map. Reject it as junk,
+       same as any other malformed entry. */
+    if(k === "__proto__") continue;
     v = obj[k];
     if(!v || typeof v !== "object" || typeof v.text !== "string") continue;
     text = v.text.slice(0, NOTE_MAX);
@@ -63,16 +73,31 @@ function normaliseNotes(obj){
 
 function mergeNotes(a, b){
   var A = normaliseNotes(a), B = normaliseNotes(b), out = {}, k;
-  for(k in A) if(Object.prototype.hasOwnProperty.call(A, k)) out[k] = A[k];
+  /* A and B already had "__proto__" filtered out by normaliseNotes, so
+     out[k] = A[k]/B[k] below can never target that key in practice — but
+     this function is exported and must not rely on that invariant holding
+     forever, so the same guard is repeated here rather than trusted from
+     a distance. See normaliseNotes for why the write is otherwise unsafe. */
+  for(k in A) if(Object.prototype.hasOwnProperty.call(A, k) && k !== "__proto__") out[k] = A[k];
   for(k in B){
-    if(!Object.prototype.hasOwnProperty.call(B, k)) continue;
-    if(!out[k] || B[k].t > out[k].t) out[k] = B[k];
+    if(!Object.prototype.hasOwnProperty.call(B, k) || k === "__proto__") continue;
+    /* !out[k] is not a safe "no entry yet" test: for an id that names an
+       Object.prototype member (e.g. "toString", "constructor") out[k]
+       reads the inherited builtin function — truthy, with no .t — so the
+       comparison below silently loses the incoming note instead of taking
+       it. hasOwnProperty is required to tell "nothing written yet" apart
+       from "inherited from Object.prototype". */
+    if(!Object.prototype.hasOwnProperty.call(out, k) || B[k].t > out[k].t) out[k] = B[k];
   }
   return out;
 }
 
 function setNote(notes, id, text){
   var out = normaliseNotes(notes), clean = String(text == null ? "" : text).slice(0, NOTE_MAX);
+  /* Same hazard as normaliseNotes: "__proto__" is not a real record id, and
+     out[id] = ... below would reassign out's own prototype instead of
+     storing a note. Treat it as an invalid id: leave the map untouched. */
+  if(id === "__proto__") return out;
   if(!clean.trim()) { delete out[id]; return out; }
   out[id] = {text: clean, t: Date.now()};
   return out;

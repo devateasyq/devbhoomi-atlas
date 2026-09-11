@@ -232,3 +232,72 @@ test("setNote does not mutate the map it is given", () => {
   sync.setNote(notes, "x", "hello");
   assert.deepEqual(notes, {});
 });
+
+/* ---------- hostile record ids ----------
+   Record ids are internal fixed strings (e.g. "d-kangra") and are never
+   user-typed, but notes also arrive from Firestore via JSON.parse. Unlike
+   an object literal, JSON.parse gives "__proto__" a genuine own enumerable
+   property, so a naive out[k] = ... write reassigns the output object's
+   own prototype instead of storing an entry. These tests build the hostile
+   input the same way real data would arrive: through JSON.parse. */
+
+test("normaliseNotes treats __proto__ as junk, not a prototype reassignment", () => {
+  const hostile = JSON.parse('{"__proto__": {"text": "evil", "t": 1}, "d-kangra": {"text": "ok", "t": 1}}');
+  const out = sync.normaliseNotes(hostile);
+  assert.deepEqual(Object.keys(out), ["d-kangra"]);
+  assert.equal(Object.getPrototypeOf(out), Object.prototype);
+  assert.equal(out.text, undefined);
+  assert.equal(out.t, undefined);
+  assert.equal(out["d-kangra"].text, "ok");
+});
+
+test("normaliseNotes accepts constructor and toString as ordinary record ids", () => {
+  const out = sync.normaliseNotes({constructor: {text: "c-note", t: 1}, toString: {text: "ts-note", t: 2}});
+  assert.equal(out["constructor"].text, "c-note");
+  assert.equal(out["toString"].text, "ts-note");
+});
+
+test("mergeNotes treats __proto__ as junk, not a prototype reassignment", () => {
+  const hostile = JSON.parse('{"__proto__": {"text": "evil", "t": 1}, "d-kangra": {"text": "a", "t": 1}}');
+  const clean = {"d-mandi": {text: "b", t: 5}};
+  const m = sync.mergeNotes(hostile, clean);
+  assert.deepEqual(Object.keys(m).sort(), ["d-kangra", "d-mandi"]);
+  assert.equal(Object.getPrototypeOf(m), Object.prototype);
+  assert.equal(m.text, undefined);
+  assert.equal(m.t, undefined);
+  assert.equal(m["d-kangra"].text, "a");
+  assert.equal(m["d-mandi"].text, "b");
+});
+
+test("mergeNotes treats __proto__ as junk regardless of which side carries it", () => {
+  const clean = {"d-kangra": {text: "a", t: 1}};
+  const hostile = JSON.parse('{"__proto__": {"text": "evil", "t": 9}, "d-mandi": {"text": "b", "t": 1}}');
+  const m = sync.mergeNotes(clean, hostile);
+  assert.deepEqual(Object.keys(m).sort(), ["d-kangra", "d-mandi"]);
+  assert.equal(Object.getPrototypeOf(m), Object.prototype);
+});
+
+test("mergeNotes accepts constructor and toString as ordinary record ids", () => {
+  const a = {constructor: {text: "c-note", t: 1}};
+  const b = {toString: {text: "ts-note", t: 1}};
+  const m = sync.mergeNotes(a, b);
+  assert.equal(m["constructor"].text, "c-note");
+  assert.equal(m["toString"].text, "ts-note");
+});
+
+test("setNote treats __proto__ as junk, not a prototype reassignment", () => {
+  const hostile = JSON.parse('{"__proto__": {"text": "evil", "t": 1}, "d-kangra": {"text": "keep me", "t": 1}}');
+  const out = sync.setNote(hostile, "__proto__", "attempted takeover");
+  assert.equal(Object.getPrototypeOf(out), Object.prototype);
+  assert.equal(out.text, undefined);
+  assert.equal(out.t, undefined);
+  assert.equal(out["d-kangra"].text, "keep me", "a legitimate neighbouring note must survive");
+  assert.ok(!Object.keys(out).includes("__proto__"));
+});
+
+test("setNote accepts constructor and toString as ordinary record ids", () => {
+  const out1 = sync.setNote({}, "constructor", "c-note");
+  assert.equal(out1["constructor"].text, "c-note");
+  const out2 = sync.setNote({}, "toString", "ts-note");
+  assert.equal(out2["toString"].text, "ts-note");
+});
