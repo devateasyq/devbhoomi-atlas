@@ -824,6 +824,9 @@ function mountMap(){
     S.focus = fsel.value;
     applyFocus();
     zoomToFocus();
+    /* the panel has done its job — get it off the map so the district it
+       just focused is actually visible */
+    if(S.legendOpen && lgt) lgt.click();
   });
 
   applyLayers();

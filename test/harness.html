@@ -251,6 +251,11 @@ window.addEventListener("load", async () => {
     const zoom = () => Number(ev("ZT.k"));
     check("the map starts unzoomed", Math.abs(zoom() - 1) < 0.01, "k=" + zoom());
 
+    /* open the panel first, so "it closes" is a real observation */
+    if(doc.querySelector(".maplegend").classList.contains("shut")){
+      doc.getElementById("lgtoggle").click();
+      await wait(150);
+    }
     fsel.value = "d-kinnaur";
     fsel.dispatchEvent(new win.Event("change"));
     await wait(600);
@@ -260,6 +265,8 @@ window.addEventListener("load", async () => {
     check("focusing leaves that district's own markers lit", focused > 0);
     check("focusing moves the map to that district", zoom() > 1.2, "k=" + zoom());
     check("focusing does NOT open the record", doc.getElementById("panel").hidden);
+    check("choosing a district closes the layers panel",
+      doc.querySelector(".maplegend").classList.contains("shut"));
     const badge = doc.getElementById("focusbadge");
     check("a badge names the focused district", badge && !badge.hidden &&
       /Kinnaur/.test(badge.textContent), badge ? badge.textContent : "no badge");
