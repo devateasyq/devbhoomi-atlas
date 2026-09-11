@@ -39,3 +39,32 @@ test("every MAP.places entry has a position and a kind", () => {
     assert.ok(p.k, pid + " has no kind");
   }
 });
+
+/* The map is an equirectangular projection fitted over the 123 existing
+   markers; residual is 0.068 units on a 1000-unit map, i.e. exact. Any
+   new marker must land on the same transform or it will sit in the wrong
+   valley. */
+const PROJ = {a: 292.5745, b: -22112.4202, c: -344.3249, d: 11450.7708};
+
+test("twelve glaciers are on the map", () => {
+  const g = Object.entries(MAP.places).filter(([, p]) => p.k === "glacier");
+  assert.equal(g.length, 12);
+});
+
+test("every marker's x/y matches the projection of its lat/lng", () => {
+  for(const [pid, p] of Object.entries(MAP.places)){
+    if(p.lat == null) continue;
+    const x = PROJ.a * p.lng + PROJ.b;
+    const y = PROJ.c * p.lat + PROJ.d;
+    assert.ok(Math.abs(x - p.x) < 0.5, pid + " x is off by " + (x - p.x).toFixed(2));
+    assert.ok(Math.abs(y - p.y) < 0.5, pid + " y is off by " + (y - p.y).toFixed(2));
+  }
+});
+
+test("glacier markers sit inside the map viewbox", () => {
+  for(const [pid, p] of Object.entries(MAP.places)){
+    if(p.k !== "glacier") continue;
+    assert.ok(p.x > 0 && p.x < MAP.w, pid + " x outside viewbox");
+    assert.ok(p.y > 0 && p.y < MAP.h, pid + " y outside viewbox");
+  }
+});
