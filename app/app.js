@@ -1769,6 +1769,7 @@ function viewProfile(){
       (st.last === dayKey() ? ' — <b>today counts</b>' :
        ' — reach '+DAY_GOAL.facts+' facts, '+DAY_GOAL.quiz+' quiz, '+
        DAY_GOAL.pyq+' past paper or '+DAY_GOAL.recs+' records')+'</div>'+
+    '<div class="pcols">'+
     '<div class="syllabus"><div class="secthead"><h3>Your notes — '+ids.length+'</h3></div>'+
       noteList+'</div>'+
     '<div class="syllabus" style="margin-top:26px">'+
@@ -1776,6 +1777,7 @@ function viewProfile(){
       '<div class="pdata"><button class="btn" type="button" id="pexport">Export everything</button>'+
       (u ? '<button class="btn danger" type="button" id="pdelete">Delete my account</button>' : '')+
       '</div></div>'+
+    '</div>'+
   '</div>';
 }
 function mountProfile(){
