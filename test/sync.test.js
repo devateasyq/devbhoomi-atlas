@@ -432,7 +432,7 @@ test("resetDocument copes with no remote document yet", () => {
 });
 
 /* ---------- streak ---------- */
-const DAY = {facts: 20, quiz: 5, pyq: 5, recs: 5};
+const DAY = {facts: 20, quiz: 5, pyq: 5, recs: 3};
 
 test("dayKey uses local calendar parts, not UTC", () => {
   /* 23:30 local on the 5th must be the 5th, whatever the timezone offset */
@@ -477,11 +477,17 @@ test("reaching any one threshold qualifies the day", () => {
 test("only DISTINCT records count towards the day", () => {
   let s = sync.emptyStreak();
   for(let i = 0; i < 8; i++) s = sync.bumpStreak(s, "rec", "d-kangra", "2026-01-05");
-  assert.equal(s.n, 0, "the same record eight times is not five records");
+  assert.equal(s.n, 0, "the same record eight times is not three records");
   assert.equal(s.recs.length, 1);
-  for(const id of ["d-shimla","d-mandi","d-kullu","d-chamba"])
+  for(const id of ["d-shimla", "d-mandi"])
     s = sync.bumpStreak(s, "rec", id, "2026-01-05");
-  assert.equal(s.n, 1, "five distinct records should qualify");
+  assert.equal(s.n, 1, "three distinct records should qualify");
+});
+
+test("the records goal is the one the rings draw", () => {
+  assert.equal(sync.DAY_GOAL.recs, 3, "the innermost ring's goal");
+  assert.equal(sync.DAY_GOAL.quiz, 5, "the middle ring's goal");
+  assert.equal(sync.DAY_GOAL.facts, 20, "the outermost ring's goal");
 });
 
 test("qualifying twice in one day does not increment twice", () => {

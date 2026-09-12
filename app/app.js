@@ -1722,6 +1722,54 @@ function deleteAccount(){
     toast("Could not delete the account");
   });
 }
+/* Three concentric rings, closed by the day's three routes. The outermost
+   carries the longest haul (20 facts) and the innermost the shortest (3
+   records), so the ring with the most ground to cover is the one with the
+   most distance to travel — the same reason Apple orders theirs that way.
+   Past papers also qualify a day but have no ring: three is the shape that
+   reads at a glance, and a fourth would make none of them legible. */
+const RINGS = [
+  {k: "facts", lb: "Facts",   goal: DAY_GOAL.facts, r: 84, c: "var(--accent)"},
+  {k: "quiz",  lb: "Quiz",    goal: DAY_GOAL.quiz,  r: 58, c: "var(--gold)"},
+  {k: "recs",  lb: "Records", goal: DAY_GOAL.recs,  r: 32, c: "var(--vermilion)"}
+];
+function ringVal(st, k){ return k === "recs" ? (st.recs || []).length : (st[k] || 0); }
+
+function streakHero(st){
+  const today = st.last === dayKey();
+  const arcs = RINGS.map(g => {
+    const pct = Math.min(1, ringVal(st, g.k) / g.goal);
+    const C = 2 * Math.PI * g.r;
+    return '<circle class="rg-t" cx="100" cy="100" r="'+g.r+'"/>'+
+           '<circle class="rg-p" cx="100" cy="100" r="'+g.r+'" stroke="'+g.c+'"'+
+             ' stroke-dasharray="'+C.toFixed(1)+'"'+
+             ' stroke-dashoffset="'+(C * (1 - pct)).toFixed(1)+'"'+
+             (pct >= 1 ? ' data-closed="1"' : '')+'/>';
+  }).join('');
+  const spoken = RINGS.map(g => ringVal(st, g.k)+' of '+g.goal+' '+g.lb.toLowerCase()).join(', ');
+  const legend = RINGS.map(g => {
+    const v = ringVal(st, g.k), done = v >= g.goal;
+    return '<div class="rg-l'+(done ? ' closed' : '')+'">'+
+      '<i style="background:'+g.c+'"></i>'+
+      '<b>'+v+'<span>/'+g.goal+'</span></b>'+g.lb+'</div>';
+  }).join('');
+  /* Past papers qualify a day without moving a ring, so they are named here
+     rather than left as a silent fourth route. */
+  const also = st.pyq ? ' '+st.pyq+' past paper'+(st.pyq === 1 ? '' : 's')+' today, too.' : '';
+  return '<div class="phero">'+
+    '<div class="rings"><svg viewBox="0 0 200 200" role="img" aria-label="Today: '+spoken+'">'+
+      arcs+'</svg></div>'+
+    '<div class="pherotext">'+
+      '<div class="prun"><b>'+st.n+'</b><span>day streak</span></div>'+
+      '<div class="rg-legend">'+legend+'</div>'+
+      '<p class="ptoday">'+(today
+        ? '<b>Today counts.</b> Close any one ring to keep a day.'
+        : 'Close any one ring and today counts.')+also+'</p>'+
+      '<p class="pbest">Best run '+st.best+' day'+(st.best === 1 ? '' : 's')+
+        ' · '+(st.grace ? 'one grace day in hand' : 'no grace day left')+'</p>'+
+    '</div></div>';
+}
+
 function viewProfile(){
   const u = authUser();
   const st = store.get("streak", emptyStreak());
@@ -1757,18 +1805,12 @@ function viewProfile(){
       '</div>';
 
   return '<div class="profile">'+acct+
+    streakHero(st)+
     '<div class="pstats">'+
-      '<div class="pstat"><b>'+st.n+'</b>day streak</div>'+
-      '<div class="pstat"><b>'+st.best+'</b>best ever</div>'+
       '<div class="pstat"><b>'+num(seen)+'</b>facts seen</div>'+
       '<div class="pstat"><b>'+(done ? Math.round(right/done*100)+"%" : "—")+'</b>quiz accuracy</div>'+
       '<div class="pstat"><b>'+num(papers)+'</b>past papers attempted</div>'+
     '</div>'+
-    '<div class="ptoday">Today: '+st.facts+' facts · '+st.quiz+' quiz · '+
-      st.pyq+' past paper · '+st.recs.length+' records'+
-      (st.last === dayKey() ? ' — <b>today counts</b>' :
-       ' — reach '+DAY_GOAL.facts+' facts, '+DAY_GOAL.quiz+' quiz, '+
-       DAY_GOAL.pyq+' past paper or '+DAY_GOAL.recs+' records')+'</div>'+
     '<div class="pcols">'+
     '<div class="syllabus"><div class="secthead"><h3>Your notes — '+ids.length+'</h3></div>'+
       noteList+'</div>'+

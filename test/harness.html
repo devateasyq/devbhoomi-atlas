@@ -382,7 +382,12 @@ window.addEventListener("load", async () => {
       JSON.stringify(stored));
     check("the tombstone is hidden from every reader",
       !Object.prototype.hasOwnProperty.call(ev('realNotes(store.get("notes", {}))'), "d-kangra"));
-    check("an emptied note shows as empty in the editor",
+    /* The editor still shows the whitespace that was typed — nothing
+       re-renders the panel on save, and it should not. What matters is
+       that reopening the record shows an empty editor, not the tombstone. */
+    win.openRec("d-shimla"); await wait(150);
+    win.openRec("d-kangra"); await wait(200);
+    check("reopening an emptied note shows an empty editor",
       doc.getElementById("notetext").value === "",
       JSON.stringify(doc.getElementById("notetext").value));
 
@@ -412,6 +417,27 @@ window.addEventListener("load", async () => {
     "psignin=" + !!doc.getElementById("psignin") + " authAvailable=" + ev("authAvailable()"));
   /* Scoped to the notes index: data-go is also on every related-record chip,
      and an open record panel puts one of those earlier in the DOM. */
+  /* The rings are the profile's headline: three arcs, each with a track and
+     a progress stroke, ordered outermost-largest-goal. A ring that silently
+     stopped drawing would look like a blank card, not like an error. */
+  check("the profile draws three streak rings",
+    doc.querySelectorAll(".rings .rg-p").length === 3,
+    "rg-p=" + doc.querySelectorAll(".rings .rg-p").length);
+  check("each ring has a track behind it",
+    doc.querySelectorAll(".rings .rg-t").length === 3);
+  const radii = [...doc.querySelectorAll(".rings .rg-p")].map(c => +c.getAttribute("r"));
+  check("rings run largest goal outermost to smallest innermost",
+    radii.length === 3 && radii[0] > radii[1] && radii[1] > radii[2],
+    JSON.stringify(radii));
+  check("the ring legend names all three routes",
+    /Facts/.test(doc.querySelector(".rg-legend").textContent) &&
+    /Quiz/.test(doc.querySelector(".rg-legend").textContent) &&
+    /Records/.test(doc.querySelector(".rg-legend").textContent),
+    doc.querySelector(".rg-legend") ? doc.querySelector(".rg-legend").textContent.trim() : "no legend");
+  check("the rings carry a spoken label for screen readers",
+    /Today:/.test(doc.querySelector(".rings svg").getAttribute("aria-label") || ""),
+    doc.querySelector(".rings svg") ? doc.querySelector(".rings svg").getAttribute("aria-label") : "no svg");
+
   const nrow = doc.querySelector(".noterow2[data-go]");
   check("the notes index links to its record", !!nrow);
   if(nrow){

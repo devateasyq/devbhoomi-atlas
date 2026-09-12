@@ -138,14 +138,17 @@ code change.
   always just yours.
 - **A daily streak, counted generously.** A day qualifies the moment you clear *any one*
   of four thresholds — 20 facts scrolled in Rounds, 5 quiz answers, 5 past-paper answers,
-  or opening 5 distinct records — so a bus-ride Rounds session and a sit-down past paper
+  or opening 3 distinct records — so a bus-ride Rounds session and a sit-down past paper
   both count as revision. Days are your device's local calendar days, not a rolling
   24 hours and not UTC. You start with one grace day, which absorbs a
   one-day gap without breaking the run and then has to be earned back — it recharges on
   every 7th consecutive qualifying day. Miss two days in a row with no grace in hand and
   the run restarts at 1 — but your best-ever run is never reduced. Across two signed-in
   devices the streak merges generously: every field takes whichever side is ahead rather
-  than whichever synced most recently.
+  than whichever synced most recently. The profile draws three of the four routes as
+  concentric rings — facts outermost at 20, quiz next at 5, records innermost at 3 — so
+  the ring with the most ground to cover has the most distance to travel. Past papers
+  still qualify a day but have no ring; the count sits beside them in words.
 - **Your profile, at `#/profile`.** Reached from the account button in the header —
   it is not in the nav — the profile shows who you are signed in as (or that you are
   not), the current and best streak, today's progress against the four thresholds above,

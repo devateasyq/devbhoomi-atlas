@@ -153,7 +153,7 @@ function shouldWriteNote(storedText, typedText, dirty){
 
 /* A day counts when any ONE of these is reached. Several routes, because a
    bus journey scrolling Rounds and a sit-down past paper are both revision. */
-var DAY_GOAL = {facts: 20, quiz: 5, pyq: 5, recs: 5};
+var DAY_GOAL = {facts: 20, quiz: 5, pyq: 5, recs: 3};
 
 function emptyStreak(){
   return {n: 0, best: 0, last: "", grace: 1, day: "",
