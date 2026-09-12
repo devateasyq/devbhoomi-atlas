@@ -10,6 +10,19 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
 
+    // A post belongs to one author and is readable by nobody else. Posts
+    // live outside users/{uid} because they are unbounded user text and the
+    // user document has a hard 1 MB limit that progress and notes already
+    // share. Opening a shared feed later means adding one clause to `read`
+    // — that is the whole reason for this shape.
+    match /posts/{postId} {
+      allow read:   if request.auth != null && resource.data.author == request.auth.uid;
+      allow create: if request.auth != null
+                    && request.resource.data.author == request.auth.uid
+                    && request.resource.data.visibility == "private";
+      allow update, delete: if request.auth != null && resource.data.author == request.auth.uid;
+    }
+
     // Nothing else in the database is reachable from a client at all.
     match /{document=**} {
       allow read, write: if false;

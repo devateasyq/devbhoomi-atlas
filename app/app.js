@@ -127,6 +127,12 @@ function localState(){
    without anybody remembering to come back for it. */
 function wipeLocal(){
   for(const e of SYNC_KEYS) store.del(e.k);
+  /* posts is deliberately not a SYNC_KEYS entry (its own collection, not the
+     user document — see pushPost/removePost/pullPosts), so the loop above
+     never touches it. Posts are still local data belonging to whoever
+     signed out, and a shared device must not keep them, so clear them
+     explicitly here. */
+  store.del("posts");
   store.del("owner");
   S.seen = [];
   dropMountedNote();
@@ -304,6 +310,7 @@ function mountAccount(){
     renderAccount(user);
     if(!user) return;
     pullAndMerge(user)
+      .then(() => pullPosts())
       .then(() => { render(); toast("Progress synced"); })
       .catch(() => toast("Could not sync just now"));
   });
@@ -1734,9 +1741,45 @@ function postsAsFacts(){
 }
 function allFacts(){ return postsAsFacts().concat(FACTS); }
 
-/* replaced in Task 8 */
-function pushPost(){}
-function removePost(){}
+/* Posts sync one document each rather than riding in the user document,
+   which already carries progress, notes and the streak against a hard
+   1 MB limit. Failures are logged the way every other write here is —
+   a silent failure would leave a card the student wrote on one device
+   only, with nothing said. */
+function postDoc(fb, id){ return fb.firestore().collection("posts").doc(id); }
+function pushPost(post){
+  if(!authUser() || !post) return;
+  loadFirebase().then(fb => postDoc(fb, post.id).set(post))
+    .catch(err => { console.error("[parikrama] post push failed:", err && err.code, err);
+                    toast("Card saved on this device only"); });
+}
+function removePost(id){
+  if(!authUser() || !id) return;
+  loadFirebase().then(fb => postDoc(fb, id).delete())
+    .catch(err => console.error("[parikrama] post delete failed:", err && err.code, err));
+}
+/* Union by id, newest wins, so a card written on either device survives. */
+function pullPosts(){
+  const u = authUser();
+  if(!u) return Promise.resolve();
+  return loadFirebase().then(fb =>
+    fb.firestore().collection("posts").where("author", "==", u.uid).get().then(snap => {
+      const remote = [];
+      snap.forEach(doc => remote.push(doc.data()));
+      const byId = {};
+      localPosts().concat(validPosts(remote, null)).forEach(p => {
+        if(!byId[p.id] || p.t > byId[p.id].t) byId[p.id] = p;
+      });
+      const merged = validPosts(Object.keys(byId).map(k => byId[k]), null);
+      store.set("posts", merged);
+      /* Anything this device holds that the server has not seen — written
+         while signed out, or while a push failed. */
+      const have = {}; remote.forEach(p => { have[p.id] = 1; });
+      merged.filter(p => !have[p.id]).forEach(pushPost);
+      if(S.view === "rounds") render();
+    })
+  ).catch(err => console.error("[parikrama] post pull failed:", err && err.code, err));
+}
 
 function savePost(text, tags){
   const clean = String(text == null ? "" : text).slice(0, POST_MAX);
