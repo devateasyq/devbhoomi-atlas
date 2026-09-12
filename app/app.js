@@ -133,6 +133,7 @@ function wipeLocal(){
      signed out, and a shared device must not keep them, so clear them
      explicitly here. */
   store.del("posts");
+  store.del("postgone");   /* the deletion tombstones are theirs too */
   store.del("owner");
   S.seen = [];
   dropMountedNote();
@@ -1766,8 +1767,14 @@ function pullPosts(){
     fb.firestore().collection("posts").where("author", "==", u.uid).get().then(snap => {
       const remote = [];
       snap.forEach(doc => remote.push(doc.data()));
-      const byId = {};
-      localPosts().concat(validPosts(remote, null)).forEach(p => {
+      /* A card deleted on this device, whose delete never reached the
+         server — offline, signed out, or a failed write. Without this the
+         union below brings it straight back. */
+      const gone = gonePosts();
+      const isGone = {}; gone.forEach(id => { isGone[id] = 1; });
+      const live = validPosts(remote, null).filter(p => !isGone[p.id]);
+      const byId = Object.create(null);
+      localPosts().concat(live).forEach(p => {
         if(!byId[p.id] || p.t > byId[p.id].t) byId[p.id] = p;
       });
       const merged = validPosts(Object.keys(byId).map(k => byId[k]), null);
@@ -1776,6 +1783,10 @@ function pullPosts(){
          while signed out, or while a push failed. */
       const have = {}; remote.forEach(p => { have[p.id] = 1; });
       merged.filter(p => !have[p.id]).forEach(pushPost);
+      /* Retry the deletes that never landed, and forget the ones the server
+         has already lost — a tombstone kept forever is just a leak. */
+      gone.forEach(id => { if(have[id]) removePost(id); });
+      store.set("postgone", gone.filter(id => have[id]));
       if(S.view === "rounds") render();
     })
   ).catch(err => console.error("[parikrama] post pull failed:", err && err.code, err));
@@ -1795,8 +1806,23 @@ function savePost(text, tags){
   toast("Card added");
   return post;
 }
+/* Deleting a card has to survive a sync. removePost returns early with no
+   account, and a push can simply fail, so without a record of the deletion
+   the next pullPosts unions the card straight back from the server and the
+   student watches something they deleted return. Notes hit this exact wall
+   in the last sub-project and were given tombstones; posts get the same
+   idea, held locally since a deleted document has nowhere to carry one.
+   Bounded, because it is bookkeeping rather than content. */
+const GONE_MAX = 200;
+function gonePosts(){
+  const g = store.get("postgone", []);
+  return Array.isArray(g) ? g.filter(x => typeof x === "string") : [];
+}
 function deletePost(id){
   store.set("posts", localPosts().filter(p => p.id !== id));
+  const gone = gonePosts().filter(x => x !== id);
+  gone.unshift(id);
+  store.set("postgone", gone.slice(0, GONE_MAX));
   removePost(id);
   toast("Card removed");
 }
