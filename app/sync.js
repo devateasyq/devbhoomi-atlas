@@ -133,6 +133,44 @@ function setNote(notes, id, text){
   out[id] = {text: clean.trim() ? clean : "", t: Date.now()};
   return out;
 }
+
+/* A post is a card in a feed you scroll, not an essay — shorter than a
+   note's 1,000 on purpose, because a card you cannot read at a glance is
+   not a card. The ceiling keeps the feed and the sync bounded; it is well
+   past a year of daily use. */
+var POST_MAX = 400, POST_LIMIT = 500;
+
+function normalisePost(p, knownIds){
+  if(!p || typeof p !== "object") return null;
+  if(typeof p.id !== "string" || !p.id || p.id === "__proto__") return null;
+  if(typeof p.text !== "string") return null;
+  var text = p.text.slice(0, POST_MAX);
+  if(!text.trim()) return null;
+  var tags = [], i;
+  if(Array.isArray(p.tags))
+    for(i = 0; i < p.tags.length; i++)
+      if(typeof p.tags[i] === "string" && (!knownIds || knownIds.has(p.tags[i])))
+        tags.push(p.tags[i]);
+  return {id: p.id,
+          author: typeof p.author === "string" ? p.author : "",
+          /* Never read from the input. Sharing is a later sub-project and
+             nothing here may publish anything, whatever arrives. */
+          visibility: "private",
+          text: text, tags: tags,
+          t: typeof p.t === "number" ? p.t : 0};
+}
+
+/* Newest first, junk dropped, capped. */
+function validPosts(list, knownIds){
+  var out = [], i, p;
+  for(i = 0; i < (list || []).length; i++){
+    p = normalisePost(list[i], knownIds);
+    if(p) out.push(p);
+  }
+  out.sort(function(a, b){ return b.t - a.t; });
+  return out.slice(0, POST_LIMIT);
+}
+
 /* flushNote decides whether the mounted note editor's value should be
    written to storage. Comparing the textarea's text against what is stored
    is not enough on its own: that comparison has no memory of whether the
@@ -458,5 +496,7 @@ if(typeof module !== "undefined" && module.exports){
                     DAY_GOAL: DAY_GOAL, HIST_MAX: HIST_MAX, emptyStreak: emptyStreak,
                     shiftDay: shiftDay, recentDays: recentDays, mergeHist: mergeHist,
                     dayKey: dayKey,
-                    daysApart: daysApart, bumpStreak: bumpStreak};
+                    daysApart: daysApart, bumpStreak: bumpStreak,
+                    POST_MAX: POST_MAX, POST_LIMIT: POST_LIMIT,
+                    normalisePost: normalisePost, validPosts: validPosts};
 }
