@@ -2137,7 +2137,72 @@ store.del("mapmode");
 buildNav();
 document.getElementById("brandmark").innerHTML = logoMark(26);
 document.getElementById("brandmarkm").innerHTML = logoMark(24);
+/* ---------- the bottom sheet ---------- */
+/* On a phone the record panel is a bottom sheet with a drag handle drawn
+   at its top — and that handle did nothing, which is worse than not
+   drawing one. A sheet that looks draggable has to be draggable. */
+function mountSheet(){
+  const panel = document.getElementById("panel");
+  if(!panel) return;
+  const phone = () => matchMedia("(max-width:1000px)").matches;
+  let start = null;
+
+  const reset = () => {
+    panel.style.transition = "";
+    panel.style.transform = "";
+    panel.style.opacity = "";
+  };
+
+  panel.addEventListener("pointerdown", e => {
+    if(!phone() || panel.hidden || e.pointerType === "mouse") return;
+    const t = e.target;
+    /* The header and the trail are always a grip. Below them the body
+       scrolls, so it is only a grip when already at the top — otherwise a
+       flick meant to scroll the prose would throw the sheet away. Never
+       from a control or the note editor, where a drag means something
+       else entirely. */
+    const onGrip = !!t.closest(".ph, .trail");
+    const body = document.getElementById("pbody");
+    const atTop = body && body.scrollTop <= 0;
+    const inControl = !!t.closest("textarea, input, button, a, select");
+    if(!onGrip && (!atTop || inControl)) return;
+    start = {y: e.clientY, t: Date.now(), id: e.pointerId};
+    panel.style.transition = "none";
+  }, {passive: true});
+
+  panel.addEventListener("pointermove", e => {
+    if(!start || e.pointerId !== start.id) return;
+    const dy = e.clientY - start.y;
+    if(dy <= 0){ panel.style.transform = ""; return; }
+    /* Past the first few pixels this is a dismissal, not a scroll — take
+       the gesture so the body underneath does not also move. */
+    if(dy > 6 && e.cancelable) e.preventDefault();
+    panel.style.transform = "translateY(" + dy + "px)";
+    panel.style.opacity = String(Math.max(0.35, 1 - dy / 420));
+  }, {passive: false});
+
+  const finish = e => {
+    if(!start || (e.pointerId != null && e.pointerId !== start.id)) return;
+    const dy = e.clientY - start.y, ms = Date.now() - start.t;
+    start = null;
+    panel.style.transition = "transform .2s cubic-bezier(.2,.8,.3,1), opacity .2s";
+    /* Either far enough, or a quick flick that clearly meant to throw it
+       away without travelling the whole distance. */
+    if(dy > 110 || (dy > 40 && ms < 260)){
+      panel.style.transform = "translateY(100%)";
+      panel.style.opacity = "0";
+      setTimeout(() => { closePanel(); reset(); }, 190);
+    } else reset();
+  };
+  panel.addEventListener("pointerup", finish);
+  panel.addEventListener("pointercancel", finish);
+  /* A sheet left mid-drag when the layout changes would stay shoved down
+     the screen with no way back. */
+  window.addEventListener("resize", () => { if(!phone()){ start = null; reset(); } });
+}
+
 mountAccount();
+mountSheet();
 if(location.hash && readHash().view) applyHash();
 else setView("home", true);
 

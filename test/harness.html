@@ -429,6 +429,28 @@ window.addEventListener("load", async () => {
   /* The rings are the profile's headline: three arcs, each with a track and
      a progress stroke, ordered outermost-largest-goal. A ring that silently
      stopped drawing would look like a blank card, not like an error. */
+  /* The sheet draws a drag handle on a phone, so it has to be draggable.
+     Dispatched synchronously: a throttled background tab stretches even a
+     5ms wait into a second, which would read as a slow drag. */
+  win.openRec("d-kangra"); await wait(250);
+  (function(){
+    const panel = doc.getElementById("panel"), ph = doc.querySelector(".ph");
+    const r = ph.getBoundingClientRect();
+    const x = r.left + r.width/2, y0 = r.top + 10;
+    const mk = (t, yy) => new win.PointerEvent(t, {bubbles:true, cancelable:true,
+      pointerId:31, pointerType:"touch", clientX:x, clientY:yy, isPrimary:true});
+    doc.getElementById("pbody").scrollTop = 0;
+    panel.dispatchEvent(mk("pointerdown", y0));
+    panel.dispatchEvent(mk("pointermove", y0 + 60));
+    panel.dispatchEvent(mk("pointermove", y0 + 140));
+    panel.dispatchEvent(mk("pointerup",   y0 + 200));
+  })();
+  await wait(400);
+  check("the sheet closes when dragged down", doc.getElementById("panel").hidden);
+  check("the drag leaves no transform stuck on the sheet",
+    !doc.getElementById("panel").style.transform,
+    doc.getElementById("panel").style.transform || "(cleared)");
+
   check("the profile draws three streak rings",
     doc.querySelectorAll(".rings .rg-p").length === 3,
     "rg-p=" + doc.querySelectorAll(".rings .rg-p").length);
