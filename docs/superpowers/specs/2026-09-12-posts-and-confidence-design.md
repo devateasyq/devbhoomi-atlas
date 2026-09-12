@@ -42,7 +42,8 @@ oldest-first. It gains a third input and returns four tiers:
 
 A card marked **again** is also re-queued five positions ahead in the feed you are
 currently scrolling, so "again" means *again*, not "next time you open Rounds".
-Without that the button is a promise the app does not keep until tomorrow.
+Without that the button is a promise the app does not keep until tomorrow. If fewer
+than five cards remain below, it goes to the end — never nowhere.
 
 ## Posts
 
@@ -53,6 +54,10 @@ attached to a record would be a second way to do something the app already does.
 
 **Shape:** `{author, visibility: "private", text, tags, t}`. `tags` holds record ids
 or section ids, so a post can also surface on the record it belongs to.
+
+A post is a card, so it takes the same two taps as any other. Its confidence entry is
+keyed `post:<postId>`, which cannot collide with a fact's `recordId#hash` — the two
+live in one `conf` map and must stay distinguishable.
 
 **Capped at 400 characters.** Shorter than a note's 1,000 on purpose: this is a card
 in a feed you scroll, and a card you cannot read at a glance is not a card. Enforced
@@ -92,6 +97,18 @@ match /posts/{postId} {
 ```
 
 A shared feed later would add one clause to `read`. Nothing else changes.
+
+### Which keys sync, and how
+
+This matters because getting it wrong is how the 1 MB ceiling gets breached:
+
+- **`conf` joins `SYNC_KEYS`** — bounded, small, merges by the same most-recent-wins
+  rule as the quiz answers, and rides in the user document with the rest of progress.
+- **`posts` does NOT join `SYNC_KEYS`.** It is a local mirror of the `posts`
+  collection, synced by its own path. Putting it in `SYNC_KEYS` would write every
+  post into the user document and reintroduce exactly the ceiling problem this
+  design exists to avoid.
+- Device preferences (`theme`, `mapoff`, `legendopen`) still never sync.
 
 ## The fact id change
 
