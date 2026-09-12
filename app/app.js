@@ -345,6 +345,7 @@ function factsList(pairs){
 const S = {
   view:"home", sel:null, trail:[], seen:[], legendOpen:false, focus:"",
   era:"all", battleFilter:"all", topicSec:"all",
+  cmpTab:"districts", cmpKey:"area", cmpDesc:true,
   revMode:"papers",
   qIdx:0, qSec:"all", qAnswered:null,
   pyYear:"all", pyHP:true, pyIdx:0, pyAnswered:null
@@ -358,6 +359,9 @@ const NAV = [
   {id:"topics",   lb:"Topics",   ic:'<path d="M4 5h16M4 12h16M4 19h10"/>'},
   {id:"people",   lb:"People",   ic:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-6 7-6s7 2.1 7 6"/>'},
   {id:"trends",   lb:"Trends",   ic:'<path d="M4 19V5"/><path d="M4 15l5-5 4 4 7-7"/><path d="M20 11V7h-4"/>'},
+  /* Earns a rail slot where the profile did not: this is syllabus material,
+     not the reader's own. Not in the dock, which stays four and a search. */
+  {id:"compare",  lb:"Compare",  ic:'<path d="M3 5h18M3 12h18M3 19h18"/><path d="M9 5v14M15 5v14"/>'},
   {id:"rounds",   lb:"Rounds", mob:1,   ic:'<path d="M12 3a9 9 0 109 9"/><path d="M12 7a5 5 0 105 5"/><circle cx="12" cy="12" r="1.6"/>'},
   {id:"revise",   lb:"Revise", mob:1,   ic:'<path d="M4 5.5A2.5 2.5 0 016.5 3H19v15H6.5A2.5 2.5 0 004 20.5z"/><path d="M9 8h6"/>'},
   /* mobOnly: neither nav carries it. The rail is already nine deep, and the
@@ -374,9 +378,10 @@ const SUB = {home:"Start here", map:"12 districts · "+D.states.length+" hill st
              timeline:"Prehistory to 1971", battles:"Wars, sieges and treaties",
              topics:"Notes by subject", people:"Rulers, rebels, builders",
              trends:"What the papers actually ask", rounds:"One fact at a time",
-             revise:"Past papers and quiz"};
+             compare:"Side by side, sortable", revise:"Past papers and quiz"};
 const TITLE = {home:"Overview", map:"Atlas", timeline:"Timeline", battles:"Battles & Treaties",
-               topics:"Topics", people:"People", trends:"Question Trends", rounds:"Rounds", revise:"Revise"};
+               topics:"Topics", people:"People", trends:"Question Trends", rounds:"Rounds",
+               compare:"Compare", revise:"Revise"};
 /* Not in NAV: the rail already carries nine entries and the phone bar is
    deliberately four. The header account button is the way in. */
 TITLE.profile = "Your profile";
@@ -1413,6 +1418,138 @@ function progressStrip(seen, done, right){
     '</div></div>';
 }
 
+/* ---------- Compare ---------- */
+/* The superlative is the question type: "largest district", "highest
+   density", "which state merged last". A table that makes you scan for
+   the answer has only moved the work, so the extreme in every sortable
+   column is marked. Everything here comes from the bundled records; no
+   figure is introduced that the atlas did not already carry. */
+const CMP = {
+  districts: {
+    lb: "Districts",
+    rows: () => D.districts,
+    cols: [
+      {k:"name",   lb:"District",     sort:"text"},
+      {k:"hq",     lb:"Headquarters", sort:"text"},
+      {k:"div",    lb:"Division",     sort:"text"},
+      {k:"formed", lb:"Formed",        sort:"date"},
+      {k:"area",   lb:"Area km²",      sort:"num"},
+      {k:"pop",    lb:"Population",    sort:"num", note:"2011"},
+      {k:"den",    lb:"Density",       sort:"num", note:"2011"},
+      {k:"lit",    lb:"Literacy %",    sort:"num", note:"2011"},
+      {k:"sr",     lb:"Sex ratio",     sort:"num", note:"2011"}
+    ]
+  },
+  states: {
+    lb: "Hill states",
+    rows: () => D.states,
+    cols: [
+      {k:"name",    lb:"State",   sort:"text"},
+      {k:"seat",    lb:"Seat",    sort:"text"},
+      {k:"dynasty", lb:"Dynasty", sort:"text"},
+      {k:"group",   lb:"Group",   sort:"text"},
+      {k:"founder", lb:"Founder"},
+      /* Deliberately NOT sortable. Only 11 of 23 founding dates carry a
+         four-digit year — the rest are "c. 550 CE", "8th-9th century BCE",
+         "traditionally ancient". A sort would strand half the table in a
+         no-year bucket while presenting itself as chronological, which is
+         worse than no sort at all. Every merger date has a year, so that
+         one sorts. */
+      {k:"founded", lb:"Founded"},
+      {k:"merged",  lb:"Merged",  sort:"date"}
+    ]
+  }
+};
+/* "1 July 1954", "c. 1700", "1948" — sortable by the first four-digit year
+   in the string. A record with no year sorts last rather than to zero,
+   which would otherwise plant every undated state at the top. */
+function cmpYear(v){
+  const m = String(v == null ? "" : v).match(/\d{4}/);
+  return m ? +m[0] : null;
+}
+function cmpValue(row, col){
+  if(col.sort === "num") return typeof row[col.k] === "number" ? row[col.k] : null;
+  if(col.sort === "date") return cmpYear(row[col.k]);
+  return null;                      /* text sorts by compare, not by value */
+}
+function cmpSorted(tab){
+  const spec = CMP[tab], rows = spec.rows().slice();
+  const col = spec.cols.filter(c => c.sort).find(c => c.k === S.cmpKey);
+  if(!col) return rows.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  if(col.sort === "text")
+    return rows.sort((a, b) => {
+      const r = String(a[col.k] || "").localeCompare(String(b[col.k] || ""));
+      return S.cmpDesc ? -r : r;
+    });
+  return rows.sort((a, b) => {
+    const x = cmpValue(a, col), y = cmpValue(b, col);
+    if(x === null && y === null) return String(a.name).localeCompare(String(b.name));
+    if(x === null) return 1;          /* no figure: always last, either way */
+    if(y === null) return -1;
+    return S.cmpDesc ? y - x : x - y;
+  });
+}
+/* The highest and lowest actually present in each sortable column. */
+function cmpExtremes(rows, cols){
+  const out = {};
+  /* Only where an extreme means something. "Highest name" does not. */
+  cols.filter(c => c.sort === "num" || c.sort === "date").forEach(c => {
+    const vals = rows.map(r => cmpValue(r, c)).filter(v => v !== null);
+    if(vals.length < 2) return;
+    const hi = Math.max.apply(null, vals), lo = Math.min.apply(null, vals);
+    /* Only when the extreme is UNIQUE. Fifteen of the twenty-three hill
+       states merged in 1948, and flagging all fifteen as "highest" would
+       mark twenty of twenty-three rows — noise dressed as a superlative.
+       "The largest district" is a fact; "one of fifteen" is not. */
+    out[c.k] = {
+      hi: vals.filter(v => v === hi).length === 1 ? hi : null,
+      lo: vals.filter(v => v === lo).length === 1 ? lo : null
+    };
+  });
+  return out;
+}
+function viewCompare(){
+  const tab = CMP[S.cmpTab] ? S.cmpTab : "districts";
+  const spec = CMP[tab];
+  const rows = cmpSorted(tab);
+  const ext = cmpExtremes(rows, spec.cols);
+
+  const tabs = Object.keys(CMP).map(k =>
+    '<button class="cmptab" type="button" data-cmptab="'+k+'" '+
+      'aria-pressed="'+(k === tab)+'">'+esc(CMP[k].lb)+'</button>').join('');
+
+  const head = spec.cols.map(c => {
+    if(!c.sort) return '<th scope="col">'+esc(c.lb)+'</th>';
+    const on = S.cmpKey === c.k;
+    return '<th scope="col" aria-sort="'+(on ? (S.cmpDesc ? "descending" : "ascending") : "none")+'">'+
+      '<button class="cmpsort'+(on ? " on" : "")+'" type="button" data-cmpkey="'+c.k+'">'+
+        esc(c.lb)+'<i aria-hidden="true">'+(on ? (S.cmpDesc ? "▼" : "▲") : "↕")+'</i>'+
+      '</button></th>';
+  }).join('');
+
+  const body = rows.map(r => '<tr data-go="'+esc(r.id)+'" tabindex="0">'+
+    spec.cols.map((c, i) => {
+      const raw = r[c.k];
+      const v = cmpValue(r, c);
+      const e = ext[c.k];
+      const hi = e && v !== null && e.hi !== null && v === e.hi;
+      const lo = e && v !== null && e.lo !== null && v === e.lo;
+      const mark = hi ? '<i class="xhi" title="highest">▲</i>'
+                 : lo ? '<i class="xlo" title="lowest">▼</i>' : '';
+      const text = c.sort === "num" && typeof raw === "number" ? num(raw)
+                 : esc(raw == null || raw === "" ? "—" : raw);
+      return i === 0 ? '<th scope="row">'+text+'</th>'
+                     : '<td'+(c.sort ? ' class="n"' : '')+'>'+text+mark+'</td>';
+    }).join('')+'</tr>').join('');
+
+  return '<div class="pagewrap"><div class="cmpbar">'+tabs+
+    '<span class="cmphint">Sort by any column. '+
+      '<i class="xhi">▲</i> highest, <i class="xlo">▼</i> lowest. '+
+      'Census figures are 2011.</span></div>'+
+    '<div class="cmpwrap"><table class="cmp"><thead><tr>'+head+'</tr></thead>'+
+    '<tbody>'+body+'</tbody></table></div></div>';
+}
+
 function viewHome(){
   const syl = [
     ["01","Ancient Himachal","Pre-history, Vedic references and the janapadas","t-janapadas"],
@@ -2362,6 +2499,7 @@ function render(){
   else if(S.view === "trends")    s.innerHTML = viewTrends();
   else if(S.view === "rounds")  { s.innerHTML = viewRounds(); mountRounds(); }
   else if(S.view === "revise")    s.innerHTML = viewRevise();
+  else if(S.view === "compare") s.innerHTML = viewCompare();
   else if(S.view === "profile") { s.innerHTML = viewProfile(); mountProfile(); }
 }
 
@@ -2376,6 +2514,15 @@ document.addEventListener("click", e => {
   if(hit("#msx")){ closeSearch(); return; }
 
   const nav = hit("[data-view]");   if(nav){ go(nav.dataset.view); return; }
+  const ct = hit("[data-cmptab]"); if(ct){ S.cmpTab = ct.dataset.cmptab;
+      /* Each table has its own columns, so a key from the other one would
+         silently fall back to name order. Start on one it has. */
+      S.cmpKey = S.cmpTab === "districts" ? "area" : "merged";
+      S.cmpDesc = true; render(); return; }
+  const ck = hit("[data-cmpkey]"); if(ck){
+      if(S.cmpKey === ck.dataset.cmpkey) S.cmpDesc = !S.cmpDesc;
+      else { S.cmpKey = ck.dataset.cmpkey; S.cmpDesc = true; }
+      render(); return; }
   /* Picking a result is the end of a search: on a phone the field is the
      dock, and leaving it open would hide the very record it just opened. */
   const gob = hit("[data-go]");     if(gob){ $("#results").hidden = true; closeSearch(); goTo(gob.dataset.go); return; }

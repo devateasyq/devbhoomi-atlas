@@ -507,6 +507,45 @@ window.addEventListener("load", async () => {
     !doc.getElementById("panel").style.transform,
     doc.getElementById("panel").style.transform || "(cleared)");
 
+  /* Compare: the superlative is the question type, so the table has to
+     answer it without being scanned — and must not claim a superlative
+     that is not one. */
+  /* go() rather than setting S.view: closePanel above writes the hash on a
+     timer, and the hashchange that follows re-renders whatever the hash
+     says. Setting S.view alone loses that race and the table is wiped out
+     from under the check. */
+  await wait(500);
+  win.go("compare");
+  ev('S.cmpTab="districts"; S.cmpKey="area"; S.cmpDesc=true; render();');
+  await wait(350);
+  check("the compare table lists every district",
+    doc.querySelectorAll("table.cmp tbody tr").length === 12,
+    doc.querySelectorAll("table.cmp tbody tr").length + " rows");
+  check("sorting by area puts the largest first",
+    /Lahaul/.test(doc.querySelector("table.cmp tbody tr th").textContent),
+    doc.querySelector("table.cmp tbody tr th").textContent);
+  check("the largest is marked as the extreme",
+    !!doc.querySelector("table.cmp tbody tr .xhi"));
+  check("the table scrolls inside its own box, not the page",
+    doc.querySelector(".cmpwrap") &&
+    win.getComputedStyle(doc.querySelector(".cmpwrap")).overflowX === "auto");
+  ev('S.cmpTab="states"; S.cmpKey="merged"; S.cmpDesc=true; render();');
+  await wait(300);
+  check("the hill states table lists them all",
+    doc.querySelectorAll("table.cmp tbody tr").length === 23,
+    doc.querySelectorAll("table.cmp tbody tr").length + " rows");
+  /* Fifteen states merged in 1948. Marking all fifteen as "highest" would
+     be noise dressed as a superlative, so a tied extreme is marked at all. */
+  check("a tied extreme is not marked as a superlative",
+    doc.querySelectorAll("table.cmp .xhi, table.cmp .xlo").length === 0,
+    doc.querySelectorAll("table.cmp .xhi, table.cmp .xlo").length + " marks");
+  check("founded is deliberately not sortable",
+    !doc.querySelector('[data-cmpkey="founded"]'));
+  /* Back to the profile: the ring checks below were reached by clicking the
+     account button further up, and this block navigated away from it. */
+  win.go("profile");
+  await wait(350);
+
   check("the profile draws three streak rings",
     doc.querySelectorAll(".rings .rg-p").length === 3,
     "rg-p=" + doc.querySelectorAll(".rings .rg-p").length);
