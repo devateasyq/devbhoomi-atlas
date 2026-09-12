@@ -218,7 +218,12 @@ test("mergeConf survives a hostile key", () => {
   const m = sync.mergeConf({constructor: {v: "got", t: 1}}, {toString: {v: "again", t: 1}});
   assert.equal(m.constructor && m.constructor.v, "got", "an inherited builtin must not swallow it");
   assert.equal(m.toString && m.toString.v, "again");
-  assert.ok(!("__proto__" in sync.mergeConf({"__proto__": {v: "got", t: 1}}, {})));
+  /* NOT `"__proto__" in x` — that is true for every plain object via the
+     inherited accessor, so the assertion could never fail whatever the
+     code did. Own-property is the question worth asking. */
+  const pp = sync.mergeConf({"__proto__": {v: "got", t: 1}}, {});
+  assert.ok(!Object.prototype.hasOwnProperty.call(pp, "__proto__"));
+  assert.equal(Object.getPrototypeOf(pp), Object.prototype, "the prototype must be untouched");
 });
 
 test("setConf records a decision", () => {
