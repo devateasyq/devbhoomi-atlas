@@ -529,9 +529,13 @@ button.brow:hover .blab{color:var(--accent)}
   .rounds.anim .short .rart{opacity:.85;transform:none;transition:none}
 }
 
-#acctbtn{padding:6px 11px;border:1px solid var(--line);border-radius:20px;
+#acctbtn{display:flex;align-items:center;gap:6px;padding:5px 11px 5px 8px;
+  border:1px solid var(--line);border-radius:20px;
   background:var(--surface);font:inherit;font-size:12px;color:var(--ink-2);cursor:pointer;
-  white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}
+  white-space:nowrap;max-width:170px}
+#acctbtn .ic{width:15px;height:15px;flex:0 0 15px;stroke:currentColor;fill:none;
+  stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+#acctbtn span{overflow:hidden;text-overflow:ellipsis}
 #acctbtn:hover{border-color:var(--accent-line);color:var(--ink)}
 #acctbtn.in{border-color:var(--accent-line);color:var(--accent)}
 /* Google requires their mark shown unaltered and in full colour on a light
@@ -558,7 +562,7 @@ button.brow:hover .blab{color:var(--accent)}
   border:1px solid var(--line);background:var(--ground);color:var(--ink)}
 #acctemail:focus{outline:none;border-color:var(--accent-line)}
 .acctmsg{min-height:17px;font-size:12px;color:var(--accent)}
-@media (max-width:600px){ #acctbtn{max-width:96px} }
+@media (max-width:600px){ #acctbtn{max-width:112px;padding-right:9px} }
 .noteblk textarea{width:100%;font:inherit;font-size:14px;line-height:1.5;
   padding:9px 11px;border-radius:8px;border:1px solid var(--line);
   background:var(--ground);color:var(--ink);resize:vertical;min-height:66px}

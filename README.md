@@ -149,11 +149,13 @@ code change.
   concentric rings — facts outermost at 20, quiz next at 5, records innermost at 3 — so
   the ring with the most ground to cover has the most distance to travel. Past papers
   still qualify a day but have no ring; the count sits beside them in words.
-- **Your profile, at `#/profile`.** Reached from the account button in the header —
-  it is not in the nav — the profile shows who you are signed in as (or that you are
-  not), the current and best streak, today's progress against the four thresholds above,
-  quiz accuracy, past papers attempted, and an index of every note you have written, each
-  linking back to its record.
+- **Your profile, at `#/profile`.** Three ways in: the account button in the header,
+  a *Profile* entry in the rail, and a card on the Overview — the phone tab bar stays
+  the four it has always been, and the Overview card is how a phone gets there. The
+  profile shows who you are signed in as (or that you are not) with a sign-out button,
+  today's three rings, the current and best streak, quiz accuracy, past papers
+  attempted, and an index of every note you have written, each linking back to its
+  record.
 - **Export and delete.** The profile can export everything the app holds about you —
   notes, streak and all synced progress — as one JSON file, and, for a signed-in account,
   delete the account and its stored data outright. Both are described in

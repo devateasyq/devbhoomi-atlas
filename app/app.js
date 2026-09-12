@@ -100,8 +100,15 @@ function renderAccount(user){
   const btn = document.getElementById("acctbtn");
   if(!btn) return;
   btn.hidden = false;   /* markup starts hidden until the first render fills it in */
-  btn.textContent = user ? (user.displayName || user.email || "Account")
-                    : authAvailable() ? "Sign in" : "You";
+  const name = user ? (user.displayName || user.email || "Account")
+               : authAvailable() ? "Sign in" : "You";
+  /* A bare name in the corner did not read as something you could press.
+     The avatar mark and the title say what it does. */
+  btn.innerHTML = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+
+    '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="2.8"/>'+
+    '<path d="M6.8 18.7a6 6 0 0110.4 0"/></svg><span>'+esc(name)+'</span>';
+  btn.title = user ? "Your profile" : "Your profile and sign-in";
+  btn.setAttribute("aria-label", btn.title);
   btn.classList.toggle("in", !!user);
 }
 /* One document per user holds the progress that belongs to the person.
@@ -344,7 +351,13 @@ const NAV = [
   {id:"people",   lb:"People",   ic:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-6 7-6s7 2.1 7 6"/>'},
   {id:"trends",   lb:"Trends",   ic:'<path d="M4 19V5"/><path d="M4 15l5-5 4 4 7-7"/><path d="M20 11V7h-4"/>'},
   {id:"rounds",   lb:"Rounds", mob:1,   ic:'<path d="M12 3a9 9 0 109 9"/><path d="M12 7a5 5 0 105 5"/><circle cx="12" cy="12" r="1.6"/>'},
-  {id:"revise",   lb:"Revise", mob:1,   ic:'<path d="M4 5.5A2.5 2.5 0 016.5 3H19v15H6.5A2.5 2.5 0 004 20.5z"/><path d="M9 8h6"/>'}
+  {id:"revise",   lb:"Revise", mob:1,   ic:'<path d="M4 5.5A2.5 2.5 0 016.5 3H19v15H6.5A2.5 2.5 0 004 20.5z"/><path d="M9 8h6"/>'},
+  /* Deliberately no mob flag — the phone bar stays Overview, Map, Rounds,
+     Revise. The rail carries it, and the Overview hub is built from NAV so
+     a card appears there too, which is how a phone reaches it. Keeping this
+     out of the nav entirely was a mistake: the header button alone was not
+     a findable route to your own streak and notes. */
+  {id:"profile",  lb:"Profile",  ic:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="2.8"/><path d="M6.8 18.7a6 6 0 0110.4 0"/>'}
 ];
 const COUNTS = {map:D.districts.length, timeline:D.events.length, battles:D.battles.length,
                 topics:D.topics.length, people:D.people.length, trends:D.pyq.length,
