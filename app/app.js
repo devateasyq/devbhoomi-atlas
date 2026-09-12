@@ -1229,7 +1229,10 @@ function viewHome(){
     (done ? stat(right+"/"+done, "quiz correct") : "") +
     '</div>';
 
-  const sections = NAV.filter(n => n.id !== "home").map(n => {
+  /* The hub lists the content sections. Profile is not one of them — it is
+     yours, not the syllabus — and it has the phone bar and the header's
+     account button of its own. */
+  const sections = NAV.filter(n => n.id !== "home" && !n.mobOnly).map(n => {
     const pk = SECT_PIC[n.id] ? PICS[SECT_PIC[n.id]] : null;
     return '<button class="sect'+(pk ? " haspic" : "")+'" type="button" data-view="'+n.id+'">'+
       (pk ? '<img class="sectpic" src="'+pk.s+'" alt="" loading="lazy" decoding="async">' : '')+

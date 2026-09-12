@@ -153,11 +153,10 @@ code change.
   so a run reads as a shape rather than as a number you have to take on trust. A day
   with no work still draws, empty, rather than shortening the row. Merely *opening* a
   record no longer counts towards a day — writing something down does.
-- **Your profile, at `#/profile`.** Three ways in: the account button in the header,
-  a *Profile* tab in the phone bar (which is five tabs now, not four), and a card on
-  the Overview. It is deliberately not in the rail: on a desktop the rail is already
-  nine deep and the account button sits in view at all times, whereas on a phone that
-  button competes with the wordmark and the search box. The
+- **Your profile, at `#/profile`.** Two ways in: the account button in the header, and
+  a *Profile* tab in the phone bar (which is five tabs now, not four). It is in neither
+  the rail nor the Overview hub — the hub lists the syllabus, and the profile is yours
+  rather than part of it. The
   profile shows who you are signed in as (or that you are not) with a sign-out button,
   today's three rings, the current and best streak, quiz accuracy, past papers
   attempted, and an index of every note you have written, each linking back to its
