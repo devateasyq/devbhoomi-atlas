@@ -64,13 +64,16 @@ Nothing is origin-specific — relative paths throughout, so it works from a sub
 - **Past papers.** 448 questions from the HPAS prelims papers of 2020, 2021, 2022, 2023 and 2025,
   filterable by year, with a *Himachal only* toggle that narrows them to the 109 state-specific ones.
   Where a question maps to a note in the atlas, the explanation links straight to it.
-- **Progress is yours.** Quiz and past-paper results, the facts you have seen, your notes and your
-  streak live in `localStorage` under the `hpatlas:` prefix, in separate buckets. Signed out, they
-  stay on the device. Signed in, they also sync to a Firestore document that `firestore.rules`
-  makes readable and writable by that account alone, so the same progress follows you between
-  devices. Theme, hidden map layers and the legend's state are device preferences and never sync.
-  Everything can be exported, and the account and its data deleted, from the profile.
-  The page does load Vercel Analytics (`cdn.vercel-insights.com`), which counts page views.
+- **Progress is yours.** Quiz and past-paper results, the facts you have seen, how well you said
+  you know each one, your notes and your streak live in `localStorage` under the `hpatlas:`
+  prefix, in separate buckets. Signed out, they stay on the device. Signed in, they also sync to
+  a Firestore document that `firestore.rules` makes readable and writable by that account alone,
+  so the same progress follows you between devices. Cards you write in Rounds sync too, but
+  through their own collection rather than that document — see [Rounds](#rounds) and
+  [Accounts and sync](#accounts-and-sync-optional). Theme, hidden map layers and the legend's
+  state are device preferences and never sync. Everything can be exported, and the account and
+  its data deleted, from the profile. The page does load Vercel Analytics
+  (`cdn.vercel-insights.com`), which counts page views.
 
 ## Structure
 
@@ -118,8 +121,46 @@ first, so exhausting the pool turns the feed into spaced repetition rather than 
 There is no completion state and no counter, by design. The seen set persists at
 `hpatlas:seen`.
 
+Each fact's id is a hash of its own text (`recordId#<hash>`), not its position in the
+hook — reordering a hook's atoms, or fixing a typo in one, used to shift every id after
+it onto a different fact, which could silently misattribute a `seen` mark or, now, a
+confidence rating to the wrong card. **Switching to a text hash was a one-time, paid
+cost, stated plainly: every existing id changed, so `hpatlas:seen` was pruned of
+everything it no longer recognised the moment this shipped, and the facts-seen count
+reset to zero for whoever had one.** It rebuilds itself from here exactly as it always
+has; nothing about how facts are seen or ordered changed, only how they are named.
+
 Tapping a card opens the record it came from — the feed is a way into the atlas, not a
 dead end.
+
+**Two taps, and neither is required.** Every card carries *Got it* and *Again*.
+*Got it* sends the card behind every other card in the feed — you have said you know
+it, so it waits. *Again* re-queues it within the next five cards, then, once you have
+seen it again, it drops back into the ordinary seen rotation like any other fact.
+Pressing the button a card already holds clears it — that is the only undo, and it
+means there is no separate "clear" control. Scrolling past a card without tapping
+either leaves it exactly where the unseen/seen ordering above has always put it: the
+two taps add a leading and a trailing tier to that order, they do not replace it.
+Ratings persist at `hpatlas:conf` and, signed in, sync the same way the rest of your
+progress does.
+
+**Add your own card.** The **+** above the feed opens a plain textarea, capped at 400
+characters with a live counter, and an optional tag to one record. Save it and it is a
+card, not a note: it joins the Rounds feed exactly like an extracted fact, takes the
+same *Got it* / *Again* taps, and — when tagged — also shows up under "Your cards" on
+that record's own panel. Up to 500 can exist at once; past that the composer refuses
+new ones rather than quietly dropping old ones. A post is always private — there is no
+sharing or public posting in this build. Cards live in their own `posts/{postId}`
+Firestore collection rather than as a field in the per-account document the rest of
+your progress shares, because that document has a hard 1 MB limit already shared by
+notes and everything else described in
+[Accounts and sync](#accounts-and-sync-optional) — 500 cards of up to 400 characters
+is exactly the kind of unbounded field that limit exists to keep out. **The `posts`
+collection's rules must be published before any card can sync at all** — see
+[Accounts and sync](#accounts-and-sync-optional); until then, cards you write stay
+local to the device that wrote them. Deleting a card also drops a local tombstone
+(`hpatlas:postgone`), so a card removed on one device cannot be brought back by a
+sync that still has an older server copy of it.
 
 **Known gap:** all 16 battle records and all 24 people records carry no exam hook, so
 Sansar Chand, the Gurkha wars and the Praja Mandal leaders never surface in the feed.
@@ -274,19 +315,37 @@ exists for one reason: to carry your progress between devices.
   either way. To turn sign-in on, create a Firebase project, enable the Google and
   Email link providers, and paste the four web-app keys from Project settings → Your
   apps → Web app into that file.
-- **`firestore.rules` must be published before any account is created.** Firebase
-  Database → Rules → paste the contents of `firestore.rules` → Publish. Firebase's own
-  default rules let any signed-in user read every document in the project, including
-  other people's progress — publishing the rules in this repo, which restrict each
-  document at `users/{uid}` to that same `uid`, is not optional. Nothing else in the
-  database is reachable from a client at all.
-- **What syncs.** Five keys, all progress, none of it identifying beyond the account
-  itself: `seen` (the Rounds spaced-repetition set), `quiz` and `pyq` (per-question
-  answers with a timestamp, so the merge on sign-in can take the most recent answer),
-  `notes` (your per-record notes, most-recent-wins per note), and `streak` (the daily
-  streak, merged so every field takes whichever device is ahead). Merging is generous
-  throughout — signing in on a second device adds that device's progress to the account
-  rather than replacing either side, and no field is ever reduced by a sync.
+- **`firestore.rules` must be published before any account is created — and
+  republished now.** Firebase Database → Rules → paste the contents of
+  `firestore.rules` → Publish. Firebase's own default rules let any signed-in user
+  read every document in the project, including other people's progress — publishing
+  the rules in this repo, which restrict each document at `users/{uid}` to that same
+  `uid` and each document at `posts/{postId}` to the `uid` its own `author` field
+  names, is not optional. **This sub-project added the `posts` collection and its
+  rule; until the repo owner re-publishes the updated file, cards written in Rounds
+  do not sync at all** — they still work, but stay local to the device that wrote
+  them, the same as being signed out. Nothing else in the database is reachable from
+  a client at all.
+- **What syncs.** Six keys in the per-account document, all progress, none of it
+  identifying beyond the account itself: `seen` (the Rounds spaced-repetition set),
+  `quiz` and `pyq` (per-question answers with a timestamp, so the merge on sign-in
+  can take the most recent answer), `conf` (Got it / Again per fact, the same
+  timestamped shape and most-recent-wins merge as quiz and pyq), `notes` (your
+  per-record notes, most-recent-wins per note), and `streak` (the daily streak,
+  merged so every field takes whichever device is ahead). Merging is generous
+  throughout — signing in on a second device adds that device's progress to the
+  account rather than replacing either side, and no field is ever reduced by a sync.
+  **Cards you write in Rounds are not part of this document** — see the next bullet.
+- **Posts are a separate collection, not a seventh key.** Cards you write in Rounds
+  are capped at 400 characters and 500 total, and the per-account document already
+  carries notes and streak history against its hard 1 MB ceiling — 500 cards would be
+  the easiest way yet to blow past it, and doing so silently breaks every other kind
+  of sync at once, the same reasoning the note cap rests on. Each card is instead its
+  own document at `posts/{postId}`, keyed to its author, and merges the same way
+  progress does: newest write wins per card. A card deleted on one device leaves a
+  local tombstone (`hpatlas:postgone`) so a slower sync from another device cannot
+  bring it back. Every post is created `visibility: "private"` and stays that way;
+  nothing in this build ever reads, or offers to read, someone else's card.
 - **What never syncs.** Theme, the map legend's hidden-layer set, and any other device
   preference stay in `localStorage` on that device only. They are not sent anywhere and
   are not part of the merge.
@@ -300,16 +359,20 @@ exists for one reason: to carry your progress between devices.
   `file://`, where Firebase's popup and redirect sign-in flows do not work, so the build
   forces `FB_READY` to `false`, meaning none of the sign-in affordances — including the
   profile's sign-in card — ever appear in it, regardless of whether
-  `app/firebase-config.js` has been filled in. The profile itself, the streak and notes
-  all still work there, entirely locally. Use the hosted copy (or a local static server)
-  to sign in; the downloaded file is for offline guest revision.
+  `app/firebase-config.js` has been filled in. The profile itself, the streak, notes and
+  the Rounds composer all still work there, entirely locally — a card written in this
+  build stays on that device and never syncs, same as every other kind of progress here.
+  Use the hosted copy (or a local static server) to sign in; the downloaded file is for
+  offline guest revision.
 
 ### Privacy
 
 If you sign in, Firebase Auth holds your **email address** and **display name** (from
 Google, or from the email link you used) separately, to know it's you. The Firestore
-document scoped to your account stores only the five progress keys above — `seen`,
-`quiz`, `pyq`, `notes` and `streak` — and nothing else. No analytics, no tracking, no
+document scoped to your account stores only the six progress keys above — `seen`,
+`quiz`, `pyq`, `conf`, `notes` and `streak` — and nothing else. Cards you write in
+Rounds are stored separately, one document per card in the `posts` collection,
+readable only by the account that wrote it. No analytics, no tracking, no
 third-party sharing.
 
 **You can leave at any time.** The profile's export gives you everything the app holds
