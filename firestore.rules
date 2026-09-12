@@ -20,7 +20,15 @@ service cloud.firestore {
       allow create: if request.auth != null
                     && request.resource.data.author == request.auth.uid
                     && request.resource.data.visibility == "private";
-      allow update, delete: if request.auth != null && resource.data.author == request.auth.uid;
+      // An update must not be able to do what a create may not: hand the
+      // post to someone else, or make it public. Nothing in this app writes
+      // visibility from input, but the client is not what enforces that —
+      // this is. Sharing is a later sub-project and it starts here.
+      allow update: if request.auth != null
+                    && resource.data.author == request.auth.uid
+                    && request.resource.data.author == request.auth.uid
+                    && request.resource.data.visibility == "private";
+      allow delete: if request.auth != null && resource.data.author == request.auth.uid;
     }
 
     // Nothing else in the database is reachable from a client at all.
