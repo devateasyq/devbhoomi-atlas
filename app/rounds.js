@@ -115,19 +115,28 @@ function shuffle(a){
   return a;
 }
 
-/* Unseen facts first, shuffled. Seen facts follow oldest-first, so when
-   the pool is exhausted the feed cycles into what you saw longest ago —
-   spaced repetition for free, and no "you're done" wall. */
-function orderFacts(facts, seen){
-  var at = {}, list = seen || [];
-  for(var i = 0; i < list.length; i++) if(!(list[i] in at)) at[list[i]] = i;
-  var fresh = [], stale = [];
-  for(var j = 0; j < facts.length; j++){
-    if(facts[j].id in at) stale.push(facts[j]); else fresh.push(facts[j]);
+/* Four tiers. Unseen-first-then-oldest was the whole ordering; confidence
+   wraps it rather than replacing it, so a feed with nothing marked comes
+   out exactly as it always did.
+     again  — you asked to see it again, so it leads
+     unseen — shuffled, as before
+     seen   — oldest first, as before
+     got    — you said you know it, so it waits behind everything */
+function orderFacts(facts, seen, conf){
+  var at = {}, list = seen || [], c = conf || {}, i, id;
+  for(i = 0; i < list.length; i++) if(!(list[i] in at)) at[list[i]] = i;
+  var again = [], fresh = [], stale = [], got = [];
+  for(i = 0; i < facts.length; i++){
+    id = facts[i].id;
+    var st = Object.prototype.hasOwnProperty.call(c, id) && c[id] ? c[id].v : null;
+    if(st === "again")      again.push(facts[i]);
+    else if(st === "got")   got.push(facts[i]);
+    else if(id in at)       stale.push(facts[i]);
+    else                    fresh.push(facts[i]);
   }
   shuffle(fresh);
   stale.sort(function(x, y){ return at[x.id] - at[y.id]; });
-  return fresh.concat(stale);
+  return again.concat(fresh, stale, got);
 }
 
 /* What to draw behind a fact. The feed is the atlas's feed, so every card

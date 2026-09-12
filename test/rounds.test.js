@@ -211,3 +211,41 @@ test("pruneSeen keeps the order it was given", () => {
   const facts = [{id: "x"}, {id: "y"}, {id: "z"}];
   assert.deepEqual(rounds.pruneSeen(["z", "x", "y"], facts), ["z", "x", "y"]);
 });
+
+const F = n => Array.from({length: n}, (_, i) => ({id: "f" + i, text: "t" + i}));
+
+test("orderFacts without confidence behaves exactly as before", () => {
+  const facts = F(5), seen = ["f1", "f3"];
+  const out = rounds.orderFacts(facts, seen, {});
+  assert.equal(out.length, 5);
+  assert.deepEqual(out.slice(3).map(f => f.id), ["f1", "f3"], "seen still trail, oldest first");
+});
+
+test("again comes first and got comes last", () => {
+  const facts = F(6);
+  const conf = {f4: {v: "again", t: 1}, f0: {v: "got", t: 1}};
+  const out = rounds.orderFacts(facts, ["f0", "f2"], conf).map(f => f.id);
+  assert.equal(out[0], "f4", "a card marked again leads");
+  assert.equal(out[out.length - 1], "f0", "a card marked got trails everything");
+});
+
+test("every fact appears exactly once whatever its state", () => {
+  const facts = F(8);
+  const conf = {f1: {v: "again", t: 1}, f2: {v: "got", t: 1}, f5: {v: "again", t: 2}};
+  const out = rounds.orderFacts(facts, ["f2", "f3", "f5"], conf);
+  assert.equal(out.length, 8);
+  assert.equal(new Set(out.map(f => f.id)).size, 8);
+});
+
+test("a got fact that was never seen still trails", () => {
+  const facts = F(4);
+  const out = rounds.orderFacts(facts, [], {f3: {v: "got", t: 1}}).map(f => f.id);
+  assert.equal(out[out.length - 1], "f3");
+});
+
+test("orderFacts does not mutate what it is given", () => {
+  const facts = F(4), seen = ["f1"], conf = {f2: {v: "got", t: 1}};
+  rounds.orderFacts(facts, seen, conf);
+  assert.deepEqual(seen, ["f1"]);
+  assert.deepEqual(facts.map(f => f.id), ["f0", "f1", "f2", "f3"]);
+});
