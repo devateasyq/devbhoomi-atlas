@@ -675,3 +675,16 @@ button.brow:hover .blab{color:var(--accent)}
 .cfb:hover{border-color:var(--accent-line);color:var(--ink)}
 .cfb.on[data-conf="got"]{border-color:var(--good);color:var(--good);background:var(--accent-soft)}
 .cfb.on[data-conf="again"]{border-color:var(--gold);color:var(--gold)}
+
+.pcard-s{font-size:13.5px;line-height:1.5;color:var(--ink-2);padding:9px 11px;
+  border-left:2px solid var(--accent-line);background:var(--surface);
+  border-radius:0 8px 8px 0;margin-bottom:8px}
+.rcompose{position:absolute;right:14px;top:14px;z-index:5}
+.cfb.rm{margin-top:10px;border-color:var(--line);color:var(--ink-3)}
+.cfb.rm:hover{border-color:var(--crit);color:var(--crit)}
+#cardlg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;
+  align-items:center;justify-content:center;z-index:80;padding:18px}
+#cardlg textarea{width:100%;font:inherit;font-size:14px;line-height:1.5;padding:9px 11px;
+  border-radius:8px;border:1px solid var(--line);background:var(--ground);color:var(--ink);resize:vertical}
+#cardlg select{width:100%;font:inherit;font-size:13px;padding:8px 10px;border-radius:8px;
+  border:1px solid var(--line);background:var(--ground);color:var(--ink);margin-bottom:10px}

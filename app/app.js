@@ -487,6 +487,15 @@ function noteBlock(id){
       cur.length+' / '+NOTE_MAX+'</span>'+
       '<button class="btn sm" type="button" id="notesave">Save</button></div></div>';
 }
+/* A card you wrote about this record, shown where the record is read. The
+   tag is how a post belongs somewhere; without this it would be a label
+   that changed nothing. */
+function postBlock(id){
+  const mine = localPosts().filter(p => (p.tags || []).indexOf(id) >= 0);
+  if(!mine.length) return "";
+  return '<div class="blk"><h5>Your cards &mdash; '+mine.length+'</h5>'+
+    mine.map(p => '<p class="pcard-s">'+esc(p.text)+'</p>').join('')+'</div>';
+}
 /* The editor lives inside #pbody, which openRec replaces wholesale. When a
    focused textarea is removed that way the browser clears focus WITHOUT
    firing blur — so a note typed and then left via the Back button, or any
@@ -720,6 +729,7 @@ function openRec(id, headerNote, fromHash, silent){
     body += renderBlocks(r.blocks);
     if(TOPIC_FEATURES[id]) body += featureChips(TOPIC_FEATURES[id]);
   }
+  body += postBlock(id);
   body += noteBlock(id);
   body += relBlock(rels(r));
 
@@ -1644,6 +1654,42 @@ function moveSearch(d){
    Facts are a projection of the records' exam hooks, so a card
    can never drift from the note it came from.
    ============================================================ */
+/* A post is a card, so it becomes a fact-shaped object and joins the same
+   feed, the same ordering and the same two taps. The id is prefixed so a
+   post's confidence entry can never collide with a fact's recordId#hash. */
+function localPosts(){ return validPosts(store.get("posts", []), null); }
+function postsAsFacts(){
+  return localPosts().map(p => ({
+    id: "post:" + p.id,
+    srcId: (p.tags && p.tags[0]) || "",
+    kind: "post", name: "Your card", text: p.text, post: p
+  }));
+}
+function allFacts(){ return postsAsFacts().concat(FACTS); }
+
+/* replaced in Task 8 */
+function pushPost(){}
+function removePost(){}
+
+function savePost(text, tags){
+  const clean = String(text == null ? "" : text).slice(0, POST_MAX);
+  if(!clean.trim()){ toast("Nothing to save"); return null; }
+  const list = localPosts();
+  if(list.length >= POST_LIMIT){ toast("That is as many cards as this holds"); return null; }
+  const u = authUser();
+  const post = {id: "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+                author: u ? u.uid : "", visibility: "private",
+                text: clean, tags: tags || [], t: Date.now()};
+  store.set("posts", [post].concat(list));
+  pushPost(post);
+  toast("Card added");
+  return post;
+}
+function deletePost(id){
+  store.set("posts", localPosts().filter(p => p.id !== id));
+  removePost(id);
+  toast("Card removed");
+}
 function viewRounds(){
   /* The state's outline is identical on every card, so it is defined once
      and referenced — 265 cards must not each carry the district geometry,
@@ -1653,6 +1699,8 @@ function viewRounds(){
   return '<svg class="rartdefs" aria-hidden="true" width="0" height="0">'+
       '<symbol id="hpoutline" viewBox="0 0 '+MAP.w+' '+MAP.h+'">'+outline+'</symbol>'+
     '</svg>'+
+    '<div class="rcompose"><button class="btn sm" type="button" id="addcard">'+
+      '&#43; Add a card</button></div>'+
     '<div id="roundsfeed" class="rounds" tabindex="0" role="region" '+
     'aria-label="Prelims facts, one per screen"></div>';
 }
@@ -1674,7 +1722,8 @@ function roundArt(f){
 /* One fact per card. The kind label reuses the map legend's colour, so a
    glance says whether this is a pass, a lake, a district or a treaty. */
 function roundCard(f){
-  const k = KINDS[f.kind];
+  const isPost = !!f.post;
+  const k = isPost ? null : KINDS[f.kind];
   const c = k ? k.c : "var(--accent)";
   const p = PIC_REC[f.srcId] || PICS[f.kind];
   /* An <article>, not a <button>: the confidence controls live inside a
@@ -1685,12 +1734,13 @@ function roundCard(f){
     (p ? '<img class="rpic" src="'+p.s+'" alt="" loading="lazy" decoding="async">' : '')+
     roundArt(f)+
     '<button class="shopen" type="button" data-src="'+esc(f.srcId)+'">'+
-      '<span class="k">'+(k ? k.lb : "Fact")+'</span>'+
+      '<span class="k">'+(isPost ? "Your card" : (k ? k.lb : "Fact"))+'</span>'+
       '<span class="nm">'+esc(f.name)+'</span>'+
       '<span class="ft">'+esc(f.text)+'</span>'+
       '<span class="go">Open the note &rarr;</span>'+
     '</button>'+
     (p ? '<span class="cred">'+esc(p.t)+' &middot; '+esc(p.a)+' / '+esc(p.l)+'</span>' : '')+
+    (isPost ? '<button class="cfb rm" type="button" data-del="'+esc(f.post.id)+'">Remove</button>' : '')+
     confBar(f.id)+
     '</article>';
 }
@@ -1714,7 +1764,7 @@ function appendRounds(feed, n){
   const tmp = document.createElement("div");
   let html = "";
   for(let i = 0; i < n; i++){
-    if(RI >= RQ.length){ RQ = orderFacts(FACTS, S.seen, store.get("conf", {})); RI = 0; }
+    if(RI >= RQ.length){ RQ = orderFacts(allFacts(), S.seen, store.get("conf", {})); RI = 0; }
     html += roundCard(RQ[RI++]);
   }
   tmp.innerHTML = html;
@@ -1727,7 +1777,9 @@ function appendRounds(feed, n){
 function mountRounds(){
   const feed = document.getElementById("roundsfeed");
   if(!feed || !FACTS.length) return;
-  RQ = orderFacts(FACTS, S.seen, store.get("conf", {})); RI = 0;
+  const add = document.getElementById("addcard");
+  if(add) add.addEventListener("click", openComposer);
+  RQ = orderFacts(allFacts(), S.seen, store.get("conf", {})); RI = 0;
   feed.innerHTML = "";
   /* only now is anything here able to reveal cards, so only now may CSS
      start them hidden */
@@ -1749,11 +1801,42 @@ function mountRounds(){
   }, {root: feed, threshold: 0.6});
   appendRounds(feed, 30);
   feed.addEventListener("click", e => {
+    const rm = e.target.closest("[data-del]");
+    if(rm){ deletePost(rm.dataset.del); render(); return; }
     const cf = e.target.closest(".cfb");
     if(cf){ markConf(cf.dataset.cfid, cf.dataset.conf, cf.closest(".short")); return; }
     const b = e.target.closest(".shopen");
     if(b && IDX.has(b.dataset.src)) openRec(b.dataset.src);
   });
+}
+/* Deliberately plain: a textarea, a counter and two buttons. A card you
+   write while revising should cost one sentence, not a form. */
+function openComposer(){
+  const dlg = document.getElementById("cardlg");
+  const ta = document.getElementById("cardtext");
+  const cnt = document.getElementById("cardcount");
+  ta.value = ""; cnt.textContent = "0 / " + POST_MAX;
+  dlg.hidden = false;
+  ta.focus();
+}
+function mountComposer(){
+  const dlg = document.getElementById("cardlg");
+  if(!dlg) return;
+  const ta = document.getElementById("cardtext");
+  const cnt = document.getElementById("cardcount");
+  const shut = () => { dlg.hidden = true; };
+  ta.addEventListener("input", () => { cnt.textContent = ta.value.length + " / " + POST_MAX; });
+  document.getElementById("cardcancel").addEventListener("click", shut);
+  dlg.addEventListener("click", e => { if(e.target === dlg) shut(); });
+  document.getElementById("cardsave").addEventListener("click", () => {
+    const sel = document.getElementById("cardtag");
+    const tags = sel && sel.value ? [sel.value] : [];
+    if(savePost(ta.value, tags)){ shut(); if(S.view === "rounds") render(); }
+  });
+  const sel = document.getElementById("cardtag");
+  if(sel && sel.options.length < 2)
+    sel.insertAdjacentHTML("beforeend",
+      [...IDX.keys()].map(id => '<option value="'+esc(id)+'">'+esc(nameOf(IDX.get(id)))+'</option>').join(''));
 }
 /* "Again" has to mean again. Ordering alone would only take effect the next
    time the feed is built, so the card is also re-queued a few places ahead
@@ -2261,6 +2344,7 @@ function mountSheet(){
 
 mountAccount();
 mountSheet();
+mountComposer();
 if(location.hash && readHash().view) applyHash();
 else setView("home", true);
 

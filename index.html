@@ -127,6 +127,21 @@
   </div>
 </div>
 
+<div id="cardlg" hidden role="dialog" aria-modal="true" aria-label="Add a card">
+  <div class="acctcard">
+    <h3>Add a card</h3>
+    <p>It joins your Rounds feed beside the built-in facts, and takes the same two taps.</p>
+    <label class="vh" for="cardtext">The fact</label>
+    <textarea id="cardtext" maxlength="400" rows="3"
+      placeholder="One fact, in your own words&hellip;"></textarea>
+    <div class="noterow"><span class="notecount" id="cardcount">0 / 400</span></div>
+    <label class="vh" for="cardtag">Attach to</label>
+    <select id="cardtag"><option value="">Not attached to a record</option></select>
+    <button class="btn" id="cardsave" type="button">Add the card</button>
+    <button class="btn sm" id="cardcancel" type="button">Cancel</button>
+  </div>
+</div>
+
 <script src="data/geo.js"></script>
 <script src="data/places.js"></script>
 <script src="data/history.js"></script>

@@ -233,6 +233,23 @@ window.addEventListener("load", async () => {
       check("Again re-queues the card into the feed",
         feed.children.length === before + 1, before + " -> " + feed.children.length);
     })();
+    await (async function(){
+      const before = win.localStorage.getItem("hpatlas:posts");
+      ev('savePost("A card written by the harness", ["d-kangra"])');
+      const posts = JSON.parse(win.localStorage.getItem("hpatlas:posts") || "[]");
+      check("a card can be written", posts.length >= 1 && /harness/.test(posts[0].text),
+        JSON.stringify(posts[0] || null));
+      check("a written card is private", posts[0] && posts[0].visibility === "private");
+      check("a written card keeps its tag",
+        posts[0] && posts[0].tags.indexOf("d-kangra") >= 0, JSON.stringify(posts[0] && posts[0].tags));
+      win.openRec("d-kangra"); await wait(250);
+      check("a tagged card shows on its record",
+        /written by the harness/.test(doc.getElementById("pbody").textContent));
+      ev('deletePost(' + JSON.stringify(posts[0].id) + ')');
+      const after = JSON.parse(win.localStorage.getItem("hpatlas:posts") || "[]");
+      check("a card can be removed", !after.some(p => /harness/.test(p.text)),
+        JSON.stringify(after.map(p => p.id)));
+    })();
   }
 
   ev('S.view="home"; render();');
