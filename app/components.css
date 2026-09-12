@@ -287,16 +287,24 @@ button.card:hover{border-color:var(--accent-line);transform:translateY(-1px)}
   text-align:right;line-height:1.3}
 
 /* ---------- Overview: the same rings, showing coverage ---------- */
-.hprog{display:flex;align-items:center;gap:28px;flex-wrap:wrap;padding:2px 4px 22px}
-.hprog .rings{flex:0 0 150px}
-.hprog .rings svg{width:150px;height:150px}
-.hprog-say{flex:1;min-width:230px}
-.hprog-say > b{display:block;font-family:var(--f-display);font-size:19px;font-weight:600;
-  letter-spacing:-.01em;color:var(--ink);margin-bottom:10px}
-.hprog-say > span{display:block;font-size:13px;color:var(--ink-2);line-height:1.55;
+/* Centred as one column: the rings are the thing worth looking at, and a
+   ring sitting off to one side of a paragraph reads as a decoration
+   beside the text rather than as the point of it. */
+.hprog{display:flex;flex-direction:column;align-items:center;text-align:center;
+  gap:14px;padding:6px 4px 26px}
+/* The profile's own mobile rule pins .rings to 148px below 600px, and a
+   more specific svg width here would overflow that container and sit 8px
+   off centre. Size the box to the drawing instead of fighting over it. */
+.hprog .rings{flex:0 0 auto;width:auto;display:flex;justify-content:center}
+.hprog .rings svg{width:164px;height:164px}
+@media (max-width:600px){ .hprog .rings svg{width:144px;height:144px} }
+.hprog-say{max-width:460px;display:flex;flex-direction:column;align-items:center}
+.hprog-say > b{display:block;font-family:var(--f-display);font-size:20px;font-weight:600;
+  letter-spacing:-.01em;color:var(--ink);margin-bottom:12px}
+.hprog-say > span{display:block;font-size:13.5px;color:var(--ink-2);line-height:1.55;
   margin-bottom:8px}
-.hprog .rg-legend{margin-bottom:10px}
-.hacc{font-size:11.5px;color:var(--ink-3);margin:0 0 12px}
+.hprog .rg-legend{justify-content:center;margin-bottom:12px}
+.hacc{font-size:11.5px;color:var(--ink-3);margin:0 0 14px}
 
 .sect.haspic{min-height:112px;justify-content:flex-end;isolation:isolate;overflow:hidden}
 .sectpic{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
