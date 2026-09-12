@@ -857,10 +857,28 @@ function viewMap(){
     '</div></div>';
 }
 let ZT = {k:1, x:0, y:0};
+/* Markers and labels are counter-scaled so they hold a constant screen size
+   however far the map is zoomed — the right default for a map, where a name
+   belongs to a point rather than to an area, and where growing everything
+   would just fill the screen with overlapping text.
+
+   On a phone that default fails: the base size is already at the floor of
+   legibility, so pinching in bought a bigger map and the same unreadable
+   names. There they grow with the zoom, but sub-linearly — k^GROW, not k —
+   so the labels still thin out as you go in, and capped so the deepest zoom
+   does not end up shouting. Screen size works out at base * k^GROW, since
+   the transform multiplies by k and this returns k^GROW / k. */
+const LABEL_GROW = 0.34, LABEL_GROW_MAX = 2;
+function markScale(){
+  const k = ZT.k;
+  if(k <= 1) return 1 / k;
+  if(!matchMedia("(max-width:1000px)").matches) return 1 / k;
+  return Math.min(LABEL_GROW_MAX, Math.pow(k, LABEL_GROW)) / k;
+}
 function applyZoom(){
   const g = document.getElementById("mapg"); if(!g) return;
   g.setAttribute("transform", "translate("+ZT.x+","+ZT.y+") scale("+ZT.k+")");
-  const inv = 1/ZT.k;
+  const inv = markScale();
   g.querySelectorAll(".mk,.dl").forEach(m => {
     const t = m.dataset.at || (m.dataset.at = m.getAttribute("transform").match(/translate\(([^)]+)\)/)[1]);
     m.setAttribute("transform", "translate("+t+") scale("+inv+")");
@@ -876,7 +894,10 @@ function relabel(){
   const g = document.getElementById("mapg"); if(!g) return;
   const marks = [...g.querySelectorAll(".mk:not(.hid):not(.dim),.dl")];
   if(!marks.length) return;
-  const inv = 1/ZT.k;
+  /* The same factor applyZoom used, or the collision boxes would describe
+     labels of a different size from the ones actually on screen — and the
+     de-collision would let bigger labels overlap. */
+  const inv = markScale();
   const items = marks.map((m,i) => {
     /* applyZoom() caches the marker's untransformed origin in dataset.at as
        BARE numbers ("340.2,120.5"), while the transform attribute wraps them
@@ -1083,6 +1104,12 @@ function mountMap(){
   svg.addEventListener("pointerup", release);
   svg.addEventListener("pointercancel", e => { pts.delete(e.pointerId); pinch = null; down = null; dragging = false; svg.classList.remove("grabbing"); });
   svg.addEventListener("pointerleave", () => tip.classList.remove("on"));
+  /* Crossing the phone breakpoint, or turning the device, changes what
+     markScale returns — re-apply so the sizes match the layout. */
+  if(!window._mapResize){
+    window._mapResize = true;
+    window.addEventListener("resize", () => { if(document.getElementById("mapg")) applyZoom(); });
+  }
   svg.addEventListener("wheel", e => {
     e.preventDefault();
     const p = toSvg(e), f = Math.exp(-e.deltaY*0.0015);
