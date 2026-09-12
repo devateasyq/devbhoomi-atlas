@@ -814,6 +814,10 @@ function viewMap(){
     .map(([id,p]) => '<g class="mk" data-k="'+p.k+'" data-p="'+id+'" '+
       'data-rec="'+(placeTarget(id)||"")+'" data-n="'+p.n+'" '+
       'transform="translate('+p.x+','+p.y+')">'+
+      /* The glyph fits a +/-7 box, about 15px on a phone — well under any
+         thumb. This transparent circle is the thing you actually hit; it
+         is scaled up again on small screens in CSS. */
+      '<circle class="hit" r="12"/>'+
       '<g class="gly" style="fill:'+LAYER_BY_KIND[p.k].c+'">'+mkGlyph(LAYER_BY_KIND[p.k].glyph)+'</g>'+
       '<text y="-9">'+p.n+'</text></g>').join('');
   /* Every layer the map can draw, in LAYERS order. `base` layers (the
@@ -1001,6 +1005,33 @@ function mountMap(){
     const r = svg.getBoundingClientRect(), sc = MAP.w/r.width;
     return {x:(e.clientX-r.left)*sc, y:(e.clientY-r.top)*sc};
   };
+  /* 135 markers on a 375px-wide phone sit a median 9px apart, so no tap
+     target can be both thumb-sized and unambiguous: a circle big enough to
+     hit reliably covers its neighbours, and then whichever was drawn last
+     wins rather than the one you aimed at — measured, not guessed. Resolve
+     by proximity instead. The nearest visible marker inside a tolerance
+     wins, which is what the tap actually meant, and a miss still falls
+     through to the river or district underneath. */
+  const TAP_TOL = matchMedia("(max-width:1000px)").matches ? 15 : 6;
+  const nearestMarker = e => {
+    const g = document.getElementById("mapg"); if(!g) return null;
+    const r = svg.getBoundingClientRect();
+    if(!r.width) return null;
+    const p = toSvg(e);
+    /* dataset.at holds the marker's position BEFORE the zoom transform, so
+       undo translate and scale before comparing. */
+    const gx = (p.x - ZT.x)/ZT.k, gy = (p.y - ZT.y)/ZT.k;
+    const tol = TAP_TOL * (MAP.w/r.width) / ZT.k;
+    let best = null, bestD = tol;
+    g.querySelectorAll(".mk:not(.hid):not(.dim):not(.nolabel), .mk:not(.hid):not(.dim)").forEach(m => {
+      const raw = m.dataset.at ||
+        ((m.getAttribute("transform") || "").match(/translate\(([^)]*)\)/) || [,""])[1];
+      const xy = raw.split(/[\s,]+/).map(Number);
+      const d = Math.hypot(xy[0] - gx, xy[1] - gy);
+      if(d < bestD){ bestD = d; best = m; }
+    });
+    return best;
+  };
   let down = null, dragging = false;
 
   /* Two-finger pinch. Pointer events give one call per finger, so the live
@@ -1024,7 +1055,8 @@ function mountMap(){
       return;
     }
     down = {x:e.clientX, y:e.clientY, ox:ZT.x, oy:ZT.y, id:e.pointerId,
-            target:e.target.closest(".mk") || e.target.closest(".river") || e.target.closest(".dist")};
+            target:e.target.closest(".mk") || nearestMarker(e) ||
+                   e.target.closest(".river") || e.target.closest(".dist")};
     dragging = false;
   });
   svg.addEventListener("pointermove", e => {
@@ -1055,7 +1087,8 @@ function mountMap(){
       if(dragging){ ZT.x = down.ox+dx*sc; ZT.y = down.oy+dy*sc; applyZoom(); }
       return;
     }
-    const hit = e.target.closest(".mk") || e.target.closest(".river") || e.target.closest(".dist");
+    const hit = e.target.closest(".mk") || nearestMarker(e) ||
+                e.target.closest(".river") || e.target.closest(".dist");
     if(hit && !dragging){
       const rect = canvas.getBoundingClientRect();
       let title, sub;
