@@ -266,12 +266,21 @@ window.addEventListener("load", async () => {
     !reach.has("profile"), [...reach].join(","));
 
   const mtabs = [...doc.querySelectorAll("#mtabs .mtab")].map(b => b.dataset.view);
-  check("the mobile bar carries exactly five tabs", mtabs.length === 5,
+  /* Four, not five. Profile was briefly a fifth tab; the dock that replaced
+     the old bar carries four and a search circle, and the route to the
+     profile is the account button, which shows the reader's own name. A
+     fifth tab does still FIT — measured at 375px, 54.8px per tab against a
+     41px longest label — so this is a design choice, not a constraint, and
+     the check says four because four is what is intended. */
+  check("the mobile bar carries exactly four tabs", mtabs.length === 4,
     mtabs.length + ": " + mtabs.join(","));
-  check("the mobile bar is Overview, Map, Rounds, Revise, Profile",
-    ["home","map","rounds","revise","profile"].every(id => mtabs.includes(id)), mtabs.join(","));
-  /* Profile lives in the phone bar, not the rail — the rail is already
-     nine deep and the header's account button is always in view there. */
+  check("the mobile bar is Overview, Map, Rounds, Revise",
+    ["home","map","rounds","revise"].every(id => mtabs.includes(id)), mtabs.join(","));
+  check("the dock does not carry a profile tab", !mtabs.includes("profile"), mtabs.join(","));
+  /* With neither nav carrying it, the account button is the only way in —
+     so it had better be there. */
+  check("the account button is the way to the profile",
+    !!doc.getElementById("acctbtn") && !doc.getElementById("acctbtn").hidden);
   const railIds = [...doc.querySelectorAll("#railnav .navbtn")].map(b => b.dataset.view);
   check("the rail does not repeat the phone bar's profile tab",
     !railIds.includes("profile"), railIds.join(","));
