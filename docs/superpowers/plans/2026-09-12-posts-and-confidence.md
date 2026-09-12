@@ -157,7 +157,7 @@ Confirm every generated id is unique — a hash collision would silently merge t
 
 ```bash
 cd /Users/avinashnegi/Downloads/prep/hp-atlas && node -e '
-const {D} = require("./test/load.js");
+const {D} = require("./test/load.js").loadData();
 const r = require("./app/rounds.js");
 const f = r.buildFacts(D);
 const ids = new Set(f.map(x => x.id));
