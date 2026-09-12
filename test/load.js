@@ -9,7 +9,7 @@ const ROOT = path.join(__dirname, "..");
 function loadData(files){
   const D = {};
   let MAP = null;
-  const list = files || ["geo.js","places.js","history.js","topics.js","rivers.js","features.js","quiz.js","pyq.js"];
+  const list = files || ["geo.js","places.js","history.js","topics.js","rivers.js","features.js","quiz.js","pyq.js","economy.js"];
   for(const f of list){
     const p = path.join(ROOT, "data", f);
     if(!fs.existsSync(p)) continue;

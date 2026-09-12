@@ -541,6 +541,21 @@ window.addEventListener("load", async () => {
     doc.querySelectorAll("table.cmp .xhi, table.cmp .xlo").length + " marks");
   check("founded is deliberately not sortable",
     !doc.querySelector('[data-cmpkey="founded"]'));
+  /* The Economic Survey tab ships with no figures on purpose: they change
+     every year and must come from the Survey itself. An empty table has to
+     say so rather than look broken. */
+  ev('S.cmpTab="economy"; render();');
+  await wait(300);
+  check("the Economic Survey tab lists the indicators the papers ask about",
+    doc.querySelectorAll("table.econ tbody tr:not(.econgrp)").length === 21,
+    doc.querySelectorAll("table.econ tbody tr:not(.econgrp)").length + " rows");
+  check("an empty Economic Survey table says where the figures come from",
+    !!doc.querySelector(".econwarn") &&
+    /Economic Survey/.test(doc.querySelector(".econwarn").textContent));
+  check("no figure is invented — every cell is blank until filled",
+    [...doc.querySelectorAll("table.econ td.n")].every(td => td.textContent.trim() === "\u2014"));
+  check("indicators do not pretend to be sortable",
+    doc.querySelectorAll("table.econ .cmpsort").length === 0);
   /* Back to the profile: the ring checks below were reached by clicking the
      account button further up, and this block navigated away from it. */
   win.go("profile");

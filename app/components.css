@@ -128,6 +128,17 @@ table.cmp tbody tr:focus-visible{outline:2px solid var(--accent);outline-offset:
 .xhi,.xlo{font-style:normal;font-size:9px;margin-left:6px}
 .xhi{color:var(--good)}
 .xlo{color:var(--vermilion)}
+/* A blank table is the honest state until the Survey's figures are in, so
+   it says so rather than looking broken. */
+.econwarn{color:var(--ink-2);max-width:56ch;line-height:1.5}
+.econwarn code{font-family:var(--f-mono);font-size:11px;background:var(--surface-2);
+  padding:1px 5px;border-radius:4px}
+table.econ tbody th{white-space:normal;max-width:34ch;font-weight:500;color:var(--ink-2)}
+table.econ .econunit{font-family:var(--f-mono);font-size:11px;color:var(--ink-3);white-space:nowrap}
+tr.econgrp th{background:var(--surface-2);font-family:var(--f-mono);font-size:10px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600;
+  padding:8px 12px}
+table.econ td.n{color:var(--ink)}
 
 .pagewrap{padding:20px 18px 56px;max-width:1120px}
 .lede{font-size:14.5px;color:var(--ink-2);max-width:66ch;margin-bottom:18px}

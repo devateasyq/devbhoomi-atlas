@@ -1508,15 +1508,66 @@ function cmpExtremes(rows, cols){
   });
   return out;
 }
+/* Indicator x year, because that is the shape the questions take: "in
+   2022-23 the debt-to-GSDP ratio was...". Not sortable — a column of
+   yearly figures has no superlative worth marking, and ranking indicators
+   against each other is meaningless.
+
+   The figures live in data/economy.js and start empty on purpose. They
+   change every year, and a number written from memory into an exam aid
+   looks authoritative and cannot be dated. The indicators themselves were
+   derived from the Economy questions in the past-paper bank, so the list
+   is what HPPSC actually asks even while the values are blank. */
+function viewEconomy(){
+  const E = typeof ECON !== "undefined" ? ECON : {years: [], rows: []};
+  const src = E.source
+    ? '<span class="cmphint">Figures from <b>'+esc(E.source)+'</b>.</span>'
+    : '<span class="cmphint econwarn">No figures entered yet. These change every '+
+      'year — take them from the current <b>HP Economic Survey</b>, tabled with the '+
+      'budget in March, and fill in <code>data/economy.js</code>. The indicators '+
+      'below are the ones the papers have actually asked about.</span>';
+
+  const tabs = cmpTabs("economy");
+  const head = '<th scope="col">Indicator</th><th scope="col">Unit</th>'+
+    E.years.map(y => '<th scope="col" class="n">'+esc(y)+'</th>').join('');
+
+  let last = "", body = "";
+  E.rows.forEach(r => {
+    if(r.grp !== last){
+      last = r.grp;
+      body += '<tr class="econgrp"><th scope="rowgroup" colspan="'+(2 + E.years.length)+'">'+
+        esc(r.grp)+'</th></tr>';
+    }
+    body += '<tr><th scope="row">'+esc(r.lb)+'</th>'+
+      '<td class="econunit">'+esc(r.unit || "")+'</td>'+
+      E.years.map(y => {
+        const v = r.v && Object.prototype.hasOwnProperty.call(r.v, y) ? r.v[y] : null;
+        return '<td class="n">'+(v === null || v === undefined || v === "" ? "—"
+               : (typeof v === "number" ? num(v) : esc(v)))+'</td>';
+      }).join('')+'</tr>';
+  });
+
+  return '<div class="pagewrap"><div class="cmpbar">'+tabs+src+'</div>'+
+    '<div class="cmpwrap"><table class="cmp econ"><thead><tr>'+head+'</tr></thead>'+
+    '<tbody>'+body+'</tbody></table></div></div>';
+}
+
+/* Shared so the three tabs cannot drift apart. */
+function cmpTabs(active){
+  return Object.keys(CMP).concat(["economy"]).map(k =>
+    '<button class="cmptab" type="button" data-cmptab="'+k+'" '+
+      'aria-pressed="'+(k === active)+'">'+
+      esc(k === "economy" ? "Economic Survey" : CMP[k].lb)+'</button>').join('');
+}
+
 function viewCompare(){
+  if(S.cmpTab === "economy") return viewEconomy();
   const tab = CMP[S.cmpTab] ? S.cmpTab : "districts";
   const spec = CMP[tab];
   const rows = cmpSorted(tab);
   const ext = cmpExtremes(rows, spec.cols);
 
-  const tabs = Object.keys(CMP).map(k =>
-    '<button class="cmptab" type="button" data-cmptab="'+k+'" '+
-      'aria-pressed="'+(k === tab)+'">'+esc(CMP[k].lb)+'</button>').join('');
+  const tabs = cmpTabs(tab);
 
   const head = spec.cols.map(c => {
     if(!c.sort) return '<th scope="col">'+esc(c.lb)+'</th>';
@@ -2517,7 +2568,7 @@ document.addEventListener("click", e => {
   const ct = hit("[data-cmptab]"); if(ct){ S.cmpTab = ct.dataset.cmptab;
       /* Each table has its own columns, so a key from the other one would
          silently fall back to name order. Start on one it has. */
-      S.cmpKey = S.cmpTab === "districts" ? "area" : "merged";
+      S.cmpKey = S.cmpTab === "districts" ? "area" : "merged";  /* economy does not sort */
       S.cmpDesc = true; render(); return; }
   const ck = hit("[data-cmpkey]"); if(ck){
       if(S.cmpKey === ck.dataset.cmpkey) S.cmpDesc = !S.cmpDesc;
