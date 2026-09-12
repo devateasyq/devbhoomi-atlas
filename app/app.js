@@ -415,8 +415,10 @@ window.addEventListener("hashchange", () => {
 
 /* ---------- navigation ---------- */
 function buildNav(){
+  /* The title is what identifies an icon once the rail is collapsed and
+     the labels are gone, so it is not decoration. */
   $("#railnav").innerHTML = NAV.filter(n => !n.mobOnly).map(n =>
-    '<button class="navbtn" type="button" data-view="'+n.id+'">'+
+    '<button class="navbtn" type="button" data-view="'+n.id+'" title="'+esc(n.lb)+'">'+
     '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+n.ic+'</svg><span>'+n.lb+'</span>'+
     (COUNTS[n.id] ? '<span class="cnt">'+COUNTS[n.id]+'</span>' : '')+'</button>').join('');
   /* Nine tabs clipped their own labels on a phone. The dock carries the four
@@ -2595,8 +2597,35 @@ function mountSheet(){
   window.addEventListener("resize", () => { if(!phone()){ start = null; reset(); } });
 }
 
+/* ---------- the sidebar's width ---------- */
+/* A device preference, like the theme and the hidden map layers: which
+   width you like on this screen is not something to carry to another one,
+   so it is deliberately NOT a SYNC_KEYS entry. */
+function applyRail(){
+  const min = store.get("railmin", false);
+  const shell = document.getElementById("shell");
+  if(shell) shell.classList.toggle("railmin", min);
+  const b = document.getElementById("railtog");
+  if(!b) return;
+  b.setAttribute("aria-expanded", min ? "false" : "true");
+  b.title = min ? "Expand the sidebar" : "Collapse the sidebar";
+  b.setAttribute("aria-label", b.title);
+}
+function mountRail(){
+  const b = document.getElementById("railtog");
+  if(b) b.addEventListener("click", () => {
+    store.set("railmin", !store.get("railmin", false));
+    applyRail();
+    /* The map is sized from its container, so a rail that just changed
+       width leaves the labels laid out for the old one. */
+    if(document.getElementById("mapg")) applyZoom();
+  });
+  applyRail();
+}
+
 mountAccount();
 mountSheet();
+mountRail();
 mountComposer();
 placeSearch();
 mountKeyboardLift();

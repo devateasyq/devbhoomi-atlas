@@ -1,5 +1,38 @@
 /* ---------- app shell ---------- */
+/* NO transition on grid-template-columns. Chrome cannot interpolate
+   "246px 1034px" to "66px 1fr", and rather than jumping it keeps the old
+   value outright — the class landed, the rule matched, --rail computed to
+   66px, and the grid stayed at 246px forever. The collapse silently did
+   not happen. Measured: with transition:none it snaps correctly. */
 #shell{display:grid;grid-template-columns:var(--rail) 1fr;height:100dvh;width:100%}
+
+/* ---------- the collapsed sidebar ---------- */
+/* Collapsed to icons rather than hidden: nine sections one click away is
+   the rail's whole job, and a sidebar you have to reopen to navigate has
+   stopped doing it. The labels go; the icons and their titles stay. */
+#railtog{margin-left:auto;flex:0 0 auto;width:26px;height:26px;border-radius:7px;
+  display:flex;align-items:center;justify-content:center;color:var(--ink-3);cursor:pointer}
+#railtog svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round;transition:transform .18s}
+#railtog:hover{background:var(--surface-2);color:var(--ink)}
+/* The column is set directly rather than by moving --rail. #shell both
+   declares the custom property and consumes it in grid-template-columns,
+   and with a transition on that property the computed value never
+   refreshed: the class landed, --rail computed to 66px, and the grid
+   stayed at 246px indefinitely. Measured, not guessed. */
+#shell.railmin{grid-template-columns:66px 1fr}
+#shell.railmin .brandtext{display:none}
+#shell.railmin .brand{flex-direction:column;align-items:center;gap:10px;padding:0 8px 14px}
+#shell.railmin #railtog{margin-left:0}
+#shell.railmin #railtog svg{transform:rotate(180deg)}
+#shell.railmin nav.rail-nav{padding:0 8px}
+#shell.railmin .navbtn{justify-content:center;padding:9px 0;gap:0}
+/* Both the label and the count are spans; a collapsed rail wants neither. */
+#shell.railmin .navbtn span{display:none}
+/* The foot is three text-only buttons with no icons to fall back on, so
+   they wait for the rail to be open again rather than becoming initials. */
+#shell.railmin .rail-foot{display:none}
+@media (prefers-reduced-motion:reduce){ #railtog svg{transition:none} }
 #rail{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;
   min-height:0;padding-block:18px 10px}
 .brand{padding:0 18px 16px;display:flex;flex-direction:column;gap:2px}
