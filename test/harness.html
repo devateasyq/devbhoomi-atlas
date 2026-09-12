@@ -552,8 +552,16 @@ window.addEventListener("load", async () => {
   check("an empty Economic Survey table says where the figures come from",
     !!doc.querySelector(".econwarn") &&
     /Economic Survey/.test(doc.querySelector(".econwarn").textContent));
-  check("no figure is invented — every cell is blank until filled",
-    [...doc.querySelectorAll("table.econ td.n")].every(td => td.textContent.trim() === "\u2014"));
+  /* Every figure must be traceable: a number with no source is a number
+     you cannot re-check when the next Survey moves it. */
+  check("every filled row names where its figure came from",
+    [...doc.querySelectorAll("table.econ tbody tr:not(.econgrp)")]
+      .filter(tr => [...tr.querySelectorAll("td.n")].some(td => td.textContent.trim() !== "\u2014"))
+      .every(tr => !!tr.querySelector(".econsrc")));
+  check("the sources are linked", !!doc.querySelector(".econcite a"));
+  check("the table says how many indicators are still blank",
+    /still blank/.test(doc.querySelector(".cmpbar .cmphint").textContent),
+    doc.querySelector(".cmpbar .cmphint").textContent.slice(0, 80));
   check("indicators do not pretend to be sortable",
     doc.querySelectorAll("table.econ .cmpsort").length === 0);
   /* Back to the profile: the ring checks below were reached by clicking the

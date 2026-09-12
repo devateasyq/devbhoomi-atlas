@@ -1520,8 +1520,14 @@ function cmpExtremes(rows, cols){
    is what HPPSC actually asks even while the values are blank. */
 function viewEconomy(){
   const E = typeof ECON !== "undefined" ? ECON : {years: [], rows: []};
+  const blanks = E.rows.filter(r => !r.v || !Object.keys(r.v).length).length;
+  /* What is missing is said out loud. A half-filled table that looks
+     complete is worse than one that admits the gap. */
   const src = E.source
-    ? '<span class="cmphint">Figures from <b>'+esc(E.source)+'</b>.</span>'
+    ? '<span class="cmphint">Figures from <b>'+esc(E.source)+'</b>.'+
+      (blanks ? ' '+blanks+' of '+E.rows.length+' indicators are still blank — '+
+        'fill them from the Survey itself.' : '')+
+      ' <b>Check against the current Survey before the exam.</b></span>'
     : '<span class="cmphint econwarn">No figures entered yet. These change every '+
       'year — take them from the current <b>HP Economic Survey</b>, tabled with the '+
       'budget in March, and fill in <code>data/economy.js</code>. The indicators '+
@@ -1538,7 +1544,8 @@ function viewEconomy(){
       body += '<tr class="econgrp"><th scope="rowgroup" colspan="'+(2 + E.years.length)+'">'+
         esc(r.grp)+'</th></tr>';
     }
-    body += '<tr><th scope="row">'+esc(r.lb)+'</th>'+
+    body += '<tr><th scope="row">'+esc(r.lb)+
+        (r.src ? '<i class="econsrc">'+esc(r.src)+'</i>' : '')+'</th>'+
       '<td class="econunit">'+esc(r.unit || "")+'</td>'+
       E.years.map(y => {
         const v = r.v && Object.prototype.hasOwnProperty.call(r.v, y) ? r.v[y] : null;
@@ -1547,9 +1554,16 @@ function viewEconomy(){
       }).join('')+'</tr>';
   });
 
+  /* Where the numbers came from, linked. A figure you cannot trace is a
+     figure you cannot check when the next Survey moves it. */
+  const cites = (E.sources || []).length
+    ? '<p class="econcite">Sources: '+(E.sources || []).map(s =>
+        '<a href="'+esc(s.url)+'" target="_blank" rel="noopener">'+esc(s.lb)+'</a>'
+      ).join(' · ')+'</p>'
+    : '';
   return '<div class="pagewrap"><div class="cmpbar">'+tabs+src+'</div>'+
     '<div class="cmpwrap"><table class="cmp econ"><thead><tr>'+head+'</tr></thead>'+
-    '<tbody>'+body+'</tbody></table></div></div>';
+    '<tbody>'+body+'</tbody></table></div>'+cites+'</div>';
 }
 
 /* Shared so the three tabs cannot drift apart. */
