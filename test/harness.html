@@ -215,10 +215,15 @@ window.addEventListener("load", async () => {
     unreachable.length === 0, "missing: " + unreachable.join(", "));
 
   const mtabs = [...doc.querySelectorAll("#mtabs .mtab")].map(b => b.dataset.view);
-  check("the mobile bar carries exactly four tabs", mtabs.length === 4,
+  check("the mobile bar carries exactly five tabs", mtabs.length === 5,
     mtabs.length + ": " + mtabs.join(","));
-  check("the mobile bar is Overview, Map, Rounds, Revise",
-    ["home","map","rounds","revise"].every(id => mtabs.includes(id)), mtabs.join(","));
+  check("the mobile bar is Overview, Map, Rounds, Revise, Profile",
+    ["home","map","rounds","revise","profile"].every(id => mtabs.includes(id)), mtabs.join(","));
+  /* Profile lives in the phone bar, not the rail — the rail is already
+     nine deep and the header's account button is always in view there. */
+  const railIds = [...doc.querySelectorAll("#railnav .navbtn")].map(b => b.dataset.view);
+  check("the rail does not repeat the phone bar's profile tab",
+    !railIds.includes("profile"), railIds.join(","));
 
   ev('S.view="map"; render();');
   await wait(350);

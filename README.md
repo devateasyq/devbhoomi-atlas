@@ -154,8 +154,10 @@ code change.
   with no work still draws, empty, rather than shortening the row. Merely *opening* a
   record no longer counts towards a day — writing something down does.
 - **Your profile, at `#/profile`.** Three ways in: the account button in the header,
-  a *Profile* entry in the rail, and a card on the Overview — the phone tab bar stays
-  the four it has always been, and the Overview card is how a phone gets there. The
+  a *Profile* tab in the phone bar (which is five tabs now, not four), and a card on
+  the Overview. It is deliberately not in the rail: on a desktop the rail is already
+  nine deep and the account button sits in view at all times, whereas on a phone that
+  button competes with the wordmark and the search box. The
   profile shows who you are signed in as (or that you are not) with a sign-out button,
   today's three rings, the current and best streak, quiz accuracy, past papers
   attempted, and an index of every note you have written, each linking back to its

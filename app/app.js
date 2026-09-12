@@ -352,12 +352,12 @@ const NAV = [
   {id:"trends",   lb:"Trends",   ic:'<path d="M4 19V5"/><path d="M4 15l5-5 4 4 7-7"/><path d="M20 11V7h-4"/>'},
   {id:"rounds",   lb:"Rounds", mob:1,   ic:'<path d="M12 3a9 9 0 109 9"/><path d="M12 7a5 5 0 105 5"/><circle cx="12" cy="12" r="1.6"/>'},
   {id:"revise",   lb:"Revise", mob:1,   ic:'<path d="M4 5.5A2.5 2.5 0 016.5 3H19v15H6.5A2.5 2.5 0 004 20.5z"/><path d="M9 8h6"/>'},
-  /* Deliberately no mob flag — the phone bar stays Overview, Map, Rounds,
-     Revise. The rail carries it, and the Overview hub is built from NAV so
-     a card appears there too, which is how a phone reaches it. Keeping this
-     out of the nav entirely was a mistake: the header button alone was not
-     a findable route to your own streak and notes. */
-  {id:"profile",  lb:"Profile",  ic:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="2.8"/><path d="M6.8 18.7a6 6 0 0110.4 0"/>'}
+  /* mobOnly: the phone bar carries it, the rail does not. On a desktop the
+     rail is already nine deep and the header's account button sits in view
+     at all times; on a phone that button competes with the wordmark and the
+     search box, so the bar is the honest place for it. The Overview hub is
+     built from NAV, so a card appears there either way. */
+  {id:"profile",  lb:"Profile", mob:1, mobOnly:1, ic:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="2.8"/><path d="M6.8 18.7a6 6 0 0110.4 0"/>'}
 ];
 const COUNTS = {map:D.districts.length, timeline:D.events.length, battles:D.battles.length,
                 topics:D.topics.length, people:D.people.length, trends:D.pyq.length,
@@ -407,11 +407,11 @@ window.addEventListener("hashchange", () => {
 
 /* ---------- navigation ---------- */
 function buildNav(){
-  $("#railnav").innerHTML = NAV.map(n =>
+  $("#railnav").innerHTML = NAV.filter(n => !n.mobOnly).map(n =>
     '<button class="navbtn" type="button" data-view="'+n.id+'">'+
     '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+n.ic+'</svg><span>'+n.lb+'</span>'+
     (COUNTS[n.id] ? '<span class="cnt">'+COUNTS[n.id]+'</span>' : '')+'</button>').join('');
-  /* Nine tabs clipped their own labels on a phone. The bar carries the four
+  /* Nine tabs clipped their own labels on a phone. The bar carries the ones
      you reach for; everything else is one tap away on the Overview. */
   $("#mtabs").innerHTML = NAV.filter(n => n.mob).map(n =>
     '<button class="mtab" type="button" data-view="'+n.id+'">'+
