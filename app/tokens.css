@@ -17,6 +17,19 @@
   --map-land:#E2E7DB; --map-line:#B9C2B4; --map-sel:#C7DCD4;
   --water:#3E7FA8; --water-soft:#7FAFC9;
   --rail:246px; --panel:400px;
+  /* ---- the phone dock's glass ----------------------------------------
+     A pane of glass is a tint you can see through, a bright rim where the
+     light catches the edge, and a shadow that proves it is floating rather
+     than painted on. --glass is the pill and the circle; --glass-2 is the
+     search field, which holds text and so has to be a touch more solid.
+     The dock's height is a token because #stage, the record sheet and the
+     results list all have to keep clear of it. */
+  --glass:rgba(248,249,245,.62); --glass-2:rgba(248,249,245,.80);
+  --glass-rim:rgba(255,255,255,.85); --glass-rim-2:rgba(255,255,255,.20);
+  --glass-line:rgba(23,32,29,.07);
+  --glass-shadow:0 1px 1px rgba(23,32,29,.05), 0 2px 8px -2px rgba(23,32,29,.12),
+                 0 14px 34px -10px rgba(23,32,29,.30);
+  --dock-h:58px;
   --f-display:"Petrona",ui-serif,Georgia,"Times New Roman",serif;
   --f-body:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -42,6 +55,13 @@
     --shadow-lg:0 2px 4px rgba(0,0,0,.5), 0 24px 48px -20px rgba(0,0,0,.75);
     --map-land:#212A26; --map-line:#3D4A44; --map-sel:#28453D;
     --water:#5FA8CE; --water-soft:#3D6B84;
+    /* In the dark the rim is the only thing that reads as an edge, so it
+       carries the weight the light tint carries by day. */
+    --glass:rgba(26,33,30,.58); --glass-2:rgba(35,44,40,.82);
+    --glass-rim:rgba(255,255,255,.16); --glass-rim-2:rgba(255,255,255,.04);
+    --glass-line:rgba(255,255,255,.07);
+    --glass-shadow:0 1px 1px rgba(0,0,0,.45), 0 2px 8px -2px rgba(0,0,0,.45),
+                   0 14px 34px -10px rgba(0,0,0,.70);
     --s1:#00a089; --s2:#d95b54; --s3:#5b83e9; --s4:#aa8300; --s5:#bd60b6; --s6:#47a03f;
     --grid:#28312C; --axis:#3D4A44;
   --e1:#7A8BB5; --e2:#6FA0BE; --e3:#5FAFAA; --e4:#63BC90; --e5:#A5B663;
@@ -60,6 +80,13 @@
   --shadow-lg:0 2px 4px rgba(0,0,0,.5), 0 24px 48px -20px rgba(0,0,0,.75);
   --map-land:#212A26; --map-line:#3D4A44; --map-sel:#28453D;
   --water:#5FA8CE; --water-soft:#3D6B84;
+  /* In the dark the rim is the only thing that reads as an edge, so it
+     carries the weight the light tint carries by day. */
+  --glass:rgba(26,33,30,.58); --glass-2:rgba(35,44,40,.82);
+  --glass-rim:rgba(255,255,255,.16); --glass-rim-2:rgba(255,255,255,.04);
+  --glass-line:rgba(255,255,255,.07);
+  --glass-shadow:0 1px 1px rgba(0,0,0,.45), 0 2px 8px -2px rgba(0,0,0,.45),
+                 0 14px 34px -10px rgba(0,0,0,.70);
   --s1:#00a089; --s2:#d95b54; --s3:#5b83e9; --s4:#aa8300; --s5:#bd60b6; --s6:#47a03f;
   --grid:#28312C; --axis:#3D4A44;
   --e1:#7A8BB5; --e2:#6FA0BE; --e3:#5FAFAA; --e4:#63BC90; --e5:#A5B663;

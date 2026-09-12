@@ -352,12 +352,12 @@ const NAV = [
   {id:"trends",   lb:"Trends",   ic:'<path d="M4 19V5"/><path d="M4 15l5-5 4 4 7-7"/><path d="M20 11V7h-4"/>'},
   {id:"rounds",   lb:"Rounds", mob:1,   ic:'<path d="M12 3a9 9 0 109 9"/><path d="M12 7a5 5 0 105 5"/><circle cx="12" cy="12" r="1.6"/>'},
   {id:"revise",   lb:"Revise", mob:1,   ic:'<path d="M4 5.5A2.5 2.5 0 016.5 3H19v15H6.5A2.5 2.5 0 004 20.5z"/><path d="M9 8h6"/>'},
-  /* mobOnly: the phone bar carries it, the rail does not. On a desktop the
-     rail is already nine deep and the header's account button sits in view
-     at all times; on a phone that button competes with the wordmark and the
-     search box, so the bar is the honest place for it. The Overview hub is
-     built from NAV, so a card appears there either way. */
-  {id:"profile",  lb:"Profile", mob:1, mobOnly:1, ic:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="2.8"/><path d="M6.8 18.7a6 6 0 0110.4 0"/>'}
+  /* mobOnly: neither nav carries it. The rail is already nine deep, and the
+     dock is four and a search circle — a fifth tab is what pushed the labels
+     to 9.5px and clipped them. The way in is the account button, which now
+     carries the reader's own name at the top of every screen: the name IS
+     the door. The Overview hub is built from NAV, so it skips profile too. */
+  {id:"profile",  lb:"Profile", mobOnly:1, ic:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="2.8"/><path d="M6.8 18.7a6 6 0 0110.4 0"/>'}
 ];
 const COUNTS = {map:D.districts.length, timeline:D.events.length, battles:D.battles.length,
                 topics:D.topics.length, people:D.people.length, trends:D.pyq.length,
@@ -411,11 +411,77 @@ function buildNav(){
     '<button class="navbtn" type="button" data-view="'+n.id+'">'+
     '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+n.ic+'</svg><span>'+n.lb+'</span>'+
     (COUNTS[n.id] ? '<span class="cnt">'+COUNTS[n.id]+'</span>' : '')+'</button>').join('');
-  /* Nine tabs clipped their own labels on a phone. The bar carries the ones
-     you reach for; everything else is one tap away on the Overview. */
-  $("#mtabs").innerHTML = NAV.filter(n => n.mob).map(n =>
-    '<button class="mtab" type="button" data-view="'+n.id+'">'+
-    '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+n.ic+'</svg><span>'+n.lb+'</span></button>').join('');
+  /* Nine tabs clipped their own labels on a phone. The dock carries the four
+     you reach for; everything else is one tap away on the Overview. The
+     lozenge is one element for the whole pill, slid under the current tab by
+     moveGlow — see the .mglow note in layout.css. */
+  $("#mtabs").innerHTML = '<span class="mglow" aria-hidden="true"></span>' +
+    NAV.filter(n => n.mob).map(n =>
+      '<button class="mtab" type="button" data-view="'+n.id+'">'+
+      '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+n.ic+'</svg><span>'+n.lb+'</span></button>').join('');
+}
+
+/* ---------- the phone dock ---------- */
+const PHONE = matchMedia("(max-width:1000px)");
+
+/* Slide the highlight under whichever tab is current. offsetLeft/offsetWidth
+   are zero while the dock is display:none (every width above the breakpoint),
+   and a zero-width lozenge parked at x=0 is what the reader would see slide
+   across the pill on the first tap after a resize down — so measure only when
+   the bar is actually laid out, and leave the lozenge hidden until it is. */
+function moveGlow(){
+  const bar = $("#mtabs"); if(!bar) return;
+  const glow = bar.querySelector(".mglow"); if(!glow) return;
+  const act = bar.querySelector('.mtab[aria-current="page"]');
+  if(!act || !bar.offsetParent){ glow.classList.remove("set"); return; }
+  glow.style.width = act.offsetWidth + "px";
+  glow.style.transform = "translateX(" + act.offsetLeft + "px)";
+  glow.classList.add("set");
+}
+
+/* One search input, not two. The wrapper moves between the header and the
+   dock at the breakpoint, so runSearch, the arrow-key handling and #results
+   all keep working on the element they were bound to at boot. */
+function placeSearch(){
+  const wrap = document.querySelector(".searchwrap");
+  const dock = $("#mdock"), tools = document.querySelector(".bartools");
+  if(!wrap || !dock || !tools) return;
+  const host = PHONE.matches ? dock : tools;
+  if(wrap.parentNode !== host) host.appendChild(wrap);
+  if(!PHONE.matches) closeSearch();
+}
+function openSearch(){
+  if(!PHONE.matches) return;
+  document.body.classList.add("searching");
+  $("#msearch").setAttribute("aria-expanded", "true");
+  /* Called straight out of the tap, which is the only moment iOS will open
+     the keyboard for us. */
+  $("#search").focus();
+}
+function closeSearch(){
+  if(!document.body.classList.contains("searching")) return;
+  document.body.classList.remove("searching");
+  const btn = $("#msearch"); if(btn) btn.setAttribute("aria-expanded", "false");
+  const inp = $("#search");
+  if(inp){ inp.value = ""; inp.blur(); }
+  $("#results").hidden = true;
+  runSearch("");
+}
+
+/* The software keyboard covers the bottom of the screen but not the layout
+   viewport, so a dock fixed to the bottom would sit behind it. visualViewport
+   reports what is actually visible; --kb lifts the dock and the results list
+   by the difference. */
+function mountKeyboardLift(){
+  const vv = window.visualViewport;
+  if(!vv) return;
+  const sync = () => {
+    const lift = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    document.documentElement.style.setProperty("--kb", (lift > 90 ? lift : 0) + "px");
+  };
+  vv.addEventListener("resize", sync);
+  vv.addEventListener("scroll", sync);
+  sync();
 }
 function setView(view, fromHash){
   S.view = view;
@@ -427,6 +493,7 @@ function setView(view, fromHash){
   $("#crumbsub").textContent = SUB[view];
   $("#vbtitle").textContent = TITLE[view];
   $("#vbsub").textContent = SUB[view];
+  moveGlow();
   render();
   $("#stage").scrollTop = 0;
   if(!fromHash) writeHash();
@@ -2130,8 +2197,13 @@ document.addEventListener("click", e => {
   const t = e.target;
   const hit = sel => t.closest(sel);
 
+  if(hit("#msearch")){ openSearch(); return; }
+  if(hit("#msx")){ closeSearch(); return; }
+
   const nav = hit("[data-view]");   if(nav){ go(nav.dataset.view); return; }
-  const gob = hit("[data-go]");     if(gob){ $("#results").hidden = true; goTo(gob.dataset.go); return; }
+  /* Picking a result is the end of a search: on a phone the field is the
+     dock, and leaving it open would hide the very record it just opened. */
+  const gob = hit("[data-go]");     if(gob){ $("#results").hidden = true; closeSearch(); goTo(gob.dataset.go); return; }
   const tr  = hit("[data-trail]");  if(tr){ goTo(tr.dataset.trail); return; }
   const zm  = hit("[data-zoom]");   if(zm){ zoomBy(+zm.dataset.zoom); return; }
   const era = hit("[data-era]");    if(era){ S.era = era.dataset.era; render(); return; }
@@ -2186,7 +2258,12 @@ document.addEventListener("click", e => {
       }
     }
     return; }
-  if(!hit(".searchwrap")) $("#results").hidden = true;
+  if(!hit(".searchwrap")){
+    $("#results").hidden = true;
+    /* On a phone the field has taken the dock over, so a tap anywhere else
+       means give it back — with an empty box there is nothing to lose. */
+    if(!$("#search").value) closeSearch();
+  }
 });
 
 function surpriseMe(){
@@ -2220,11 +2297,14 @@ $("#search").addEventListener("keydown", e => {
   else if(e.key === "Enter"){
     const a = $("#results").querySelector(".res.act");
     if(a){ e.preventDefault(); $("#results").hidden = true; e.target.blur(); goTo(a.dataset.go); } }
-  else if(e.key === "Escape"){ $("#results").hidden = true; e.target.blur(); }
+  else if(e.key === "Escape"){ $("#results").hidden = true; e.target.blur(); closeSearch(); }
 });
 document.addEventListener("keydown", e => {
   const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
-  if(e.key === "/" && !typing){ e.preventDefault(); $("#search").focus(); $("#search").select(); return; }
+  if(e.key === "/" && !typing){
+    e.preventDefault();
+    if(PHONE.matches) openSearch();
+    $("#search").focus(); $("#search").select(); return; }
   if(e.key === "Escape"){
     const dlg = $("#acctdlg");
     if(dlg && !dlg.hidden){ dlg.hidden = true; return; }
@@ -2345,6 +2425,12 @@ function mountSheet(){
 mountAccount();
 mountSheet();
 mountComposer();
+placeSearch();
+mountKeyboardLift();
+PHONE.addEventListener("change", () => { placeSearch(); moveGlow(); });
+/* The lozenge is measured, not declared, so it has to be re-measured whenever
+   the pill changes width — a rotation, or a keyboard opening on Android. */
+window.addEventListener("resize", moveGlow);
 if(location.hash && readHash().view) applyHash();
 else setView("home", true);
 

@@ -49,7 +49,7 @@ nav.rail-nav{display:flex;flex-direction:column;gap:1px;padding:0 10px;overflow-
 #stage{flex:1;min-width:0;overflow:auto;position:relative;scroll-behavior:smooth}
 
 /* ---------- mobile ---------- */
-#mtabs{display:none}
+#mdock{display:none}
 @media (max-width:1240px){ :root{--panel:352px} }
 @media (max-width:1000px){
   #shell{grid-template-columns:1fr}
@@ -61,13 +61,126 @@ nav.rail-nav{display:flex;flex-direction:column;gap:1px;padding:0 10px;overflow-
   .ph::before{content:"";position:absolute;top:6px;left:50%;transform:translateX(-50%);width:34px;
     height:3.5px;border-radius:2px;background:var(--line)}
   .ph{padding-top:17px}
-  #mtabs{display:flex;background:var(--surface);border-top:1px solid var(--line);
-    padding:5px 4px calc(5px + env(safe-area-inset-bottom));flex:0 0 auto;z-index:50;position:relative}
-  .mtab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 2px;
-    border-radius:8px;font-size:9.5px;font-weight:600;color:var(--ink-3)}
-  .mtab .ic{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.7;
+  /* ---- the dock -------------------------------------------------------
+     A pill of four tabs and a search circle, floating over the content
+     rather than sitting in the column beneath it. Fixed, not in flow, so
+     everything that scrolls has to leave --dock-h of room at its foot:
+     see #stage, .pb and .short below. */
+  #mdock{display:flex;align-items:center;gap:9px;position:fixed;z-index:60;
+    left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));
+    bottom:calc(11px + env(safe-area-inset-bottom) + var(--kb,0px));
+    pointer-events:none;
+    transition:bottom .2s cubic-bezier(.2,.8,.3,1)}
+  #mdock > *{pointer-events:auto}
+
+  /* The glass: a tint you see through, a bright rim where the light catches
+     the edge, and a shadow that proves it is floating. */
+  #mtabs,#msearch,#mdock .searchwrap{
+    position:relative;height:var(--dock-h);
+    background:var(--glass);
+    -webkit-backdrop-filter:blur(22px) saturate(180%);
+    backdrop-filter:blur(22px) saturate(180%);
+    box-shadow:var(--glass-shadow)}
+  #mtabs::before,#msearch::before,#mdock .searchwrap::before{
+    content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:2;
+    box-shadow:inset 0 1px 0 var(--glass-rim),inset 0 -1px 0 var(--glass-rim-2),
+               inset 0 0 0 1px var(--glass-line)}
+
+  #mtabs{display:flex;flex:1;min-width:0;padding:0 5px;
+    border-radius:calc(var(--dock-h) / 2)}
+  .mtab{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:2px;position:relative;z-index:1;
+    border-radius:calc(var(--dock-h) / 2 - 5px);
+    font-size:9.5px;font-weight:600;color:var(--ink-3);
+    transition:color .18s}
+  .mtab .ic{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.7;
     stroke-linecap:round;stroke-linejoin:round}
+  .mtab span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
   .mtab[aria-current="page"]{color:var(--accent)}
+
+  /* One lozenge for the whole bar, slid under whichever tab is current, so
+     the highlight travels with the tap instead of blinking out here and in
+     again there. Transform and width only — both stay off the main thread.
+     Its spring overshoot is what reads as "liquid"; the global
+     prefers-reduced-motion rule in tokens.css collapses it to a jump. */
+  .mglow{position:absolute;top:5px;bottom:5px;left:0;width:0;opacity:0;z-index:0;
+    border-radius:calc(var(--dock-h) / 2 - 5px);background:var(--accent-soft);
+    box-shadow:inset 0 1px 0 var(--glass-rim-2);
+    transition:transform .34s cubic-bezier(.34,1.32,.5,1),
+               width .34s cubic-bezier(.34,1.32,.5,1),opacity .18s}
+  /* Before the first measurement the lozenge has no position, and sliding
+     it in from x=0 would read as a stray bar shooting across the pill. */
+  .mglow.set{opacity:1}
+
+  #msearch{flex:0 0 var(--dock-h);width:var(--dock-h);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;color:var(--ink-2);
+    transition:transform .14s}
+  #msearch svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;
+    stroke-linecap:round}
+  #msearch:active{transform:scale(.94)}
+
+  /* Search takes the dock over: the circle becomes the field, in place. */
+  #mdock .searchwrap{display:none;flex:1;min-width:0;
+    border-radius:calc(var(--dock-h) / 2);background:var(--glass-2)}
+  body.searching #mtabs,body.searching #msearch{display:none}
+  body.searching #mdock .searchwrap{display:flex}
+  #mdock #search{width:100%;height:var(--dock-h);border:none;background:none;
+    border-radius:calc(var(--dock-h) / 2);padding:0 46px;
+    /* 16px exactly: any smaller and iOS zooms the page on focus. */
+    font-size:16px}
+  #mdock #search:focus{width:100%;outline:none}
+  /* type="search" draws its own clear button, which would sit beside the
+     dock's ✕ as a second, smaller, differently-shaped way to do almost the
+     same thing. One of them has to go, and it is not the one that closes.
+     Two rules rather than one selector list: a browser that rejects either
+     of these vendor pseudo-elements would drop the whole group with it, and
+     the one that matters would go down with the one that does not. */
+  #mdock #search::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
+  #mdock #search::-webkit-search-decoration{-webkit-appearance:none;display:none}
+  #mdock .searchwrap .si{left:18px;width:18px;height:18px;z-index:3}
+  .msx{display:none}
+  body.searching #mdock .msx{display:flex;align-items:center;justify-content:center;
+    position:absolute;right:9px;top:50%;transform:translateY(-50%);z-index:3;
+    width:32px;height:32px;border-radius:50%;background:var(--surface-2);color:var(--ink-2)}
+  .msx svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;
+    stroke-linecap:round}
+
+  /* Results rise from above the dock rather than dropping from a header the
+     field no longer sits in. Qualified by #main — not for the cascade's sake
+     but for source order: components.css is linked after this file, so a bare
+     #results here loses to its own top:56px, and an absolutely positioned box
+     with both top and bottom set stretches to fill the whole screen. */
+  #main #results{top:auto;bottom:calc(var(--dock-h) + 20px + env(safe-area-inset-bottom) + var(--kb,0px));
+    left:12px;right:12px;width:auto;max-height:min(50dvh,400px);border-radius:18px;
+    background:var(--glass-2);
+    -webkit-backdrop-filter:blur(22px) saturate(180%);
+    backdrop-filter:blur(22px) saturate(180%);
+    box-shadow:var(--glass-shadow)}
+
+  /* Room at the foot of everything the dock now floats over. .short and .pb
+     are qualified for the same source-order reason as #main #results above:
+     components.css is linked after this file and sets both with a `padding`
+     shorthand, which would overwrite a bare padding-bottom here. */
+  #stage{padding-bottom:calc(var(--dock-h) + 22px + env(safe-area-inset-bottom))}
+  /* The rounds feed is one card per screen and never scrolls past its own
+     foot, so it takes the clearance as padding inside the card instead. */
+  #stage.noscroll{padding-bottom:0}
+  #stage .short{padding-bottom:calc(32px + var(--dock-h))}
+  #panel .pb{padding-bottom:calc(var(--dock-h) + 34px + env(safe-area-inset-bottom))}
+
+  /* Glass needs something behind it to refract. Where the browser cannot
+     blur a backdrop, or the reader has asked for less transparency, the
+     dock keeps its shape and stops pretending.
+     #main #results, not #results: it is undoing a two-id rule above, and a
+     one-id selector would leave the results list glass while the dock beside
+     it went solid. */
+  @media (prefers-reduced-transparency:reduce){
+    #mtabs,#msearch,#mdock .searchwrap,#main #results{background:var(--surface);
+      -webkit-backdrop-filter:none;backdrop-filter:none}
+  }
+  @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+    #mtabs,#msearch,#mdock .searchwrap,#main #results{background:var(--surface)}
+  }
   /* The glyph grows so it can be seen. The tap target does NOT grow to
      thumb size: markers sit a median 9px apart here, so a circle big
      enough for a thumb covers its neighbours and the one drawn last wins
