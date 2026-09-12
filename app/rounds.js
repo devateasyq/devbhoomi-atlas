@@ -45,6 +45,37 @@ function keepFact(text, name){
   return true;
 }
 
+/* Ids were recordId + "#" + the atom's index, so adding, removing or
+   reordering a line in a record's exam hook shifted every id after it onto
+   a different fact. That only mis-attributed `seen`, which is cosmetic —
+   but a confidence rating landing on the wrong fact would bury something
+   the student does not know, which is the opposite of the job. Hash the
+   fact's own text instead: reordering moves nothing, and genuinely editing
+   a fact's wording correctly makes it a new card, because it is one. */
+function hash32(s){
+  var h = 2166136261, i;                 /* FNV-1a, 32-bit */
+  for(i = 0; i < s.length; i++){
+    h ^= s.charCodeAt(i);
+    h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+  }
+  return h.toString(36);
+}
+function factId(recordId, text){
+  return recordId + "#" + hash32(String(text == null ? "" : text));
+}
+
+/* Ids that no current fact claims — a fact whose wording was edited, or
+   anything left over from the old positional scheme. Dropped on load so
+   they neither inflate the seen count nor sit in the synced document
+   forever. */
+function pruneSeen(seen, facts){
+  var have = {}, out = [], i;
+  for(i = 0; i < (facts || []).length; i++) have[facts[i].id] = 1;
+  for(i = 0; i < (seen || []).length; i++)
+    if(have[(seen || [])[i]]) out.push(seen[i]);
+  return out;
+}
+
 function buildFacts(D){
   var groups = [["district", D.districts], ["state", D.states], ["event", D.events],
                 ["battle", D.battles], ["person", D.people], ["topic", D.topics],
@@ -63,11 +94,9 @@ function buildFacts(D){
         if(!/exam hook/i.test(String(blocks[b][1]))) continue;
         atoms = atoms.concat(splitHook(blocks[b][2]));
       }
-      var n = 0;
       for(var a = 0; a < atoms.length; a++){
         if(!keepFact(atoms[a], name)) continue;
-        out.push({id: r.id + "#" + n, srcId: r.id, kind: k, name: name, text: atoms[a]});
-        n++;
+        out.push({id: factId(r.id, atoms[a]), srcId: r.id, kind: k, name: name, text: atoms[a]});
       }
     }
   }
@@ -115,5 +144,6 @@ function factGeom(rec, kind, MAP){
 
 if(typeof module !== "undefined" && module.exports){
   module.exports = {buildFacts: buildFacts, orderFacts: orderFacts, factGeom: factGeom, splitHook: splitHook,
-                    keepFact: keepFact, MIN_FACT: MIN_FACT, MAX_FACT: MAX_FACT};
+                    keepFact: keepFact, MIN_FACT: MIN_FACT, MAX_FACT: MAX_FACT,
+                    factId: factId, pruneSeen: pruneSeen};
 }
