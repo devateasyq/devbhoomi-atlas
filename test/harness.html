@@ -209,6 +209,30 @@ window.addEventListener("load", async () => {
       !doc.querySelector("#roundsfeed button button"));
     check("the card still opens its record",
       !!doc.querySelector(".short .shopen[data-src]"));
+
+    check("a card offers both confidence buttons",
+      doc.querySelectorAll(".short .cfb").length >= 2);
+    (function(){
+      const card = doc.querySelector(".short");
+      const got = card.querySelector('.cfb[data-conf="got"]');
+      got.click();
+      const stored = JSON.parse(win.localStorage.getItem("hpatlas:conf") || "{}");
+      check("pressing Got it records it", (stored[card.dataset.fid]||{}).v === "got",
+        JSON.stringify(stored[card.dataset.fid]));
+      check("the button reads as pressed", got.getAttribute("aria-pressed") === "true");
+      got.click();
+      const after = JSON.parse(win.localStorage.getItem("hpatlas:conf") || "{}");
+      check("pressing it again clears it",
+        !Object.prototype.hasOwnProperty.call(after, card.dataset.fid), JSON.stringify(after));
+    })();
+    (function(){
+      const feed = doc.getElementById("roundsfeed");
+      const before = feed.children.length;
+      const card = feed.children[0];
+      card.querySelector('.cfb[data-conf="again"]').click();
+      check("Again re-queues the card into the feed",
+        feed.children.length === before + 1, before + " -> " + feed.children.length);
+    })();
   }
 
   ev('S.view="home"; render();');

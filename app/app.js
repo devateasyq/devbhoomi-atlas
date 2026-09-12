@@ -1691,7 +1691,21 @@ function roundCard(f){
       '<span class="go">Open the note &rarr;</span>'+
     '</button>'+
     (p ? '<span class="cred">'+esc(p.t)+' &middot; '+esc(p.a)+' / '+esc(p.l)+'</span>' : '')+
+    confBar(f.id)+
     '</article>';
+}
+/* Neither button is required — scrolling past without deciding leaves the
+   card in normal rotation, which is how the feed has always worked. */
+function confBar(id){
+  const c = store.get("conf", {});
+  const held = Object.prototype.hasOwnProperty.call(c, id) && c[id] ? c[id].v : "";
+  const btn = (v, lb, sym) =>
+    '<button class="cfb'+(held === v ? " on" : "")+'" type="button" '+
+      'data-conf="'+v+'" data-cfid="'+esc(id)+'" '+
+      'aria-pressed="'+(held === v ? "true" : "false")+'">'+
+      '<span aria-hidden="true">'+sym+'</span>'+lb+'</button>';
+  return '<div class="cfbar">'+btn("got", "Got it", "&check;")+
+         btn("again", "Again", "&#8634;")+'</div>';
 }
 let RQ = [], RI = 0, RIO = null;
 /* The feed is endless, so it renders a window and extends it rather than
@@ -1700,7 +1714,7 @@ function appendRounds(feed, n){
   const tmp = document.createElement("div");
   let html = "";
   for(let i = 0; i < n; i++){
-    if(RI >= RQ.length){ RQ = orderFacts(FACTS, S.seen); RI = 0; }
+    if(RI >= RQ.length){ RQ = orderFacts(FACTS, S.seen, store.get("conf", {})); RI = 0; }
     html += roundCard(RQ[RI++]);
   }
   tmp.innerHTML = html;
@@ -1713,7 +1727,7 @@ function appendRounds(feed, n){
 function mountRounds(){
   const feed = document.getElementById("roundsfeed");
   if(!feed || !FACTS.length) return;
-  RQ = orderFacts(FACTS, S.seen); RI = 0;
+  RQ = orderFacts(FACTS, S.seen, store.get("conf", {})); RI = 0;
   feed.innerHTML = "";
   /* only now is anything here able to reveal cards, so only now may CSS
      start them hidden */
@@ -1735,9 +1749,43 @@ function mountRounds(){
   }, {root: feed, threshold: 0.6});
   appendRounds(feed, 30);
   feed.addEventListener("click", e => {
+    const cf = e.target.closest(".cfb");
+    if(cf){ markConf(cf.dataset.cfid, cf.dataset.conf, cf.closest(".short")); return; }
     const b = e.target.closest(".shopen");
     if(b && IDX.has(b.dataset.src)) openRec(b.dataset.src);
   });
+}
+/* "Again" has to mean again. Ordering alone would only take effect the next
+   time the feed is built, so the card is also re-queued a few places ahead
+   of where you are now — near enough to come back, far enough not to be the
+   very next thing you see. */
+const REQUEUE_AHEAD = 5;
+function markConf(id, v, card){
+  const next = setConf(store.get("conf", {}), id, v);
+  store.set("conf", next);
+  if(authUser()) pushStateSoon();
+  const held = Object.prototype.hasOwnProperty.call(next, id) && next[id] ? next[id].v : "";
+  if(card) card.querySelectorAll(".cfb").forEach(b => {
+    const on = b.dataset.conf === held;
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+  if(held === "again" && card) requeueCard(card);
+  toast(held === "got" ? "Got it" : held === "again" ? "Coming back shortly" : "Cleared");
+}
+/* Clone rather than move: moving the card the reader is looking at would
+   yank the feed out from under their thumb. */
+function requeueCard(card){
+  const feed = card.parentNode; if(!feed) return;
+  const kids = [].slice.call(feed.children);
+  const at = kids.indexOf(card);
+  if(at < 0) return;
+  const copy = card.cloneNode(true);
+  copy.classList.add("on");
+  const before = kids[at + REQUEUE_AHEAD] || null;
+  /* Fewer than REQUEUE_AHEAD cards below: go to the end, never nowhere. */
+  feed.insertBefore(copy, before);
+  if(RIO) RIO.observe(copy);
 }
 
 /* Anything interpolated into an innerHTML string goes through here. & first,
@@ -2131,6 +2179,11 @@ applyTheme();
 /* The old boolean rivers toggle is now two legend layers. Migrate it so
    a returning visitor who had rivers off does not see them reappear. */
 S.seen   = store.get("seen", []);
+/* Fact ids are a hash of the fact's text now, so ids saved under the old
+   positional scheme — and any left by a since-edited fact — match nothing.
+   Drop them rather than let them sit in the synced document forever. */
+S.seen = pruneSeen(S.seen, FACTS);
+store.set("seen", S.seen);
 S.legendOpen = store.get("legendopen", false);
 S.mapOff = store.get("mapoff", null) ||
   (store.get("rivers", true) ? [] : ["river1","river2"]);

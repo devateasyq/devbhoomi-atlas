@@ -666,3 +666,12 @@ button.brow:hover .blab{color:var(--accent)}
 .pdata{display:flex;gap:9px;flex-wrap:wrap;padding-top:12px}
 .btn.danger{border-color:var(--crit);color:var(--crit)}
 .btn.danger:hover{background:var(--crit);color:var(--on-accent)}
+
+.cfbar{display:flex;gap:8px;margin-top:12px}
+.cfb{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:20px;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink-2);
+  font:inherit;font-size:13px;cursor:pointer;min-height:40px}
+.cfb span{font-size:14px;line-height:1}
+.cfb:hover{border-color:var(--accent-line);color:var(--ink)}
+.cfb.on[data-conf="got"]{border-color:var(--good);color:var(--good);background:var(--accent-soft)}
+.cfb.on[data-conf="again"]{border-color:var(--gold);color:var(--gold)}
