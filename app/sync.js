@@ -347,6 +347,52 @@ function mergeHist(a, b){
   return trimHist(Object.keys(by).map(function(k){ return by[k]; }));
 }
 
+/* How well the student says they know a fact. Same {value, timestamp}
+   shape the quiz and past-paper answers use, so it merges by the same
+   most-recent-wins rule — one idea, not two.
+
+   hasOwnProperty throughout, never `!out[k]`: mergeAnswers above still uses
+   truthiness, which reads the inherited Object.prototype member for a key
+   like "constructor" and silently drops the entry. That was a real bug in
+   the notes map. Not repeated here. */
+var CONF_VALUES = ["got", "again"];
+
+function confOk(v){ return v === "got" || v === "again"; }
+
+function normaliseConf(obj){
+  var out = {}, k, e;
+  if(!obj || typeof obj !== "object") return out;
+  for(k in obj){
+    if(!Object.prototype.hasOwnProperty.call(obj, k)) continue;
+    if(k === "__proto__") continue;
+    e = obj[k];
+    if(!e || typeof e !== "object" || !confOk(e.v)) continue;
+    out[k] = {v: e.v, t: typeof e.t === "number" ? e.t : 0};
+  }
+  return out;
+}
+
+function mergeConf(a, b){
+  var A = normaliseConf(a), B = normaliseConf(b), out = {}, k;
+  for(k in A) if(Object.prototype.hasOwnProperty.call(A, k)) out[k] = A[k];
+  for(k in B){
+    if(!Object.prototype.hasOwnProperty.call(B, k)) continue;
+    if(!Object.prototype.hasOwnProperty.call(out, k) || B[k].t > out[k].t) out[k] = B[k];
+  }
+  return out;
+}
+
+/* Pressing the state a card already holds clears it. One button that
+   undoes itself is easier to reach, on a card you are scrolling past,
+   than a third button for "I was wrong about that". */
+function setConf(conf, id, v){
+  var out = normaliseConf(conf);
+  if(!confOk(v) || id === "__proto__") return out;
+  if(Object.prototype.hasOwnProperty.call(out, id) && out[id].v === v){ delete out[id]; return out; }
+  out[id] = {v: v, t: Date.now()};
+  return out;
+}
+
 /* The single source of truth for what syncs and how each key merges. It was
    previously spelled out in four places — localState, both branches of
    pullAndMerge, and mergeState — which is how a key gets missed and its data
@@ -355,6 +401,7 @@ var SYNC_KEYS = [
   {k: "seen",   empty: function(){ return []; }, merge: mergeSeen},
   {k: "quiz",   empty: function(){ return {}; }, merge: mergeAnswers},
   {k: "pyq",    empty: function(){ return {}; }, merge: mergeAnswers},
+  {k: "conf",   empty: function(){ return {}; }, merge: mergeConf},
   {k: "notes",  empty: function(){ return {}; }, merge: mergeNotes},
   {k: "streak", empty: emptyStreak,              merge: mergeStreak}
 ];
@@ -406,6 +453,8 @@ if(typeof module !== "undefined" && module.exports){
                     SYNC_KEYS: SYNC_KEYS, NOTE_MAX: NOTE_MAX, normaliseNotes: normaliseNotes,
                     realNotes: realNotes, mergeNotes: mergeNotes, setNote: setNote,
                     shouldWriteNote: shouldWriteNote,
+                    CONF_VALUES: CONF_VALUES, normaliseConf: normaliseConf,
+                    mergeConf: mergeConf, setConf: setConf,
                     DAY_GOAL: DAY_GOAL, HIST_MAX: HIST_MAX, emptyStreak: emptyStreak,
                     shiftDay: shiftDay, recentDays: recentDays, mergeHist: mergeHist,
                     dayKey: dayKey,

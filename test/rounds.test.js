@@ -23,10 +23,10 @@ test("every fact carries its source record and a display name", () => {
   }
 });
 
-test("fact ids are unique and follow recordId#index", () => {
+test("fact ids are unique and follow recordId#hash", () => {
   const seen = new Set();
   for(const f of FACTS){
-    assert.match(f.id, /^.+#\d+$/, "bad id shape: " + f.id);
+    assert.match(f.id, /^.+#[0-9a-z]+$/, "bad id shape: " + f.id);
     assert.ok(!seen.has(f.id), "duplicate id: " + f.id);
     seen.add(f.id);
     assert.equal(f.id.split("#")[0], f.srcId, f.id + " id does not match srcId");
@@ -164,4 +164,88 @@ test("most facts can be placed on the map", () => {
   for(const f of FACTS) if(rounds.factGeom(BY_ID.get(f.srcId), f.kind, MAP)) placed++;
   const pct = Math.round(placed / FACTS.length * 100);
   assert.ok(pct >= 60, "only " + pct + "% of facts could be placed on the map");
+});
+
+test("a fact's id comes from its text, not its position", () => {
+  const a = rounds.factId("d-kangra", "Kangra fort fell in 1620");
+  const b = rounds.factId("d-kangra", "Kangra fort fell in 1620");
+  assert.equal(a, b, "the same text must always give the same id");
+  assert.ok(a.startsWith("d-kangra#"), a);
+});
+
+test("editing a fact's text changes its id", () => {
+  const a = rounds.factId("d-kangra", "Kangra fort fell in 1620");
+  const b = rounds.factId("d-kangra", "Kangra fort fell in 1621");
+  assert.notEqual(a, b);
+});
+
+test("the same text under two records keeps two ids", () => {
+  assert.notEqual(rounds.factId("d-kangra", "same words"),
+                  rounds.factId("d-shimla", "same words"));
+});
+
+test("reordering a record's atoms leaves every id unchanged", () => {
+  const texts = ["first fact here", "second fact here", "third fact here"];
+  const before = texts.map(t => rounds.factId("r1", t));
+  const after = [texts[2], texts[0], texts[1]].map(t => rounds.factId("r1", t));
+  for(const t of texts){
+    const i = texts.indexOf(t);
+    assert.ok(after.includes(before[i]), "id for " + JSON.stringify(t) + " survived reordering");
+  }
+});
+
+test("pruneSeen drops ids no current fact claims", () => {
+  const facts = [{id: "a#1"}, {id: "b#2"}];
+  assert.deepEqual(rounds.pruneSeen(["a#1", "gone#9", "b#2"], facts), ["a#1", "b#2"]);
+  assert.deepEqual(rounds.pruneSeen(null, facts), []);
+  assert.deepEqual(rounds.pruneSeen(["a#1"], []), []);
+});
+
+test("pruneSeen is not fooled by an inherited property name", () => {
+  const facts = [{id: "real"}];
+  assert.deepEqual(rounds.pruneSeen(["constructor", "toString", "__proto__", "real"], facts),
+    ["real"], "only an id a fact actually claims survives");
+});
+
+test("pruneSeen keeps the order it was given", () => {
+  const facts = [{id: "x"}, {id: "y"}, {id: "z"}];
+  assert.deepEqual(rounds.pruneSeen(["z", "x", "y"], facts), ["z", "x", "y"]);
+});
+
+const F = n => Array.from({length: n}, (_, i) => ({id: "f" + i, text: "t" + i}));
+
+test("orderFacts without confidence behaves exactly as before", () => {
+  const facts = F(5), seen = ["f1", "f3"];
+  const out = rounds.orderFacts(facts, seen, {});
+  assert.equal(out.length, 5);
+  assert.deepEqual(out.slice(3).map(f => f.id), ["f1", "f3"], "seen still trail, oldest first");
+});
+
+test("again comes first and got comes last", () => {
+  const facts = F(6);
+  const conf = {f4: {v: "again", t: 1}, f0: {v: "got", t: 1}};
+  const out = rounds.orderFacts(facts, ["f0", "f2"], conf).map(f => f.id);
+  assert.equal(out[0], "f4", "a card marked again leads");
+  assert.equal(out[out.length - 1], "f0", "a card marked got trails everything");
+});
+
+test("every fact appears exactly once whatever its state", () => {
+  const facts = F(8);
+  const conf = {f1: {v: "again", t: 1}, f2: {v: "got", t: 1}, f5: {v: "again", t: 2}};
+  const out = rounds.orderFacts(facts, ["f2", "f3", "f5"], conf);
+  assert.equal(out.length, 8);
+  assert.equal(new Set(out.map(f => f.id)).size, 8);
+});
+
+test("a got fact that was never seen still trails", () => {
+  const facts = F(4);
+  const out = rounds.orderFacts(facts, [], {f3: {v: "got", t: 1}}).map(f => f.id);
+  assert.equal(out[out.length - 1], "f3");
+});
+
+test("orderFacts does not mutate what it is given", () => {
+  const facts = F(4), seen = ["f1"], conf = {f2: {v: "got", t: 1}};
+  rounds.orderFacts(facts, seen, conf);
+  assert.deepEqual(seen, ["f1"]);
+  assert.deepEqual(facts.map(f => f.id), ["f0", "f1", "f2", "f3"]);
 });

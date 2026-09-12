@@ -157,7 +157,7 @@ test("recordAnswer does not mutate the map it is given", () => {
 
 test("SYNC_KEYS is the single source of truth for what syncs", () => {
   const keys = sync.SYNC_KEYS.map(e => e.k);
-  assert.deepEqual(keys, ["seen", "quiz", "pyq", "notes", "streak"]);
+  assert.deepEqual(keys, ["seen", "quiz", "pyq", "conf", "notes", "streak"]);
   for(const e of sync.SYNC_KEYS){
     assert.equal(typeof e.empty, "function", e.k + " has no empty()");
     assert.equal(typeof e.merge, "function", e.k + " has no merge()");
@@ -740,4 +740,67 @@ test("mergeStreak preserves a real streak's date and today's counters against a 
     assert.equal(m.best, 6, "the best must survive " + where);
     assert.equal(m.grace, 1, "the more forgiving grace wins " + where);
   }
+});
+
+test("only got and again are storable confidence values", () => {
+  assert.deepEqual(sync.CONF_VALUES, ["got", "again"]);
+  const out = sync.normaliseConf({a: {v: "got", t: 1}, b: {v: "again", t: 2},
+                                  c: {v: "maybe", t: 3}, d: {v: 1, t: 4}, e: null});
+  assert.deepEqual(Object.keys(out).sort(), ["a", "b"]);
+});
+
+test("normaliseConf defaults a missing timestamp to zero", () => {
+  assert.equal(sync.normaliseConf({a: {v: "got"}}).a.t, 0);
+});
+
+test("mergeConf keeps the most recent decision per fact", () => {
+  const a = {f1: {v: "got", t: 100}, f2: {v: "again", t: 5}};
+  const b = {f1: {v: "again", t: 900}, f3: {v: "got", t: 5}};
+  const m = sync.mergeConf(a, b);
+  assert.equal(m.f1.v, "again", "the later decision wins");
+  assert.equal(m.f2.v, "again");
+  assert.equal(m.f3.v, "got");
+});
+
+test("mergeConf never mutates its inputs", () => {
+  const a = {x: {v: "got", t: 1}}, b = {x: {v: "again", t: 2}};
+  sync.mergeConf(a, b);
+  assert.equal(a.x.v, "got");
+  assert.equal(b.x.v, "again");
+});
+
+test("mergeConf survives a hostile key", () => {
+  const m = sync.mergeConf({constructor: {v: "got", t: 1}}, {toString: {v: "again", t: 1}});
+  assert.equal(m.constructor && m.constructor.v, "got", "an inherited builtin must not swallow it");
+  assert.equal(m.toString && m.toString.v, "again");
+  assert.ok(!Object.prototype.hasOwnProperty.call(
+    sync.mergeConf({"__proto__": {v: "got", t: 1}}, {}), "__proto__"));
+});
+
+test("setConf records a decision", () => {
+  const before = Date.now();
+  const out = sync.setConf({}, "f1", "got");
+  assert.equal(out.f1.v, "got");
+  assert.ok(out.f1.t >= before);
+});
+
+test("setConf with the value already held clears it", () => {
+  const held = sync.setConf({}, "f1", "again");
+  const out = sync.setConf(held, "f1", "again");
+  assert.ok(!("f1" in out), "tapping the same button again returns to normal rotation");
+});
+
+test("setConf switching between the two replaces rather than clears", () => {
+  const held = sync.setConf({}, "f1", "again");
+  assert.equal(sync.setConf(held, "f1", "got").f1.v, "got");
+});
+
+test("setConf ignores a value that is not got or again", () => {
+  assert.deepEqual(sync.setConf({}, "f1", "maybe"), {});
+});
+
+test("setConf does not mutate the map it is given", () => {
+  const c = {};
+  sync.setConf(c, "f1", "got");
+  assert.deepEqual(c, {});
 });
