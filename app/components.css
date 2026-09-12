@@ -620,12 +620,21 @@ button.brow:hover .blab{color:var(--accent)}
 .dstrip{margin:0 0 16px}
 .dstrip h4{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.11em;
   text-transform:uppercase;color:var(--ink-3);font-weight:500;margin:0 0 9px}
-.dstrip-row{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;max-width:460px}
-.dcell{display:flex;flex-direction:column;align-items:center;gap:5px}
-.dcell svg{width:100%;max-width:52px;height:auto;display:block;transform:rotate(-90deg)}
-.dcell span{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.04em;color:var(--ink-3)}
+.dstrip-row{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;max-width:500px}
+/* Every day gets a visible slot whether it holds anything or not. A day
+   with no work still has to read as a day you did not work — an empty
+   space reads as missing data instead. */
+.dcell{display:flex;flex-direction:column;align-items:center;gap:6px;
+  background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:8px 4px 7px}
+.dcell.today{border-color:var(--accent-line);background:var(--accent-soft)}
+.dcell svg{width:100%;max-width:46px;height:auto;display:block;transform:rotate(-90deg)}
+.dcell span{font-family:var(--f-mono);font-size:9px;letter-spacing:.04em;color:var(--ink-3)}
 .dcell.today span{color:var(--accent);font-weight:600}
-.mr-t{fill:none;stroke:var(--line);stroke-width:6}
+/* --line is barely a shade off --surface in the dark theme, which made an
+   untouched day look like nothing had been drawn at all. --ink-3 reads on
+   both grounds; the opacity keeps it a track rather than a fourth ring. */
+.mr-t{fill:none;stroke:var(--ink-3);stroke-width:6;opacity:.3}
 .mr-p{fill:none;stroke-width:6;stroke-linecap:round}
 
 .pstats{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
