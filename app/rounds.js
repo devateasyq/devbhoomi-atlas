@@ -69,10 +69,14 @@ function factId(recordId, text){
    they neither inflate the seen count nor sit in the synced document
    forever. */
 function pruneSeen(seen, facts){
-  var have = {}, out = [], i;
+  /* Object.create(null), not {}: a plain object inherits Object.prototype,
+     so have["constructor"] reads a function and reports a junk id as
+     claimed by a real fact. The same shape has already cost this codebase
+     two bugs — one in the notes map, one in mergeNotes. */
+  var have = Object.create(null), out = [], i, list = seen || [];
   for(i = 0; i < (facts || []).length; i++) have[facts[i].id] = 1;
-  for(i = 0; i < (seen || []).length; i++)
-    if(have[(seen || [])[i]]) out.push(seen[i]);
+  for(i = 0; i < list.length; i++)
+    if(have[list[i]]) out.push(list[i]);
   return out;
 }
 

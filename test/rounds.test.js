@@ -201,6 +201,12 @@ test("pruneSeen drops ids no current fact claims", () => {
   assert.deepEqual(rounds.pruneSeen(["a#1"], []), []);
 });
 
+test("pruneSeen is not fooled by an inherited property name", () => {
+  const facts = [{id: "real"}];
+  assert.deepEqual(rounds.pruneSeen(["constructor", "toString", "__proto__", "real"], facts),
+    ["real"], "only an id a fact actually claims survives");
+});
+
 test("pruneSeen keeps the order it was given", () => {
   const facts = [{id: "x"}, {id: "y"}, {id: "z"}];
   assert.deepEqual(rounds.pruneSeen(["z", "x", "y"], facts), ["z", "x", "y"]);
