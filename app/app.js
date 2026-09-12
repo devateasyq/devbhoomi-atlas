@@ -127,6 +127,13 @@ function localState(){
    without anybody remembering to come back for it. */
 function wipeLocal(){
   for(const e of SYNC_KEYS) store.del(e.k);
+  /* posts is deliberately not a SYNC_KEYS entry (its own collection, not the
+     user document — see pushPost/removePost/pullPosts), so the loop above
+     never touches it. Posts are still local data belonging to whoever
+     signed out, and a shared device must not keep them, so clear them
+     explicitly here. */
+  store.del("posts");
+  store.del("postgone");   /* the deletion tombstones are theirs too */
   store.del("owner");
   S.seen = [];
   dropMountedNote();
@@ -304,6 +311,7 @@ function mountAccount(){
     renderAccount(user);
     if(!user) return;
     pullAndMerge(user)
+      .then(() => pullPosts())
       .then(() => { render(); toast("Progress synced"); })
       .catch(() => toast("Could not sync just now"));
   });
@@ -352,12 +360,12 @@ const NAV = [
   {id:"trends",   lb:"Trends",   ic:'<path d="M4 19V5"/><path d="M4 15l5-5 4 4 7-7"/><path d="M20 11V7h-4"/>'},
   {id:"rounds",   lb:"Rounds", mob:1,   ic:'<path d="M12 3a9 9 0 109 9"/><path d="M12 7a5 5 0 105 5"/><circle cx="12" cy="12" r="1.6"/>'},
   {id:"revise",   lb:"Revise", mob:1,   ic:'<path d="M4 5.5A2.5 2.5 0 016.5 3H19v15H6.5A2.5 2.5 0 004 20.5z"/><path d="M9 8h6"/>'},
-  /* mobOnly: the phone bar carries it, the rail does not. On a desktop the
-     rail is already nine deep and the header's account button sits in view
-     at all times; on a phone that button competes with the wordmark and the
-     search box, so the bar is the honest place for it. The Overview hub is
-     built from NAV, so a card appears there either way. */
-  {id:"profile",  lb:"Profile", mob:1, mobOnly:1, ic:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="2.8"/><path d="M6.8 18.7a6 6 0 0110.4 0"/>'}
+  /* mobOnly: neither nav carries it. The rail is already nine deep, and the
+     dock is four and a search circle — a fifth tab is what pushed the labels
+     to 9.5px and clipped them. The way in is the account button, which now
+     carries the reader's own name at the top of every screen: the name IS
+     the door. The Overview hub is built from NAV, so it skips profile too. */
+  {id:"profile",  lb:"Profile", mobOnly:1, ic:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="2.8"/><path d="M6.8 18.7a6 6 0 0110.4 0"/>'}
 ];
 const COUNTS = {map:D.districts.length, timeline:D.events.length, battles:D.battles.length,
                 topics:D.topics.length, people:D.people.length, trends:D.pyq.length,
@@ -411,11 +419,77 @@ function buildNav(){
     '<button class="navbtn" type="button" data-view="'+n.id+'">'+
     '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+n.ic+'</svg><span>'+n.lb+'</span>'+
     (COUNTS[n.id] ? '<span class="cnt">'+COUNTS[n.id]+'</span>' : '')+'</button>').join('');
-  /* Nine tabs clipped their own labels on a phone. The bar carries the ones
-     you reach for; everything else is one tap away on the Overview. */
-  $("#mtabs").innerHTML = NAV.filter(n => n.mob).map(n =>
-    '<button class="mtab" type="button" data-view="'+n.id+'">'+
-    '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+n.ic+'</svg><span>'+n.lb+'</span></button>').join('');
+  /* Nine tabs clipped their own labels on a phone. The dock carries the four
+     you reach for; everything else is one tap away on the Overview. The
+     lozenge is one element for the whole pill, slid under the current tab by
+     moveGlow — see the .mglow note in layout.css. */
+  $("#mtabs").innerHTML = '<span class="mglow" aria-hidden="true"></span>' +
+    NAV.filter(n => n.mob).map(n =>
+      '<button class="mtab" type="button" data-view="'+n.id+'">'+
+      '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+n.ic+'</svg><span>'+n.lb+'</span></button>').join('');
+}
+
+/* ---------- the phone dock ---------- */
+const PHONE = matchMedia("(max-width:1000px)");
+
+/* Slide the highlight under whichever tab is current. offsetLeft/offsetWidth
+   are zero while the dock is display:none (every width above the breakpoint),
+   and a zero-width lozenge parked at x=0 is what the reader would see slide
+   across the pill on the first tap after a resize down — so measure only when
+   the bar is actually laid out, and leave the lozenge hidden until it is. */
+function moveGlow(){
+  const bar = $("#mtabs"); if(!bar) return;
+  const glow = bar.querySelector(".mglow"); if(!glow) return;
+  const act = bar.querySelector('.mtab[aria-current="page"]');
+  if(!act || !bar.offsetParent){ glow.classList.remove("set"); return; }
+  glow.style.width = act.offsetWidth + "px";
+  glow.style.transform = "translateX(" + act.offsetLeft + "px)";
+  glow.classList.add("set");
+}
+
+/* One search input, not two. The wrapper moves between the header and the
+   dock at the breakpoint, so runSearch, the arrow-key handling and #results
+   all keep working on the element they were bound to at boot. */
+function placeSearch(){
+  const wrap = document.querySelector(".searchwrap");
+  const dock = $("#mdock"), tools = document.querySelector(".bartools");
+  if(!wrap || !dock || !tools) return;
+  const host = PHONE.matches ? dock : tools;
+  if(wrap.parentNode !== host) host.appendChild(wrap);
+  if(!PHONE.matches) closeSearch();
+}
+function openSearch(){
+  if(!PHONE.matches) return;
+  document.body.classList.add("searching");
+  $("#msearch").setAttribute("aria-expanded", "true");
+  /* Called straight out of the tap, which is the only moment iOS will open
+     the keyboard for us. */
+  $("#search").focus();
+}
+function closeSearch(){
+  if(!document.body.classList.contains("searching")) return;
+  document.body.classList.remove("searching");
+  const btn = $("#msearch"); if(btn) btn.setAttribute("aria-expanded", "false");
+  const inp = $("#search");
+  if(inp){ inp.value = ""; inp.blur(); }
+  $("#results").hidden = true;
+  runSearch("");
+}
+
+/* The software keyboard covers the bottom of the screen but not the layout
+   viewport, so a dock fixed to the bottom would sit behind it. visualViewport
+   reports what is actually visible; --kb lifts the dock and the results list
+   by the difference. */
+function mountKeyboardLift(){
+  const vv = window.visualViewport;
+  if(!vv) return;
+  const sync = () => {
+    const lift = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    document.documentElement.style.setProperty("--kb", (lift > 90 ? lift : 0) + "px");
+  };
+  vv.addEventListener("resize", sync);
+  vv.addEventListener("scroll", sync);
+  sync();
 }
 function setView(view, fromHash){
   S.view = view;
@@ -427,6 +501,7 @@ function setView(view, fromHash){
   $("#crumbsub").textContent = SUB[view];
   $("#vbtitle").textContent = TITLE[view];
   $("#vbsub").textContent = SUB[view];
+  moveGlow();
   render();
   $("#stage").scrollTop = 0;
   if(!fromHash) writeHash();
@@ -486,6 +561,15 @@ function noteBlock(id){
     '<div class="noterow"><span class="notecount" id="notecount">'+
       cur.length+' / '+NOTE_MAX+'</span>'+
       '<button class="btn sm" type="button" id="notesave">Save</button></div></div>';
+}
+/* A card you wrote about this record, shown where the record is read. The
+   tag is how a post belongs somewhere; without this it would be a label
+   that changed nothing. */
+function postBlock(id){
+  const mine = localPosts().filter(p => (p.tags || []).indexOf(id) >= 0);
+  if(!mine.length) return "";
+  return '<div class="blk"><h5>Your cards &mdash; '+mine.length+'</h5>'+
+    mine.map(p => '<p class="pcard-s">'+esc(p.text)+'</p>').join('')+'</div>';
 }
 /* The editor lives inside #pbody, which openRec replaces wholesale. When a
    focused textarea is removed that way the browser clears focus WITHOUT
@@ -720,6 +804,7 @@ function openRec(id, headerNote, fromHash, silent){
     body += renderBlocks(r.blocks);
     if(TOPIC_FEATURES[id]) body += featureChips(TOPIC_FEATURES[id]);
   }
+  body += postBlock(id);
   body += noteBlock(id);
   body += relBlock(rels(r));
 
@@ -1644,6 +1729,103 @@ function moveSearch(d){
    Facts are a projection of the records' exam hooks, so a card
    can never drift from the note it came from.
    ============================================================ */
+/* A post is a card, so it becomes a fact-shaped object and joins the same
+   feed, the same ordering and the same two taps. The id is prefixed so a
+   post's confidence entry can never collide with a fact's recordId#hash. */
+function localPosts(){ return validPosts(store.get("posts", []), null); }
+function postsAsFacts(){
+  return localPosts().map(p => ({
+    id: "post:" + p.id,
+    srcId: (p.tags && p.tags[0]) || "",
+    kind: "post", name: "Your card", text: p.text, post: p
+  }));
+}
+function allFacts(){ return postsAsFacts().concat(FACTS); }
+
+/* Posts sync one document each rather than riding in the user document,
+   which already carries progress, notes and the streak against a hard
+   1 MB limit. Failures are logged the way every other write here is —
+   a silent failure would leave a card the student wrote on one device
+   only, with nothing said. */
+function postDoc(fb, id){ return fb.firestore().collection("posts").doc(id); }
+function pushPost(post){
+  if(!authUser() || !post) return;
+  loadFirebase().then(fb => postDoc(fb, post.id).set(post))
+    .catch(err => { console.error("[parikrama] post push failed:", err && err.code, err);
+                    toast("Card saved on this device only"); });
+}
+function removePost(id){
+  if(!authUser() || !id) return;
+  loadFirebase().then(fb => postDoc(fb, id).delete())
+    .catch(err => console.error("[parikrama] post delete failed:", err && err.code, err));
+}
+/* Union by id, newest wins, so a card written on either device survives. */
+function pullPosts(){
+  const u = authUser();
+  if(!u) return Promise.resolve();
+  return loadFirebase().then(fb =>
+    fb.firestore().collection("posts").where("author", "==", u.uid).get().then(snap => {
+      const remote = [];
+      snap.forEach(doc => remote.push(doc.data()));
+      /* A card deleted on this device, whose delete never reached the
+         server — offline, signed out, or a failed write. Without this the
+         union below brings it straight back. */
+      const gone = gonePosts();
+      const isGone = {}; gone.forEach(id => { isGone[id] = 1; });
+      const live = validPosts(remote, null).filter(p => !isGone[p.id]);
+      const byId = Object.create(null);
+      localPosts().concat(live).forEach(p => {
+        if(!byId[p.id] || p.t > byId[p.id].t) byId[p.id] = p;
+      });
+      const merged = validPosts(Object.keys(byId).map(k => byId[k]), null);
+      store.set("posts", merged);
+      /* Anything this device holds that the server has not seen — written
+         while signed out, or while a push failed. */
+      const have = {}; remote.forEach(p => { have[p.id] = 1; });
+      merged.filter(p => !have[p.id]).forEach(pushPost);
+      /* Retry the deletes that never landed, and forget the ones the server
+         has already lost — a tombstone kept forever is just a leak. */
+      gone.forEach(id => { if(have[id]) removePost(id); });
+      store.set("postgone", gone.filter(id => have[id]));
+      if(S.view === "rounds") render();
+    })
+  ).catch(err => console.error("[parikrama] post pull failed:", err && err.code, err));
+}
+
+function savePost(text, tags){
+  const clean = String(text == null ? "" : text).slice(0, POST_MAX);
+  if(!clean.trim()){ toast("Nothing to save"); return null; }
+  const list = localPosts();
+  if(list.length >= POST_LIMIT){ toast("That is as many cards as this holds"); return null; }
+  const u = authUser();
+  const post = {id: "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+                author: u ? u.uid : "", visibility: "private",
+                text: clean, tags: tags || [], t: Date.now()};
+  store.set("posts", [post].concat(list));
+  pushPost(post);
+  toast("Card added");
+  return post;
+}
+/* Deleting a card has to survive a sync. removePost returns early with no
+   account, and a push can simply fail, so without a record of the deletion
+   the next pullPosts unions the card straight back from the server and the
+   student watches something they deleted return. Notes hit this exact wall
+   in the last sub-project and were given tombstones; posts get the same
+   idea, held locally since a deleted document has nowhere to carry one.
+   Bounded, because it is bookkeeping rather than content. */
+const GONE_MAX = 200;
+function gonePosts(){
+  const g = store.get("postgone", []);
+  return Array.isArray(g) ? g.filter(x => typeof x === "string") : [];
+}
+function deletePost(id){
+  store.set("posts", localPosts().filter(p => p.id !== id));
+  const gone = gonePosts().filter(x => x !== id);
+  gone.unshift(id);
+  store.set("postgone", gone.slice(0, GONE_MAX));
+  removePost(id);
+  toast("Card removed");
+}
 function viewRounds(){
   /* The state's outline is identical on every card, so it is defined once
      and referenced — 265 cards must not each carry the district geometry,
@@ -1653,6 +1835,8 @@ function viewRounds(){
   return '<svg class="rartdefs" aria-hidden="true" width="0" height="0">'+
       '<symbol id="hpoutline" viewBox="0 0 '+MAP.w+' '+MAP.h+'">'+outline+'</symbol>'+
     '</svg>'+
+    '<div class="rcompose"><button class="btn sm" type="button" id="addcard">'+
+      '&#43; Add a card</button></div>'+
     '<div id="roundsfeed" class="rounds" tabindex="0" role="region" '+
     'aria-label="Prelims facts, one per screen"></div>';
 }
@@ -1674,19 +1858,40 @@ function roundArt(f){
 /* One fact per card. The kind label reuses the map legend's colour, so a
    glance says whether this is a pass, a lake, a district or a treaty. */
 function roundCard(f){
-  const k = KINDS[f.kind];
+  const isPost = !!f.post;
+  const k = isPost ? null : KINDS[f.kind];
   const c = k ? k.c : "var(--accent)";
   const p = PIC_REC[f.srcId] || PICS[f.kind];
-  return '<button class="short" type="button" data-fid="'+f.id+'" data-src="'+f.srcId+'" '+
+  /* An <article>, not a <button>: the confidence controls live inside a
+     card, and HTML forbids a button inside a button. The card's own
+     open-the-record action is the nested .shopen button. */
+  return '<article class="short" data-fid="'+esc(f.id)+'" data-src="'+esc(f.srcId)+'" '+
       'style="--kc:'+c+'">'+
     (p ? '<img class="rpic" src="'+p.s+'" alt="" loading="lazy" decoding="async">' : '')+
     roundArt(f)+
-    '<span class="k">'+(k ? k.lb : "Fact")+'</span>'+
-    '<span class="nm">'+f.name+'</span>'+
-    '<span class="ft">'+f.text+'</span>'+
-    '<span class="go">Open the note &rarr;</span>'+
-    (p ? '<span class="cred">'+p.t+' &middot; '+p.a+' / '+p.l+'</span>' : '')+
-    '</button>';
+    '<button class="shopen" type="button" data-src="'+esc(f.srcId)+'">'+
+      '<span class="k">'+(isPost ? "Your card" : (k ? k.lb : "Fact"))+'</span>'+
+      '<span class="nm">'+esc(f.name)+'</span>'+
+      '<span class="ft">'+esc(f.text)+'</span>'+
+      '<span class="go">Open the note &rarr;</span>'+
+    '</button>'+
+    (p ? '<span class="cred">'+esc(p.t)+' &middot; '+esc(p.a)+' / '+esc(p.l)+'</span>' : '')+
+    (isPost ? '<button class="cfb rm" type="button" data-del="'+esc(f.post.id)+'">Remove</button>' : '')+
+    confBar(f.id)+
+    '</article>';
+}
+/* Neither button is required — scrolling past without deciding leaves the
+   card in normal rotation, which is how the feed has always worked. */
+function confBar(id){
+  const c = store.get("conf", {});
+  const held = Object.prototype.hasOwnProperty.call(c, id) && c[id] ? c[id].v : "";
+  const btn = (v, lb, sym) =>
+    '<button class="cfb'+(held === v ? " on" : "")+'" type="button" '+
+      'data-conf="'+v+'" data-cfid="'+esc(id)+'" '+
+      'aria-pressed="'+(held === v ? "true" : "false")+'">'+
+      '<span aria-hidden="true">'+sym+'</span>'+lb+'</button>';
+  return '<div class="cfbar">'+btn("got", "Got it", "&check;")+
+         btn("again", "Again", "&#8634;")+'</div>';
 }
 let RQ = [], RI = 0, RIO = null;
 /* The feed is endless, so it renders a window and extends it rather than
@@ -1695,7 +1900,7 @@ function appendRounds(feed, n){
   const tmp = document.createElement("div");
   let html = "";
   for(let i = 0; i < n; i++){
-    if(RI >= RQ.length){ RQ = orderFacts(FACTS, S.seen); RI = 0; }
+    if(RI >= RQ.length){ RQ = orderFacts(allFacts(), S.seen, store.get("conf", {})); RI = 0; }
     html += roundCard(RQ[RI++]);
   }
   tmp.innerHTML = html;
@@ -1708,7 +1913,9 @@ function appendRounds(feed, n){
 function mountRounds(){
   const feed = document.getElementById("roundsfeed");
   if(!feed || !FACTS.length) return;
-  RQ = orderFacts(FACTS, S.seen); RI = 0;
+  const add = document.getElementById("addcard");
+  if(add) add.addEventListener("click", openComposer);
+  RQ = orderFacts(allFacts(), S.seen, store.get("conf", {})); RI = 0;
   feed.innerHTML = "";
   /* only now is anything here able to reveal cards, so only now may CSS
      start them hidden */
@@ -1730,9 +1937,74 @@ function mountRounds(){
   }, {root: feed, threshold: 0.6});
   appendRounds(feed, 30);
   feed.addEventListener("click", e => {
-    const b = e.target.closest(".short");
+    const rm = e.target.closest("[data-del]");
+    if(rm){ deletePost(rm.dataset.del); render(); return; }
+    const cf = e.target.closest(".cfb");
+    if(cf){ markConf(cf.dataset.cfid, cf.dataset.conf, cf.closest(".short")); return; }
+    const b = e.target.closest(".shopen");
     if(b && IDX.has(b.dataset.src)) openRec(b.dataset.src);
   });
+}
+/* Deliberately plain: a textarea, a counter and two buttons. A card you
+   write while revising should cost one sentence, not a form. */
+function openComposer(){
+  const dlg = document.getElementById("cardlg");
+  const ta = document.getElementById("cardtext");
+  const cnt = document.getElementById("cardcount");
+  ta.value = ""; cnt.textContent = "0 / " + POST_MAX;
+  dlg.hidden = false;
+  ta.focus();
+}
+function mountComposer(){
+  const dlg = document.getElementById("cardlg");
+  if(!dlg) return;
+  const ta = document.getElementById("cardtext");
+  const cnt = document.getElementById("cardcount");
+  const shut = () => { dlg.hidden = true; };
+  ta.addEventListener("input", () => { cnt.textContent = ta.value.length + " / " + POST_MAX; });
+  document.getElementById("cardcancel").addEventListener("click", shut);
+  dlg.addEventListener("click", e => { if(e.target === dlg) shut(); });
+  document.getElementById("cardsave").addEventListener("click", () => {
+    const sel = document.getElementById("cardtag");
+    const tags = sel && sel.value ? [sel.value] : [];
+    if(savePost(ta.value, tags)){ shut(); if(S.view === "rounds") render(); }
+  });
+  const sel = document.getElementById("cardtag");
+  if(sel && sel.options.length < 2)
+    sel.insertAdjacentHTML("beforeend",
+      [...IDX.keys()].map(id => '<option value="'+esc(id)+'">'+esc(nameOf(IDX.get(id)))+'</option>').join(''));
+}
+/* "Again" has to mean again. Ordering alone would only take effect the next
+   time the feed is built, so the card is also re-queued a few places ahead
+   of where you are now — near enough to come back, far enough not to be the
+   very next thing you see. */
+const REQUEUE_AHEAD = 5;
+function markConf(id, v, card){
+  const next = setConf(store.get("conf", {}), id, v);
+  store.set("conf", next);
+  if(authUser()) pushStateSoon();
+  const held = Object.prototype.hasOwnProperty.call(next, id) && next[id] ? next[id].v : "";
+  if(card) card.querySelectorAll(".cfb").forEach(b => {
+    const on = b.dataset.conf === held;
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+  if(held === "again" && card) requeueCard(card);
+  toast(held === "got" ? "Got it" : held === "again" ? "Coming back shortly" : "Cleared");
+}
+/* Clone rather than move: moving the card the reader is looking at would
+   yank the feed out from under their thumb. */
+function requeueCard(card){
+  const feed = card.parentNode; if(!feed) return;
+  const kids = [].slice.call(feed.children);
+  const at = kids.indexOf(card);
+  if(at < 0) return;
+  const copy = card.cloneNode(true);
+  copy.classList.add("on");
+  const before = kids[at + REQUEUE_AHEAD] || null;
+  /* Fewer than REQUEUE_AHEAD cards below: go to the end, never nowhere. */
+  feed.insertBefore(copy, before);
+  if(RIO) RIO.observe(copy);
 }
 
 /* Anything interpolated into an innerHTML string goes through here. & first,
@@ -1994,8 +2266,13 @@ document.addEventListener("click", e => {
   const t = e.target;
   const hit = sel => t.closest(sel);
 
+  if(hit("#msearch")){ openSearch(); return; }
+  if(hit("#msx")){ closeSearch(); return; }
+
   const nav = hit("[data-view]");   if(nav){ go(nav.dataset.view); return; }
-  const gob = hit("[data-go]");     if(gob){ $("#results").hidden = true; goTo(gob.dataset.go); return; }
+  /* Picking a result is the end of a search: on a phone the field is the
+     dock, and leaving it open would hide the very record it just opened. */
+  const gob = hit("[data-go]");     if(gob){ $("#results").hidden = true; closeSearch(); goTo(gob.dataset.go); return; }
   const tr  = hit("[data-trail]");  if(tr){ goTo(tr.dataset.trail); return; }
   const zm  = hit("[data-zoom]");   if(zm){ zoomBy(+zm.dataset.zoom); return; }
   const era = hit("[data-era]");    if(era){ S.era = era.dataset.era; render(); return; }
@@ -2050,7 +2327,12 @@ document.addEventListener("click", e => {
       }
     }
     return; }
-  if(!hit(".searchwrap")) $("#results").hidden = true;
+  if(!hit(".searchwrap")){
+    $("#results").hidden = true;
+    /* On a phone the field has taken the dock over, so a tap anywhere else
+       means give it back — with an empty box there is nothing to lose. */
+    if(!$("#search").value) closeSearch();
+  }
 });
 
 function surpriseMe(){
@@ -2084,11 +2366,14 @@ $("#search").addEventListener("keydown", e => {
   else if(e.key === "Enter"){
     const a = $("#results").querySelector(".res.act");
     if(a){ e.preventDefault(); $("#results").hidden = true; e.target.blur(); goTo(a.dataset.go); } }
-  else if(e.key === "Escape"){ $("#results").hidden = true; e.target.blur(); }
+  else if(e.key === "Escape"){ $("#results").hidden = true; e.target.blur(); closeSearch(); }
 });
 document.addEventListener("keydown", e => {
   const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
-  if(e.key === "/" && !typing){ e.preventDefault(); $("#search").focus(); $("#search").select(); return; }
+  if(e.key === "/" && !typing){
+    e.preventDefault();
+    if(PHONE.matches) openSearch();
+    $("#search").focus(); $("#search").select(); return; }
   if(e.key === "Escape"){
     const dlg = $("#acctdlg");
     if(dlg && !dlg.hidden){ dlg.hidden = true; return; }
@@ -2126,6 +2411,11 @@ applyTheme();
 /* The old boolean rivers toggle is now two legend layers. Migrate it so
    a returning visitor who had rivers off does not see them reappear. */
 S.seen   = store.get("seen", []);
+/* Fact ids are a hash of the fact's text now, so ids saved under the old
+   positional scheme — and any left by a since-edited fact — match nothing.
+   Drop them rather than let them sit in the synced document forever. */
+S.seen = pruneSeen(S.seen, FACTS);
+store.set("seen", S.seen);
 S.legendOpen = store.get("legendopen", false);
 S.mapOff = store.get("mapoff", null) ||
   (store.get("rivers", true) ? [] : ["river1","river2"]);
@@ -2203,6 +2493,13 @@ function mountSheet(){
 
 mountAccount();
 mountSheet();
+mountComposer();
+placeSearch();
+mountKeyboardLift();
+PHONE.addEventListener("change", () => { placeSearch(); moveGlow(); });
+/* The lozenge is measured, not declared, so it has to be re-measured whenever
+   the pill changes width — a rotation, or a keyboard opening on Android. */
+window.addEventListener("resize", moveGlow);
 if(location.hash && readHash().view) applyHash();
 else setView("home", true);
 

@@ -485,14 +485,50 @@ function roundCard(f){
 
 - [ ] **Step 3: Move the button styling inwards**
 
-`.short` carries button styling it no longer needs, and `.shopen` needs it instead. In `app/components.css`, find the `.short` rule and split it: the layout, sizing, scroll-snap and `--kc` usage stay on `.short`; anything that only makes sense on a control — `cursor:pointer`, `text-align`, `font:inherit`, `border:0`, `background:none`, and any `:hover`/`:focus-visible` rule — moves to `.shopen`. Add:
+Three existing rules break when the spans move inside a nested button, and
+each one is silent — nothing errors, the card just degrades:
+
+- `.short > span{position:relative;z-index:2}` is a **direct-child**
+  selector. The spans are no longer direct children, so they lose their
+  stacking and can fall behind the colour wash.
+- `.short:focus-visible{outline:...}` targets an element that is no longer
+  focusable. The focus ring must follow the focus, onto `.shopen`.
+- `.short:hover .go,.short:focus-visible .go` — same; the focus half has to
+  move.
+
+**Do not use `display:contents` on `.shopen`.** An element with
+`display:contents` generates no box at all, so its focus outline never
+renders — a keyboard user would lose the focus ring entirely. Make it a
+flex container that fills the card instead.
+
+In `app/components.css`, change `.short`'s declaration list: drop
+`cursor:pointer`, `border:0`, `background:none`, `text-align:left` and
+`font:inherit` — those belong to a control — and keep everything else
+(`position`, `overflow`, the scroll-snap pair, sizing, the flex column,
+`padding`, `border-bottom`, `isolation`) exactly as it is.
+
+Then:
 
 ```css
-.shopen{display:contents;cursor:pointer;border:0;background:none;font:inherit;
-  text-align:inherit;color:inherit;padding:0;width:100%}
+/* The card's own action. It fills the card and inherits the column layout
+   the card used to lay out directly, so nothing moves. NOT display:contents
+   — that generates no box, and a focus ring on no box is no focus ring. */
+.shopen{flex:1;width:100%;display:flex;flex-direction:column;justify-content:center;
+  gap:12px;padding:0;border:0;background:none;font:inherit;text-align:left;
+  color:inherit;cursor:pointer;position:relative;z-index:2}
+.shopen:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
 ```
 
-`display:contents` keeps the existing grid or flex layout of `.short` intact — the children lay out exactly as they did when they were direct children. Read the existing `.short` rule before editing and preserve every declaration it needs; this step must not change how a card looks.
+and repoint the two broken selectors:
+
+```css
+.short span{position:relative;z-index:2}
+.short:hover .go,.shopen:focus-visible .go{opacity:1}
+```
+
+removing the old `.short > span`, `.short:focus-visible` and
+`.short:hover .go,.short:focus-visible .go` rules as you go. This step must
+not change how a card looks.
 
 - [ ] **Step 4: Verify**
 

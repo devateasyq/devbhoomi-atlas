@@ -198,11 +198,58 @@ window.addEventListener("load", async () => {
     const first = cards[0];
     const want = first.dataset.src;
     doc.getElementById("panel").hidden = true;
-    first.click();
+    first.querySelector(".shopen").click();
     await wait(150);
     check("tapping a card opens the record it names", ev("S.sel") === want,
       "got " + ev("S.sel") + ", wanted " + want);
     check("the card names a real record", !!want && want.length > 1);
+    check("a card is not a button", !!doc.querySelector("article.short"),
+      doc.querySelector(".short") ? doc.querySelector(".short").tagName : "none");
+    check("no button is nested inside another button",
+      !doc.querySelector("#roundsfeed button button"));
+    check("the card still opens its record",
+      !!doc.querySelector(".short .shopen[data-src]"));
+
+    check("a card offers both confidence buttons",
+      doc.querySelectorAll(".short .cfb").length >= 2);
+    (function(){
+      const card = doc.querySelector(".short");
+      const got = card.querySelector('.cfb[data-conf="got"]');
+      got.click();
+      const stored = JSON.parse(win.localStorage.getItem("hpatlas:conf") || "{}");
+      check("pressing Got it records it", (stored[card.dataset.fid]||{}).v === "got",
+        JSON.stringify(stored[card.dataset.fid]));
+      check("the button reads as pressed", got.getAttribute("aria-pressed") === "true");
+      got.click();
+      const after = JSON.parse(win.localStorage.getItem("hpatlas:conf") || "{}");
+      check("pressing it again clears it",
+        !Object.prototype.hasOwnProperty.call(after, card.dataset.fid), JSON.stringify(after));
+    })();
+    (function(){
+      const feed = doc.getElementById("roundsfeed");
+      const before = feed.children.length;
+      const card = feed.children[0];
+      card.querySelector('.cfb[data-conf="again"]').click();
+      check("Again re-queues the card into the feed",
+        feed.children.length === before + 1, before + " -> " + feed.children.length);
+    })();
+    await (async function(){
+      const before = win.localStorage.getItem("hpatlas:posts");
+      ev('savePost("A card written by the harness", ["d-kangra"])');
+      const posts = JSON.parse(win.localStorage.getItem("hpatlas:posts") || "[]");
+      check("a card can be written", posts.length >= 1 && /harness/.test(posts[0].text),
+        JSON.stringify(posts[0] || null));
+      check("a written card is private", posts[0] && posts[0].visibility === "private");
+      check("a written card keeps its tag",
+        posts[0] && posts[0].tags.indexOf("d-kangra") >= 0, JSON.stringify(posts[0] && posts[0].tags));
+      win.openRec("d-kangra"); await wait(250);
+      check("a tagged card shows on its record",
+        /written by the harness/.test(doc.getElementById("pbody").textContent));
+      ev('deletePost(' + JSON.stringify(posts[0].id) + ')');
+      const after = JSON.parse(win.localStorage.getItem("hpatlas:posts") || "[]");
+      check("a card can be removed", !after.some(p => /harness/.test(p.text)),
+        JSON.stringify(after.map(p => p.id)));
+    })();
   }
 
   ev('S.view="home"; render();');
@@ -219,12 +266,21 @@ window.addEventListener("load", async () => {
     !reach.has("profile"), [...reach].join(","));
 
   const mtabs = [...doc.querySelectorAll("#mtabs .mtab")].map(b => b.dataset.view);
-  check("the mobile bar carries exactly five tabs", mtabs.length === 5,
+  /* Four, not five. Profile was briefly a fifth tab; the dock that replaced
+     the old bar carries four and a search circle, and the route to the
+     profile is the account button, which shows the reader's own name. A
+     fifth tab does still FIT — measured at 375px, 54.8px per tab against a
+     41px longest label — so this is a design choice, not a constraint, and
+     the check says four because four is what is intended. */
+  check("the mobile bar carries exactly four tabs", mtabs.length === 4,
     mtabs.length + ": " + mtabs.join(","));
-  check("the mobile bar is Overview, Map, Rounds, Revise, Profile",
-    ["home","map","rounds","revise","profile"].every(id => mtabs.includes(id)), mtabs.join(","));
-  /* Profile lives in the phone bar, not the rail — the rail is already
-     nine deep and the header's account button is always in view there. */
+  check("the mobile bar is Overview, Map, Rounds, Revise",
+    ["home","map","rounds","revise"].every(id => mtabs.includes(id)), mtabs.join(","));
+  check("the dock does not carry a profile tab", !mtabs.includes("profile"), mtabs.join(","));
+  /* With neither nav carrying it, the account button is the only way in —
+     so it had better be there. */
+  check("the account button is the way to the profile",
+    !!doc.getElementById("acctbtn") && !doc.getElementById("acctbtn").hidden);
   const railIds = [...doc.querySelectorAll("#railnav .navbtn")].map(b => b.dataset.view);
   check("the rail does not repeat the phone bar's profile tab",
     !railIds.includes("profile"), railIds.join(","));

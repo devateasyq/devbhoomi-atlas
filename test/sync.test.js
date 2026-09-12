@@ -804,3 +804,43 @@ test("setConf does not mutate the map it is given", () => {
   sync.setConf(c, "f1", "got");
   assert.deepEqual(c, {});
 });
+
+/* ---------- posts ---------- */
+test("a post is capped at 400 characters", () => {
+  assert.equal(sync.POST_MAX, 400);
+  assert.equal(sync.POST_LIMIT, 500);
+  const p = sync.normalisePost({id: "p1", author: "u1", text: "x".repeat(900), tags: [], t: 5});
+  assert.equal(p.text.length, 400);
+});
+
+test("normalisePost rejects what is not a post", () => {
+  assert.equal(sync.normalisePost(null), null);
+  assert.equal(sync.normalisePost({id: "p1", text: "   "}), null, "whitespace only");
+  assert.equal(sync.normalisePost({text: "no id"}), null);
+});
+
+test("a post is always private in this sub-project", () => {
+  const p = sync.normalisePost({id: "p1", author: "u1", text: "real", visibility: "public", t: 1});
+  assert.equal(p.visibility, "private", "nothing here may publish anything");
+});
+
+test("tags are filtered to ids that actually exist", () => {
+  const p = sync.normalisePost({id: "p1", author: "u1", text: "real",
+                                tags: ["d-kangra", "ghost", "t-rivers"], t: 1},
+                               new Set(["d-kangra", "t-rivers"]));
+  assert.deepEqual(p.tags, ["d-kangra", "t-rivers"]);
+});
+
+test("validPosts drops junk and enforces the ceiling", () => {
+  const many = Array.from({length: 640}, (_, i) => ({id: "p" + i, author: "u", text: "fact " + i, t: i}));
+  const out = sync.validPosts(many.concat([null, {text: "no id"}]), null);
+  assert.equal(out.length, 500);
+  assert.equal(out[0].id, "p639", "the newest are the ones kept");
+});
+
+test("validPosts is stable and does not mutate its input", () => {
+  const list = [{id: "p1", author: "u", text: "one", t: 1}];
+  const out = sync.validPosts(list, null);
+  assert.equal(out.length, 1);
+  assert.equal(list[0].text, "one");
+});
