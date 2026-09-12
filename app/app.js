@@ -1333,6 +1333,84 @@ const SECT_PIC = {map:"district", timeline:"event", battles:"state",
    every time it is opened */
 const COVERS = ["district","lake","peak","river","pass"];
 
+/* The strip used to read "265 facts · 270 linked records · 448 past
+   questions" — three corpus sizes and no progress. Those numbers are
+   denominators, not achievements: what a reader wants to know is how much
+   of it they have actually covered, and what to do next. */
+const TRACKS = [
+  {k: "facts",  lb: "Facts read",     view: "rounds", one: "fact",
+   go: "Rounds shows one fact per screen."},
+  {k: "quiz",   lb: "Quiz answered",  view: "revise", one: "question",
+   go: "Revise has the question bank."},
+  {k: "pyq",    lb: "Past papers",    view: "revise", one: "past question",
+   go: "Revise carries five years of papers."},
+  {k: "notes",  lb: "Records noted",  view: "map",    one: "note",
+   go: "Open any record and write one at the foot of the panel."}
+];
+function trackData(seen){
+  const noted = Object.keys(realNotes(store.get("notes", {}))).filter(id => IDX.has(id)).length;
+  return {
+    facts: {n: seen, of: FACTS.length},
+    quiz:  {n: Object.keys(store.get("quiz", {})).length, of: D.quiz.length},
+    pyq:   {n: Object.keys(store.get("pyq", {})).length,  of: D.pyq.length},
+    notes: {n: noted, of: IDX.size}
+  };
+}
+/* Encouragement that is worth reading is specific. A bar that is empty gets
+   named, with the one sentence that says where to go — vague cheer ("keep
+   it up!") tells a reader nothing they did not already know. */
+function progressLine(d){
+  const pct = t => d[t.k].of ? d[t.k].n / d[t.k].of : 0;
+  const touched = TRACKS.filter(t => d[t.k].n > 0);
+  const overall = Math.round(
+    TRACKS.reduce((a, t) => a + pct(t), 0) / TRACKS.length * 100);
+  if(!touched.length)
+    return {h: "Nothing covered yet.",
+            s: "The quickest way in is Rounds — one fact per screen, and it counts from the first card.",
+            view: "rounds"};
+  /* the weakest track that still has a long way to go */
+  const weak = TRACKS.slice().sort((a, b) => pct(a) - pct(b))[0];
+  if(overall >= 90)
+    return {h: "You have been through nearly all of it.",
+            s: "What is left sits under " + weak.lb.toLowerCase() + ". " + weak.go,
+            view: weak.view};
+  return {h: overall < 10 ? "A start has been made."
+            : overall < 40 ? "You are on your way."
+            : "Well past halfway on some of it.",
+          s: weak.lb + " is the thinnest ring. " + weak.go,
+          view: weak.view};
+}
+/* The same three rings as the profile, in the same order and colours, but
+   closed by covering the syllabus rather than by a day's work: the
+   outermost is still the longest haul. Past papers qualify a day on the
+   profile without a ring; here they are named in words underneath for the
+   same reason — three arcs is what stays legible. */
+function coverRings(d){
+  return [
+    {v: d.facts.n, goal: d.facts.of, lb: "Facts read",    r: 84, c: "var(--accent)"},
+    {v: d.quiz.n,  goal: d.quiz.of,  lb: "Quiz answered", r: 58, c: "var(--gold)"},
+    {v: d.notes.n, goal: d.notes.of, lb: "Records noted", r: 32, c: "var(--vermilion)"}
+  ];
+}
+function progressStrip(seen, done, right){
+  const d = trackData(seen);
+  const msg = progressLine(d);
+  const items = coverRings(d);
+  /* Accuracy is a share too, so it can stay: it says how well the reading
+     is going without saying how much there is left to read. */
+  const acc = done ? '<p class="hacc">'+Math.round(right/done*100)+
+    '% of the quiz questions you have answered were right.</p>' : '';
+  return '<div class="hprog">'+
+    '<div class="rings"><svg viewBox="0 0 200 200" role="img" '+
+      'aria-label="Covered so far: '+ringSpokenPct(items)+'">'+ringArcs(items)+'</svg></div>'+
+    '<div class="hprog-say">'+
+      '<b>'+esc(msg.h)+'</b>'+
+      '<div class="rg-legend">'+ringLegendPct(items)+'</div>'+
+      '<span>'+esc(msg.s)+'</span>'+acc+
+      '<button class="btn sm" type="button" data-view="'+msg.view+'">Go there</button>'+
+    '</div></div>';
+}
+
 function viewHome(){
   const syl = [
     ["01","Ancient Himachal","Pre-history, Vedic references and the janapadas","t-janapadas"],
@@ -1365,14 +1443,7 @@ function viewHome(){
         '<span class="cfg">Start scrolling &rarr;</span></button>'
     : '';
 
-  const stat = (v,l) => '<span class="stat"><b>'+v+'</b>'+l+'</span>';
-  const strip = '<div class="hstrip">'+
-    stat(num(FACTS.length), "facts") +
-    stat(num(IDX.size), "linked records") +
-    stat(num(D.pyq.length), "past questions") +
-    (seen ? stat(num(seen), "facts seen") : "") +
-    (done ? stat(right+"/"+done, "quiz correct") : "") +
-    '</div>';
+  const strip = progressStrip(seen, done, right);
 
   /* The hub lists the content sections. Profile is not one of them — it is
      yours, not the syllabus — and it has the phone bar and the header's
@@ -2123,10 +2194,14 @@ function dayStrip(st){
     '<div class="dstrip-row">'+cells+'</div></div>';
 }
 
-function streakHero(st){
-  const today = st.last === dayKey();
-  const arcs = RINGS.map(g => {
-    const pct = Math.min(1, ringVal(st, g.k) / g.goal);
+/* One renderer for both sets of rings — the profile's day, and the
+   Overview's coverage of the whole syllabus. Same geometry, same colours,
+   same outermost-is-the-longest-haul order, so the shape means the same
+   thing in both places even though the numbers behind it differ.
+   `items` is [{v, goal, lb, c}]. */
+function ringArcs(items){
+  return items.map(g => {
+    const pct = g.goal ? Math.min(1, g.v / g.goal) : 0;
     const C = 2 * Math.PI * g.r;
     return '<circle class="rg-t" cx="100" cy="100" r="'+g.r+'"/>'+
            '<circle class="rg-p" cx="100" cy="100" r="'+g.r+'" stroke="'+g.c+'"'+
@@ -2134,6 +2209,35 @@ function streakHero(st){
              ' stroke-dashoffset="'+(C * (1 - pct)).toFixed(1)+'"'+
              (pct >= 1 ? ' data-closed="1"' : '')+'/>';
   }).join('');
+}
+function ringLegend(items){
+  return items.map(g => '<div class="rg-l'+(g.v >= g.goal ? ' closed' : '')+'">'+
+    '<i style="background:'+g.c+'"></i>'+
+    '<b>'+num(g.v)+'<span>/'+num(g.goal)+'</span></b>'+esc(g.lb)+'</div>').join('');
+}
+function ringSpoken(items){
+  return items.map(g => num(g.v)+' of '+num(g.goal)+' '+g.lb.toLowerCase()).join(', ');
+}
+/* The Overview's legend deliberately shows a share, never a count. How many
+   facts or records the atlas holds is the author's business; what a reader
+   wants is how far round the ring they are, and a denominator in the
+   hundreds reads as a mountain rather than an invitation. */
+function ringLegendPct(items){
+  return items.map(g => {
+    const pct = g.goal ? Math.min(100, Math.round(g.v / g.goal * 100)) : 0;
+    return '<div class="rg-l'+(pct >= 100 ? ' closed' : '')+'">'+
+      '<i style="background:'+g.c+'"></i>'+
+      '<b>'+pct+'<span>%</span></b>'+esc(g.lb)+'</div>';
+  }).join('');
+}
+function ringSpokenPct(items){
+  return items.map(g => (g.goal ? Math.round(g.v / g.goal * 100) : 0)+
+    '% of '+g.lb.toLowerCase()).join(', ');
+}
+
+function streakHero(st){
+  const today = st.last === dayKey();
+  const arcs = ringArcs(RINGS.map(g => ({v: ringVal(st, g.k), goal: g.goal, r: g.r, c: g.c, lb: g.lb})));
   const spoken = RINGS.map(g => ringVal(st, g.k)+' of '+g.goal+' '+g.lb.toLowerCase()).join(', ');
   const legend = RINGS.map(g => {
     const v = ringVal(st, g.k), done = v >= g.goal;
