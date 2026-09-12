@@ -320,8 +320,8 @@ exists for one reason: to carry your progress between devices.
   `firestore.rules` → Publish. Firebase's own default rules let any signed-in user
   read every document in the project, including other people's progress — publishing
   the rules in this repo, which restrict each document at `users/{uid}` to that same
-  `uid` and each document at `posts/{postId}` to the `uid` its own `author` field
-  names, is not optional. **This sub-project added the `posts` collection and its
+  `uid` and each document at `posts/{postId}` to the `uid` named in its own `author`
+  field, is not optional. **This sub-project added the `posts` collection and its
   rule; until the repo owner re-publishes the updated file, cards written in Rounds
   do not sync at all** — they still work, but stay local to the device that wrote
   them, the same as being signed out. Nothing else in the database is reachable from
