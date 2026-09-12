@@ -520,6 +520,11 @@ function flushNote(){
   store.set("notes", setNote(notes, id, now));
   if(authUser()) pushStateSoon();
   toast(now.trim() ? "Note saved" : "Note removed");
+  /* Writing a note is the innermost ring. Clearing one is not — a deletion
+     is not a day's work, and counting it would let the ring be closed by
+     writing and erasing the same three records. Counted once per record,
+     so editing one note repeatedly does not close it either. */
+  if(now.trim()) noteActivity("note", id);
 }
 
 function mountNote(id){
@@ -622,8 +627,7 @@ function openRec(id, headerNote, fromHash, silent){
      did not navigate here, so it must not count as a visit (no streak
      credit, no trail entry). */
   if(!silent){
-    noteActivity("rec", id);
-    pushTrail(id);
+      pushTrail(id);
   }
   const r = o.r, k = o.kind, era = eraOf(o);
   $("#pkind").textContent = headerNote ? headerNote+" · "+KINDS[k].lb : KINDS[k].lb;
@@ -1744,9 +1748,45 @@ function deleteAccount(){
 const RINGS = [
   {k: "facts", lb: "Facts",   goal: DAY_GOAL.facts, r: 84, c: "var(--accent)"},
   {k: "quiz",  lb: "Quiz",    goal: DAY_GOAL.quiz,  r: 58, c: "var(--gold)"},
-  {k: "recs",  lb: "Records", goal: DAY_GOAL.recs,  r: 32, c: "var(--vermilion)"}
+  {k: "notes", lb: "Notes",   goal: DAY_GOAL.notes, r: 32, c: "var(--vermilion)"}
 ];
-function ringVal(st, k){ return k === "recs" ? (st.recs || []).length : (st[k] || 0); }
+function ringVal(st, k){ return k === "notes" ? (st.noted || []).length : (st[k] || 0); }
+
+/* Two letters is all seven cells have room for, and a fixed table beats
+   toLocaleDateString here — the strip must not reorder or rename itself
+   because a browser is set to another locale. */
+const WD = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+function weekdayOf(key){
+  const p = String(key).split("-");
+  return WD[new Date(+p[0], +p[1] - 1, +p[2]).getDay()];
+}
+
+/* The same three rings at a glance for each of the last seven days, so a
+   run reads as a shape rather than as a number you have to trust. Today is
+   the last cell and is drawn live; the six before it come from history. */
+function dayStrip(st){
+  const geom = [
+    {k: "facts", goal: DAY_GOAL.facts, c: "var(--accent)",    r: 24},
+    {k: "quiz",  goal: DAY_GOAL.quiz,  c: "var(--gold)",      r: 16},
+    {k: "notes", goal: DAY_GOAL.notes, c: "var(--vermilion)", r: 8}
+  ];
+  const cells = recentDays(st).map(d => {
+    const arcs = geom.map(g => {
+      const pct = Math.min(1, (d[g.k] || 0) / g.goal);
+      const C = 2 * Math.PI * g.r;
+      return '<circle class="mr-t" cx="30" cy="30" r="'+g.r+'"/>'+
+             '<circle class="mr-p" cx="30" cy="30" r="'+g.r+'" stroke="'+g.c+'"'+
+               ' stroke-dasharray="'+C.toFixed(1)+'"'+
+               ' stroke-dashoffset="'+(C * (1 - pct)).toFixed(1)+'"/>';
+    }).join('');
+    const spoken = d.d+': '+geom.map(g => (d[g.k]||0)+' of '+g.goal+' '+g.k).join(', ');
+    return '<div class="dcell'+(d.today ? ' today' : '')+'">'+
+      '<svg viewBox="0 0 60 60" role="img" aria-label="'+spoken+'">'+arcs+'</svg>'+
+      '<span>'+(d.today ? "Today" : weekdayOf(d.d))+'</span></div>';
+  }).join('');
+  return '<div class="dstrip"><h4>Last 7 days</h4>'+
+    '<div class="dstrip-row">'+cells+'</div></div>';
+}
 
 function streakHero(st){
   const today = st.last === dayKey();
@@ -1819,6 +1859,7 @@ function viewProfile(){
 
   return '<div class="profile">'+acct+
     streakHero(st)+
+    dayStrip(st)+
     '<div class="pstats">'+
       '<div class="pstat"><b>'+num(seen)+'</b>facts seen</div>'+
       '<div class="pstat"><b>'+(done ? Math.round(right/done*100)+"%" : "—")+'</b>quiz accuracy</div>'+

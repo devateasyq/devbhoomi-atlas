@@ -432,8 +432,16 @@ window.addEventListener("load", async () => {
   check("the ring legend names all three routes",
     /Facts/.test(doc.querySelector(".rg-legend").textContent) &&
     /Quiz/.test(doc.querySelector(".rg-legend").textContent) &&
-    /Records/.test(doc.querySelector(".rg-legend").textContent),
+    /Notes/.test(doc.querySelector(".rg-legend").textContent),
     doc.querySelector(".rg-legend") ? doc.querySelector(".rg-legend").textContent.trim() : "no legend");
+  /* Seven cells, always — a gap in history draws an empty day rather than
+     shortening the row, and today is the last cell. */
+  check("the strip shows seven days", doc.querySelectorAll(".dstrip .dcell").length === 7,
+    "cells=" + doc.querySelectorAll(".dstrip .dcell").length);
+  check("each day in the strip draws three rings",
+    [...doc.querySelectorAll(".dstrip .dcell")].every(c => c.querySelectorAll(".mr-p").length === 3));
+  check("the last cell in the strip is today",
+    [...doc.querySelectorAll(".dstrip .dcell")].pop().classList.contains("today"));
   check("the rings carry a spoken label for screen readers",
     /Today:/.test(doc.querySelector(".rings svg").getAttribute("aria-label") || ""),
     doc.querySelector(".rings svg") ? doc.querySelector(".rings svg").getAttribute("aria-label") : "no svg");

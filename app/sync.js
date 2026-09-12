@@ -153,11 +153,17 @@ function shouldWriteNote(storedText, typedText, dirty){
 
 /* A day counts when any ONE of these is reached. Several routes, because a
    bus journey scrolling Rounds and a sit-down past paper are both revision. */
-var DAY_GOAL = {facts: 20, quiz: 5, pyq: 5, recs: 3};
+/* The three rings, plus past papers which qualifies a day without one.
+   "notes" is notes WRITTEN, counted once per record — writing on the same
+   record five times is one note, not five. */
+var DAY_GOAL = {facts: 20, quiz: 5, pyq: 5, notes: 3};
+
+/* How many past days the strip below today can draw. */
+var HIST_MAX = 7;
 
 function emptyStreak(){
   return {n: 0, best: 0, last: "", grace: 1, day: "",
-          facts: 0, quiz: 0, pyq: 0, recs: []};
+          facts: 0, quiz: 0, pyq: 0, noted: [], hist: []};
 }
 
 /* Local calendar date. Local midnight ends a day — not a rolling 24 hours,
@@ -188,22 +194,88 @@ function normaliseStreak(s){
     facts: typeof s.facts === "number" ? s.facts : 0,
     quiz:  typeof s.quiz === "number" ? s.quiz : 0,
     pyq:   typeof s.pyq === "number" ? s.pyq : 0,
-    recs:  Array.isArray(s.recs) ? s.recs.slice() : []
+    /* A streak saved before notes became a ring carries `recs` instead.
+       It counted something else entirely — records opened — so it is
+       dropped rather than silently reinterpreted as notes written. */
+    noted: Array.isArray(s.noted) ? s.noted.slice() : [],
+    hist:  normaliseHist(s.hist)
   };
+}
+
+function normaliseHist(h){
+  var out = [], i, e;
+  if(!Array.isArray(h)) return out;
+  for(i = 0; i < h.length; i++){
+    e = h[i];
+    if(!e || typeof e !== "object" || typeof e.d !== "string" || !e.d) continue;
+    out.push({d: e.d,
+              facts: typeof e.facts === "number" ? e.facts : 0,
+              quiz:  typeof e.quiz  === "number" ? e.quiz  : 0,
+              pyq:   typeof e.pyq   === "number" ? e.pyq   : 0,
+              notes: typeof e.notes === "number" ? e.notes : 0});
+  }
+  return trimHist(out);
+}
+
+/* Newest last, one entry per day, never longer than the strip can show. */
+function trimHist(h){
+  var by = {}, keys, i, out = [];
+  for(i = 0; i < h.length; i++) by[h[i].d] = h[i];
+  keys = Object.keys(by).sort();
+  for(i = Math.max(0, keys.length - HIST_MAX); i < keys.length; i++) out.push(by[keys[i]]);
+  return out;
 }
 
 function qualified(s){
   return s.facts >= DAY_GOAL.facts || s.quiz >= DAY_GOAL.quiz ||
-         s.pyq >= DAY_GOAL.pyq || s.recs.length >= DAY_GOAL.recs;
+         s.pyq >= DAY_GOAL.pyq || s.noted.length >= DAY_GOAL.notes;
+}
+
+/* Same YYYY-MM-DD shape as dayKey, moved by whole days. Arithmetic in UTC
+   so a DST change cannot add or drop one; the keys themselves are local
+   calendar dates and stay that way. */
+function shiftDay(key, delta){
+  var p = String(key).split("-");
+  var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2]));
+  d.setUTCDate(d.getUTCDate() + delta);
+  var m = d.getUTCMonth() + 1, dd = d.getUTCDate();
+  return d.getUTCFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (dd < 10 ? "0" : "") + dd;
+}
+
+/* The last HIST_MAX days ending today, oldest first, gaps filled with
+   zeros so a week away still draws seven rings rather than a short row.
+   Today is read live off the counters, not from hist — it has not been
+   rolled in yet. */
+function recentDays(st, today){
+  var s = normaliseStreak(st), t = today || dayKey(), by = {}, out = [], i, d, h;
+  for(i = 0; i < s.hist.length; i++) by[s.hist[i].d] = s.hist[i];
+  by[t] = {d: t,
+           facts: s.day === t ? s.facts : 0,
+           quiz:  s.day === t ? s.quiz  : 0,
+           pyq:   s.day === t ? s.pyq   : 0,
+           notes: s.day === t ? s.noted.length : 0};
+  for(i = HIST_MAX - 1; i >= 0; i--){
+    d = shiftDay(t, -i);
+    h = by[d];
+    out.push({d: d, today: d === t,
+              facts: h ? h.facts : 0, quiz: h ? h.quiz : 0,
+              pyq:   h ? h.pyq   : 0, notes: h ? h.notes : 0});
+  }
+  return out;
 }
 
 function bumpStreak(st, kind, id, today){
   var s = normaliseStreak(st), day = today || dayKey();
   if(s.day !== day){                      /* a new day: counters start again */
-    s.day = day; s.facts = 0; s.quiz = 0; s.pyq = 0; s.recs = [];
+    /* The day being left behind goes into hist first, or the strip below
+       today would only ever show today. */
+    if(s.day) s.hist = trimHist(s.hist.concat([{
+      d: s.day, facts: s.facts, quiz: s.quiz, pyq: s.pyq, notes: s.noted.length
+    }]));
+    s.day = day; s.facts = 0; s.quiz = 0; s.pyq = 0; s.noted = [];
   }
-  if(kind === "rec"){
-    if(id && s.recs.indexOf(id) < 0) s.recs.push(id);
+  if(kind === "note"){
+    if(id && s.noted.indexOf(id) < 0) s.noted.push(id);
   } else if(kind === "facts" || kind === "quiz" || kind === "pyq"){
     s[kind] += 1;
   }
@@ -243,7 +315,7 @@ function mergeStreak(a, b){
   var A = normaliseStreak(a), B = normaliseStreak(b);
   var later = !A.last ? B.last : !B.last ? A.last : (daysApart(A.last, B.last) > 0 ? B.last : A.last);
   var day   = !A.day  ? B.day  : !B.day  ? A.day  : (daysApart(A.day,  B.day)  > 0 ? B.day  : A.day);
-  var recs = mergeSeen(A.day === day ? A.recs : [], B.day === day ? B.recs : []);
+  var noted = mergeSeen(A.day === day ? A.noted : [], B.day === day ? B.noted : []);
   return {
     n:     Math.max(A.n, B.n),
     best:  Math.max(A.best, B.best),
@@ -253,8 +325,26 @@ function mergeStreak(a, b){
     facts: Math.max(A.day === day ? A.facts : 0, B.day === day ? B.facts : 0),
     quiz:  Math.max(A.day === day ? A.quiz  : 0, B.day === day ? B.quiz  : 0),
     pyq:   Math.max(A.day === day ? A.pyq   : 0, B.day === day ? B.pyq   : 0),
-    recs:  recs
+    noted: noted,
+    hist:  mergeHist(A.hist, B.hist)
   };
+}
+
+/* Two devices each hold their own view of a past day. Take the better of
+   the two per field, the same generosity the live counters get — nobody
+   should lose a closed ring because the other device saw less of it. */
+function mergeHist(a, b){
+  var by = {}, all = (a || []).concat(b || []), i, e, cur;
+  for(i = 0; i < all.length; i++){
+    e = all[i]; cur = by[e.d];
+    by[e.d] = cur ? {d: e.d,
+                     facts: Math.max(cur.facts, e.facts),
+                     quiz:  Math.max(cur.quiz,  e.quiz),
+                     pyq:   Math.max(cur.pyq,   e.pyq),
+                     notes: Math.max(cur.notes, e.notes)}
+                  : e;
+  }
+  return trimHist(Object.keys(by).map(function(k){ return by[k]; }));
 }
 
 /* The single source of truth for what syncs and how each key merges. It was
@@ -316,6 +406,8 @@ if(typeof module !== "undefined" && module.exports){
                     SYNC_KEYS: SYNC_KEYS, NOTE_MAX: NOTE_MAX, normaliseNotes: normaliseNotes,
                     realNotes: realNotes, mergeNotes: mergeNotes, setNote: setNote,
                     shouldWriteNote: shouldWriteNote,
-                    DAY_GOAL: DAY_GOAL, emptyStreak: emptyStreak, dayKey: dayKey,
+                    DAY_GOAL: DAY_GOAL, HIST_MAX: HIST_MAX, emptyStreak: emptyStreak,
+                    shiftDay: shiftDay, recentDays: recentDays, mergeHist: mergeHist,
+                    dayKey: dayKey,
                     daysApart: daysApart, bumpStreak: bumpStreak};
 }

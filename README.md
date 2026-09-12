@@ -138,7 +138,7 @@ code change.
   always just yours.
 - **A daily streak, counted generously.** A day qualifies the moment you clear *any one*
   of four thresholds — 20 facts scrolled in Rounds, 5 quiz answers, 5 past-paper answers,
-  or opening 3 distinct records — so a bus-ride Rounds session and a sit-down past paper
+  or notes written on 3 distinct records — so a bus-ride Rounds session and a sit-down past paper
   both count as revision. Days are your device's local calendar days, not a rolling
   24 hours and not UTC. You start with one grace day, which absorbs a
   one-day gap without breaking the run and then has to be earned back — it recharges on
@@ -146,9 +146,13 @@ code change.
   the run restarts at 1 — but your best-ever run is never reduced. Across two signed-in
   devices the streak merges generously: every field takes whichever side is ahead rather
   than whichever synced most recently. The profile draws three of the four routes as
-  concentric rings — facts outermost at 20, quiz next at 5, records innermost at 3 — so
-  the ring with the most ground to cover has the most distance to travel. Past papers
-  still qualify a day but have no ring; the count sits beside them in words.
+  concentric rings — facts read outermost at 20, quiz next at 5, notes written innermost
+  at 3 — so the ring with the most ground to cover has the most distance to travel. Past
+  papers still qualify a day but have no ring; the count sits beside them in words.
+  Beneath today sits a strip of the last seven days, the same three rings drawn small,
+  so a run reads as a shape rather than as a number you have to take on trust. A day
+  with no work still draws, empty, rather than shortening the row. Merely *opening* a
+  record no longer counts towards a day — writing something down does.
 - **Your profile, at `#/profile`.** Three ways in: the account button in the header,
   a *Profile* entry in the rail, and a card on the Overview — the phone tab bar stays
   the four it has always been, and the Overview card is how a phone gets there. The

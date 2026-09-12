@@ -616,6 +616,18 @@ button.brow:hover .blab{color:var(--accent)}
 }
 @media (prefers-reduced-motion:reduce){ .rg-p{transition:none} }
 
+/* ---------- the seven-day strip ---------- */
+.dstrip{margin:0 0 16px}
+.dstrip h4{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ink-3);font-weight:500;margin:0 0 9px}
+.dstrip-row{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;max-width:460px}
+.dcell{display:flex;flex-direction:column;align-items:center;gap:5px}
+.dcell svg{width:100%;max-width:52px;height:auto;display:block;transform:rotate(-90deg)}
+.dcell span{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.04em;color:var(--ink-3)}
+.dcell.today span{color:var(--accent);font-weight:600}
+.mr-t{fill:none;stroke:var(--line);stroke-width:6}
+.mr-p{fill:none;stroke-width:6;stroke-linecap:round}
+
 .pstats{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
 .pstat{background:var(--surface);border:1px solid var(--line);border-radius:10px;
   padding:12px 13px;font-size:12px;color:var(--ink-2)}

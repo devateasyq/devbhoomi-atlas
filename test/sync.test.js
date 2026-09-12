@@ -432,7 +432,7 @@ test("resetDocument copes with no remote document yet", () => {
 });
 
 /* ---------- streak ---------- */
-const DAY = {facts: 20, quiz: 5, pyq: 5, recs: 3};
+const DAY = {facts: 20, quiz: 5, pyq: 5, notes: 3};
 
 test("dayKey uses local calendar parts, not UTC", () => {
   /* 23:30 local on the 5th must be the 5th, whatever the timezone offset */
@@ -474,20 +474,121 @@ test("reaching any one threshold qualifies the day", () => {
   }
 });
 
-test("only DISTINCT records count towards the day", () => {
+test("only DISTINCT records count as notes written", () => {
   let s = sync.emptyStreak();
-  for(let i = 0; i < 8; i++) s = sync.bumpStreak(s, "rec", "d-kangra", "2026-01-05");
-  assert.equal(s.n, 0, "the same record eight times is not three records");
-  assert.equal(s.recs.length, 1);
+  for(let i = 0; i < 8; i++) s = sync.bumpStreak(s, "note", "d-kangra", "2026-01-05");
+  assert.equal(s.n, 0, "editing one record eight times is not three notes");
+  assert.equal(s.noted.length, 1);
   for(const id of ["d-shimla", "d-mandi"])
-    s = sync.bumpStreak(s, "rec", id, "2026-01-05");
-  assert.equal(s.n, 1, "three distinct records should qualify");
+    s = sync.bumpStreak(s, "note", id, "2026-01-05");
+  assert.equal(s.n, 1, "notes on three distinct records should qualify");
 });
 
-test("the records goal is the one the rings draw", () => {
-  assert.equal(sync.DAY_GOAL.recs, 3, "the innermost ring's goal");
-  assert.equal(sync.DAY_GOAL.quiz, 5, "the middle ring's goal");
+test("the three ring goals are what the rings draw", () => {
   assert.equal(sync.DAY_GOAL.facts, 20, "the outermost ring's goal");
+  assert.equal(sync.DAY_GOAL.quiz, 5, "the middle ring's goal");
+  assert.equal(sync.DAY_GOAL.notes, 3, "the innermost ring's goal");
+});
+
+test("opening a record no longer counts towards a day", () => {
+  let s = sync.emptyStreak();
+  for(const id of ["a", "b", "c", "d", "e"]) s = sync.bumpStreak(s, "rec", id, "2026-01-05");
+  assert.equal(s.n, 0, "reading alone is not revision any more — writing is");
+});
+
+/* ---------- the seven-day strip ---------- */
+
+test("shiftDay moves whole days across month and year ends", () => {
+  assert.equal(sync.shiftDay("2026-03-01", -1), "2026-02-28");
+  assert.equal(sync.shiftDay("2026-01-01", -1), "2025-12-31");
+  assert.equal(sync.shiftDay("2026-01-05", -6), "2025-12-30");
+  assert.equal(sync.shiftDay("2026-01-05", 0),  "2026-01-05");
+});
+
+test("a finished day is rolled into history when the next one starts", () => {
+  let s = sync.emptyStreak();
+  for(let i = 0; i < 12; i++) s = sync.bumpStreak(s, "facts", null, "2026-01-05");
+  assert.equal(s.hist.length, 0, "today is not history yet");
+  s = sync.bumpStreak(s, "facts", null, "2026-01-06");
+  assert.equal(s.hist.length, 1);
+  assert.equal(s.hist[0].d, "2026-01-05");
+  assert.equal(s.hist[0].facts, 12, "the day kept its own total");
+  assert.equal(s.facts, 1, "the new day started from zero");
+});
+
+test("history never grows past the strip it feeds", () => {
+  let s = sync.emptyStreak();
+  for(let d = 1; d <= 20; d++){
+    const day = "2026-01-" + String(d).padStart(2, "0");
+    s = sync.bumpStreak(s, "facts", null, day);
+  }
+  assert.ok(s.hist.length <= sync.HIST_MAX, "kept " + s.hist.length);
+  assert.equal(s.hist[s.hist.length - 1].d, "2026-01-19", "the newest past day is kept");
+});
+
+test("recentDays returns seven days ending today, oldest first", () => {
+  const days = sync.recentDays(sync.emptyStreak(), "2026-01-10");
+  assert.equal(days.length, 7);
+  assert.equal(days[0].d, "2026-01-04");
+  assert.equal(days[6].d, "2026-01-10");
+  assert.equal(days[6].today, true);
+  assert.equal(days[0].today, false);
+});
+
+test("recentDays fills a gap with empty days rather than a short row", () => {
+  let s = sync.emptyStreak();
+  for(let i = 0; i < 20; i++) s = sync.bumpStreak(s, "facts", null, "2026-01-04");
+  s = sync.bumpStreak(s, "facts", null, "2026-01-10");
+  const days = sync.recentDays(s, "2026-01-10");
+  assert.equal(days.length, 7);
+  assert.equal(days[0].facts, 20, "the day that was worked is still there");
+  assert.equal(days[3].facts, 0, "an untouched day draws as empty, not missing");
+});
+
+test("recentDays reads today live, not from history", () => {
+  let s = sync.emptyStreak();
+  for(let i = 0; i < 4; i++) s = sync.bumpStreak(s, "quiz", null, "2026-01-10");
+  s = sync.bumpStreak(s, "note", "d-kangra", "2026-01-10");
+  const today = sync.recentDays(s, "2026-01-10")[6];
+  assert.equal(today.quiz, 4);
+  assert.equal(today.notes, 1);
+});
+
+test("recentDays shows nothing for today when the stored day is older", () => {
+  let s = sync.emptyStreak();
+  for(let i = 0; i < 9; i++) s = sync.bumpStreak(s, "facts", null, "2026-01-09");
+  const days = sync.recentDays(s, "2026-01-10");
+  assert.equal(days[6].facts, 0, "today has not started yet");
+  assert.equal(days[5].d, "2026-01-09");
+});
+
+test("mergeHist takes the better view of each past day", () => {
+  const a = [{d: "2026-01-05", facts: 20, quiz: 1, pyq: 0, notes: 0}];
+  const b = [{d: "2026-01-05", facts: 3,  quiz: 5, pyq: 0, notes: 2},
+             {d: "2026-01-06", facts: 7,  quiz: 0, pyq: 0, notes: 0}];
+  const m = sync.mergeHist(a, b);
+  assert.equal(m.length, 2);
+  assert.equal(m[0].facts, 20, "the device that saw more facts wins");
+  assert.equal(m[0].quiz, 5,   "the device that saw more quiz wins");
+  assert.equal(m[0].notes, 2);
+  assert.equal(m[1].d, "2026-01-06");
+});
+
+test("mergeStreak carries history across devices", () => {
+  const a = Object.assign(sync.emptyStreak(), {hist: [{d: "2026-01-05", facts: 20, quiz: 0, pyq: 0, notes: 0}]});
+  const b = Object.assign(sync.emptyStreak(), {hist: [{d: "2026-01-06", facts: 0, quiz: 5, pyq: 0, notes: 0}]});
+  const m = sync.mergeStreak(a, b);
+  assert.equal(m.hist.length, 2);
+  assert.deepEqual(m.hist.map(h => h.d), ["2026-01-05", "2026-01-06"]);
+});
+
+test("a streak saved before notes were a ring does not misread its old recs", () => {
+  const old = {n: 3, best: 4, last: "2026-01-05", grace: 1, day: "2026-01-05",
+               facts: 2, quiz: 0, pyq: 0, recs: ["a", "b", "c", "d"]};
+  const s = sync.mergeStreak(old, null);
+  assert.deepEqual(s.noted, [], "records opened is not notes written");
+  assert.equal(s.n, 3, "the run itself still survives");
+  assert.deepEqual(s.hist, []);
 });
 
 test("qualifying twice in one day does not increment twice", () => {
@@ -585,7 +686,7 @@ test("mergeStreak is generous in every direction", () => {
    preserve, not just the one the bug didn't touch. */
 test("mergeStreak copes with either side missing", () => {
   const only = {n: 2, best: 2, last: "2026-01-05", grace: 1, day: "2026-01-05",
-                facts: 20, quiz: 3, pyq: 1, recs: ["d-kangra", "d-shimla"]};
+                facts: 20, quiz: 3, pyq: 1, noted: ["d-kangra", "d-shimla"]};
 
   const withNull = sync.mergeStreak(only, null);
   assert.equal(withNull.n, 2);
@@ -595,7 +696,7 @@ test("mergeStreak copes with either side missing", () => {
   assert.equal(withNull.facts, 20);
   assert.equal(withNull.quiz, 3);
   assert.equal(withNull.pyq, 1);
-  assert.deepEqual(withNull.recs, ["d-kangra", "d-shimla"]);
+  assert.deepEqual(withNull.noted, ["d-kangra", "d-shimla"]);
 
   const nullWith = sync.mergeStreak(null, only);
   assert.equal(nullWith.n, 2);
@@ -605,7 +706,7 @@ test("mergeStreak copes with either side missing", () => {
   assert.equal(nullWith.facts, 20);
   assert.equal(nullWith.quiz, 3);
   assert.equal(nullWith.pyq, 1);
-  assert.deepEqual(nullWith.recs, ["d-kangra", "d-shimla"]);
+  assert.deepEqual(nullWith.noted, ["d-kangra", "d-shimla"]);
 
   assert.equal(sync.mergeStreak(null, null).n, 0);
 });
@@ -614,7 +715,7 @@ test("mergeStreak copes with either side missing", () => {
    Infinity whenever EITHER date is "" (a fresh emptyStreak's last/day).
    mergeStreak's original "later date wins" ternary read that Infinity as
    "B is later" and picked the EMPTY side, discarding the real side's date
-   and, via the day-gated counters, its facts/quiz/pyq/recs too. This is
+   and, via the day-gated counters, its facts/quiz/pyq/notes too. This is
    not a rare edge case: every existing user's first sync after this
    feature ships merges their real local streak against a remote with no
    "streak" key yet, i.e. exactly emptyStreak(). Check both argument
@@ -624,7 +725,7 @@ test("mergeStreak preserves a real streak's date and today's counters against a 
      rule is generous in every field, so the merged result should be 1.
      That is intentional forgiveness, not the bug this test guards. */
   const real = {n: 4, best: 6, last: "2026-01-05", grace: 0, day: "2026-01-05",
-                facts: 12, quiz: 3, pyq: 2, recs: ["d-kangra", "d-shimla"]};
+                facts: 12, quiz: 3, pyq: 2, noted: ["d-kangra", "d-shimla"]};
   const fresh = sync.emptyStreak();
 
   for(const [m, where] of [[sync.mergeStreak(real, fresh), "merged first"],
@@ -634,7 +735,7 @@ test("mergeStreak preserves a real streak's date and today's counters against a 
     assert.equal(m.facts, 12, where);
     assert.equal(m.quiz, 3, where);
     assert.equal(m.pyq, 2, where);
-    assert.deepEqual(m.recs, ["d-kangra", "d-shimla"], where);
+    assert.deepEqual(m.noted, ["d-kangra", "d-shimla"], where);
     assert.equal(m.n, 4, "the run must survive " + where);
     assert.equal(m.best, 6, "the best must survive " + where);
     assert.equal(m.grace, 1, "the more forgiving grace wins " + where);
