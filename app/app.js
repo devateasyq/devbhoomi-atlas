@@ -1677,16 +1677,21 @@ function roundCard(f){
   const k = KINDS[f.kind];
   const c = k ? k.c : "var(--accent)";
   const p = PIC_REC[f.srcId] || PICS[f.kind];
-  return '<button class="short" type="button" data-fid="'+f.id+'" data-src="'+f.srcId+'" '+
+  /* An <article>, not a <button>: the confidence controls live inside a
+     card, and HTML forbids a button inside a button. The card's own
+     open-the-record action is the nested .shopen button. */
+  return '<article class="short" data-fid="'+esc(f.id)+'" data-src="'+esc(f.srcId)+'" '+
       'style="--kc:'+c+'">'+
     (p ? '<img class="rpic" src="'+p.s+'" alt="" loading="lazy" decoding="async">' : '')+
     roundArt(f)+
-    '<span class="k">'+(k ? k.lb : "Fact")+'</span>'+
-    '<span class="nm">'+f.name+'</span>'+
-    '<span class="ft">'+f.text+'</span>'+
-    '<span class="go">Open the note &rarr;</span>'+
-    (p ? '<span class="cred">'+p.t+' &middot; '+p.a+' / '+p.l+'</span>' : '')+
-    '</button>';
+    '<button class="shopen" type="button" data-src="'+esc(f.srcId)+'">'+
+      '<span class="k">'+(k ? k.lb : "Fact")+'</span>'+
+      '<span class="nm">'+esc(f.name)+'</span>'+
+      '<span class="ft">'+esc(f.text)+'</span>'+
+      '<span class="go">Open the note &rarr;</span>'+
+    '</button>'+
+    (p ? '<span class="cred">'+esc(p.t)+' &middot; '+esc(p.a)+' / '+esc(p.l)+'</span>' : '')+
+    '</article>';
 }
 let RQ = [], RI = 0, RIO = null;
 /* The feed is endless, so it renders a window and extends it rather than
@@ -1730,7 +1735,7 @@ function mountRounds(){
   }, {root: feed, threshold: 0.6});
   appendRounds(feed, 30);
   feed.addEventListener("click", e => {
-    const b = e.target.closest(".short");
+    const b = e.target.closest(".shopen");
     if(b && IDX.has(b.dataset.src)) openRec(b.dataset.src);
   });
 }

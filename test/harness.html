@@ -198,11 +198,17 @@ window.addEventListener("load", async () => {
     const first = cards[0];
     const want = first.dataset.src;
     doc.getElementById("panel").hidden = true;
-    first.click();
+    first.querySelector(".shopen").click();
     await wait(150);
     check("tapping a card opens the record it names", ev("S.sel") === want,
       "got " + ev("S.sel") + ", wanted " + want);
     check("the card names a real record", !!want && want.length > 1);
+    check("a card is not a button", !!doc.querySelector("article.short"),
+      doc.querySelector(".short") ? doc.querySelector(".short").tagName : "none");
+    check("no button is nested inside another button",
+      !doc.querySelector("#roundsfeed button button"));
+    check("the card still opens its record",
+      !!doc.querySelector(".short .shopen[data-src]"));
   }
 
   ev('S.view="home"; render();');
