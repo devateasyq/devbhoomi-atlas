@@ -26,7 +26,9 @@ var ECON = {
      url: "https://prsindia.org/budgets/states/himachal-pradesh-budget-analysis-2026-27"},
     {lb: "PRS India — HP Budget Analysis 2024-25",
      url: "https://prsindia.org/budgets/states/himachal-pradesh-budget-analysis-2024-25"},
-    {lb: "Economics & Statistics Dept, HP — Economic Survey (official)",
+    {lb: "HP Economic Survey 2025-26 (official PDF)",
+     url: "https://himachalservices.nic.in/economics/pdf/en-economic_survey_2025-26.pdf"},
+    {lb: "Economics & Statistics Dept, HP — all Economic Surveys",
      url: "https://himachalservices.nic.in/economics/en-IN/eco-survey-2022-23.html"}
   ],
   years: ["2024-25", "2025-26 (RE)", "2026-27 (BE)"],
@@ -45,8 +47,12 @@ var ECON = {
        rather than as "grants" alone, which is a narrower thing. */
     {grp:"Public finance", lb:"Central transfers (devolution + grants), share of revenue receipts", unit:"%",
      src:"PRS", v:{"2024-25": 64.2, "2026-27 (BE)": 52.1}},
-    {grp:"Public finance", lb:"Allocation to education", unit:"₹ crore", src:"", v:{}},
-    {grp:"Public finance", lb:"Allocation to health", unit:"₹ crore", src:"", v:{}},
+    {grp:"Public finance", lb:"Allocation to education", unit:"₹ crore",
+     src:"HP Budget 2026-27", v:{"2026-27 (BE)": 9666}},
+    {grp:"Public finance", lb:"Education, share of expenditure", unit:"%",
+     src:"PRS 2026-27", v:{"2026-27 (BE)": 19.6}},
+    {grp:"Public finance", lb:"Health, share of expenditure", unit:"%",
+     src:"PRS 2026-27", v:{"2026-27 (BE)": 6.4}},
 
     /* --- income and output --- */
     {grp:"Income and output", lb:"GSDP at current prices", unit:"₹ crore",
@@ -66,14 +72,27 @@ var ECON = {
      src:"PRS 2026-27", v:{"2025-26 (RE)": 46.3}},
 
     /* --- still to fill: no figure found in the sources above --- */
+    {grp:"Employment", lb:"Workforce employed in agriculture", unit:"%",
+     src:"Survey 2025-26", v:{"2024-25": 53.95}},
     {grp:"Employment", lb:"Worker Population Ratio, all ages (PLFS)", unit:"%", src:"", v:{}},
     {grp:"Employment", lb:"Secondary sector, share of employment (PLFS)", unit:"%", src:"", v:{}},
     {grp:"Employment", lb:"Tertiary sector, share of employment (PLFS)", unit:"%", src:"", v:{}},
 
-    {grp:"Agriculture", lb:"Foodgrain production", unit:"lakh MT", src:"", v:{}},
-    {grp:"Agriculture", lb:"Potato production", unit:"lakh MT", src:"", v:{}},
-    {grp:"Agriculture", lb:"Apple production", unit:"lakh MT", src:"", v:{}},
-    {grp:"Agriculture", lb:"Area under tea", unit:"hectares", src:"", v:{}},
+    /* A target is not production. The Survey states these as the year's
+       targets, and an exam question would separate the two, so the
+       qualifier is carried on the row rather than quietly dropped. */
+    {grp:"Agriculture", lb:"Foodgrain production", unit:"thousand MT",
+     src:"Survey 2025-26", q:"TARGET, not actual", v:{"2025-26 (RE)": 1600.11}},
+    {grp:"Agriculture", lb:"Potato production", unit:"thousand MT",
+     src:"Survey 2025-26", q:"TARGET, not actual", v:{"2025-26 (RE)": 195}},
+    {grp:"Agriculture", lb:"Total fruit production", unit:"lakh tonnes",
+     src:"Survey 2025-26", q:"to 31 Dec 2025, part-year", v:{"2025-26 (RE)": 7.33}},
+    {grp:"Agriculture", lb:"Apple, share of fruit production", unit:"%",
+     src:"Survey 2025-26", v:{"2025-26 (RE)": 77.58}},
+    /* Long-quoted figure for the Kangra/Dhauladhar belt; NOT taken from
+       the Survey, so it is marked as the weaker citation it is. */
+    {grp:"Agriculture", lb:"Area under tea", unit:"hectares",
+     src:"press reports, not the Survey", q:"verify", v:{"2025-26 (RE)": 2310}},
 
     {grp:"Banking", lb:"Average population per bank branch", unit:"persons", src:"", v:{}},
     {grp:"Banking", lb:"Credit–deposit ratio", unit:"%", src:"", v:{}}

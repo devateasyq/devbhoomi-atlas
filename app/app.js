@@ -1544,7 +1544,10 @@ function viewEconomy(){
       body += '<tr class="econgrp"><th scope="rowgroup" colspan="'+(2 + E.years.length)+'">'+
         esc(r.grp)+'</th></tr>';
     }
+    /* The qualifier rides next to the source, loudly. A target shown as a
+       production figure is a wrong answer with a citation attached. */
     body += '<tr><th scope="row">'+esc(r.lb)+
+        (r.q ? '<i class="econq">'+esc(r.q)+'</i>' : '')+
         (r.src ? '<i class="econsrc">'+esc(r.src)+'</i>' : '')+'</th>'+
       '<td class="econunit">'+esc(r.unit || "")+'</td>'+
       E.years.map(y => {
