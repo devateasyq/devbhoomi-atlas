@@ -384,6 +384,60 @@ button.card:hover{border-color:var(--accent-line);transform:translateY(-1px)}
 .sect .sc{position:absolute;top:12px;right:13px;font-family:var(--f-mono);
   font-size:11px;color:var(--ink-3)}
 
+/* ---------- today's five ---------- */
+/* A ring rail at the very top of the Overview: five records picked once a
+   day. Circles, deliberately — the reader already knows what this shape
+   means and what tapping one does. The ring takes the map legend's colour
+   for that record's kind, so the rail also reads as a spread of the
+   syllabus rather than five of the same thing. */
+.stories{margin:0 0 22px}
+.strow{display:flex;gap:16px;overflow-x:auto;scrollbar-width:none;
+  padding-bottom:2px;margin-inline:-18px;padding-inline:18px}
+.strow::-webkit-scrollbar{display:none}
+.sring{flex:0 0 auto;width:84px;display:flex;flex-direction:column;align-items:center;
+  gap:6px;background:none;border:0;padding:0;cursor:pointer;font:inherit}
+/* The ring is the padding of a circular box, tinted; the photograph sits
+   inside a second circle with the page colour between them, which is what
+   gives the gap the idiom needs. */
+.srdisc{position:relative;width:64px;height:64px;border-radius:50%;
+  padding:2.5px;background:var(--kc,var(--accent));
+  transition:transform .13s}
+.srdisc::before{content:"";position:absolute;inset:2.5px;border-radius:50%;
+  border:2px solid var(--ground)}
+.srdisc img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+/* No photograph left to give this one — a tinted disc with the record's
+   initial, rather than repeating a picture already in the rail. */
+.srin{display:flex;width:100%;height:100%;border-radius:50%;align-items:center;
+  justify-content:center;font-family:var(--f-mono);font-size:23px;font-weight:600;
+  color:var(--kc,var(--accent));background:var(--surface)}
+.sring:hover .srdisc{transform:scale(1.05)}
+.sring:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:12px}
+.srn{font-size:10px;line-height:1.3;color:var(--ink-2);text-align:center;
+  max-width:84px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;
+  overflow:hidden;overflow-wrap:anywhere}
+/* Read today: the ring goes grey and the card sits at the end of the rail,
+   so the colour left in front of you is exactly what is left to read. The
+   photograph dims rather than greys out — the record is still there, it has
+   just been visited. */
+.sring.seen .srdisc{background:var(--line)}
+.sring.seen .srdisc img{opacity:.55}
+.sring.seen .srn{color:var(--ink-3)}
+.sring.seen:hover .srdisc{background:var(--ink-3)}
+
+/* The reader's own ring, first in the rail. The three coverage arcs at
+   rail size — the same geometry the dialog then shows large, so the small
+   one is a thumbnail of the big one rather than a different chart. */
+.syou .srdisc{background:var(--line)}
+.syoub{display:block;width:100%;height:100%;border-radius:50%;
+  background:var(--surface);padding:4px;box-sizing:border-box}
+.syoub svg{width:100%;height:100%;display:block}
+.syou .srn{color:var(--ink);font-weight:600}
+
+@media (max-width:1000px){
+  .stories{margin-bottom:18px}
+  .strow{margin-inline:-14px;padding-inline:14px;gap:14px}
+}
+
 button.tile:hover{border-color:var(--accent-line)}
 .syllabus{margin-top:34px}
 .sylrow{display:grid;grid-template-columns:26px 1fr;gap:12px;padding:11px 0;
@@ -778,3 +832,19 @@ button.brow:hover .blab{color:var(--accent)}
   background:var(--ground);color:var(--ink-2);cursor:pointer;font-family:inherit}
 .exlink:hover{border-color:var(--accent-line);color:var(--accent)}
 .exnote{margin-top:20px;font-size:11.5px;line-height:1.6;color:var(--ink-3);max-width:62ch}
+
+/* ---------- the ring dialog ---------- */
+/* Follows #acctdlg: a fixed backdrop toggled by [hidden], not <dialog>. */
+#storydlg{position:fixed;inset:0;z-index:92;display:grid;place-items:center;
+  background:rgba(8,16,13,.55);padding:18px}
+#storydlg[hidden]{display:none}
+.sdlgcard{max-height:calc(100vh - 36px);overflow-y:auto;text-align:left}
+.sdlgpic{width:100%;height:132px;object-fit:cover;border-radius:10px;display:block}
+.sdlgk{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--kc,var(--accent))}
+.sdlgcard h3{margin:0}
+/* The same three arcs as the rail thumbnail, given room to be read. */
+.sdlgrings{width:152px;margin:2px auto 0}
+.sdlgrings svg{width:100%;display:block}
+.sdlgcard .rg-legend{justify-content:center}
+.sdlgcard .hacc{margin:0}
