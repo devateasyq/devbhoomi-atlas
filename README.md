@@ -75,6 +75,25 @@ Nothing is origin-specific — relative paths throughout, so it works from a sub
   its data deleted, from the profile. The page does load Vercel Analytics
   (`cdn.vercel-insights.com`), which counts page views.
 
+## Pages a crawler can read
+
+The app is a single page with hash routing, which means that to a search engine
+or a link-preview crawler it is *one* page — the fragment after `#` is never sent
+to the server, and neither Google nor WhatsApp runs the app to find out what is
+inside it. So 270 records were invisible.
+
+`node tools/build-pages.js` pre-renders one static page per record at
+`/r/<id>/`, each with its own title, description, canonical URL and preview
+card, and the record's prose in the HTML rather than assembled by JavaScript.
+The page is readable on its own and does not redirect: someone arriving from a
+search or a group chat gets the answer straight away, with the atlas one click
+away. It also writes `sitemap.xml` and `robots.txt`.
+
+Re-run it whenever `data/` changes. `test/pages.test.js` checks every record has
+a page, that no stale page survives a rename, that titles are unique, and that
+canonical and `og:url` agree — a duplicated title is the classic way a
+pre-rendered site gets ignored.
+
 ## Structure
 
 ```
