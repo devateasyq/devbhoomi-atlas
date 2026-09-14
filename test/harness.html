@@ -744,6 +744,122 @@ window.addEventListener("load", async () => {
   win.go("profile");
   await wait(350);
 
+  /* The header toggle is the whole point of this change: it is the one
+     theme control a phone can reach, so it has to be present and hittable
+     at phone width, not merely present in the markup. */
+  const tt = doc.getElementById("themetog");
+  check("the header carries a theme toggle", !!tt);
+  /* Measured at phone width, not at the harness's default 1000px. The bug
+     being fixed is precisely that the existing control vanishes below the
+     breakpoint, so a check taken at desktop width would prove nothing. */
+  const frame = document.getElementById("app");
+  const wasWide = frame.style.width;
+  frame.style.width = "390px";
+  await wait(350);
+  const phoneBox = tt.getBoundingClientRect();
+  const railGone = !doc.querySelector(".rail-foot") ||
+    win.getComputedStyle(doc.querySelector(".rail-foot")).display === "none" ||
+    doc.querySelector(".rail-foot").getBoundingClientRect().width === 0;
+  check("the rail's Theme button really is out of reach on a phone", railGone,
+    "rail-foot still measurable");
+  check("the theme toggle is reachable at phone width",
+    phoneBox.width > 0 && phoneBox.height > 0,
+    phoneBox.width + "x" + phoneBox.height);
+  check("the theme toggle meets the 32px tap floor on a phone",
+    phoneBox.width >= 32 && phoneBox.height >= 32,
+    phoneBox.width + "x" + phoneBox.height);
+  frame.style.width = wasWide;
+  await wait(350);
+  check("the toggle says which theme is on, for a screen reader",
+    !!tt && /Theme: (Auto|Light|Dark)/.test(tt.getAttribute("aria-label") || ""),
+    tt ? tt.getAttribute("aria-label") : "absent");
+  ev('store.set("theme","system"); applyTheme();');
+  const iconFor = () => (doc.getElementById("themetog").innerHTML || "").length;
+  const autoIcon = iconFor();
+  tt.dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(150);
+  check("tapping the header toggle changes the theme",
+    doc.documentElement.getAttribute("data-theme") === "light",
+    doc.documentElement.getAttribute("data-theme") + "");
+  check("the toggle's icon follows the mode it is in",
+    iconFor() !== autoIcon && /Theme: Light/.test(tt.getAttribute("aria-label")),
+    tt.getAttribute("aria-label"));
+  tt.dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(120);
+  tt.dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(120);
+  check("three taps return to auto", !doc.documentElement.hasAttribute("data-theme"),
+    doc.documentElement.getAttribute("data-theme") + "");
+
+  /* Appearance. The rail's Theme button was the only way to change theme,
+     and the rail is hidden below 1000px — a phone had no route to it at
+     all, which is the bug this fixes. */
+  const segBtn = v => doc.querySelector('#stage [data-theme-set="' + v + '"]');
+  check("the profile offers all three appearance modes",
+    doc.querySelectorAll("#stage [data-theme-set]").length === 3,
+    doc.querySelectorAll("#stage [data-theme-set]").length + " modes");
+  check("exactly one mode reads as selected",
+    [...doc.querySelectorAll("#stage [data-theme-set]")]
+      .filter(b => b.getAttribute("aria-pressed") === "true").length === 1);
+  ev('store.set("theme","system"); applyTheme();');
+  segBtn("dark").dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(150);
+  check("picking dark forces the dark theme",
+    doc.documentElement.getAttribute("data-theme") === "dark",
+    doc.documentElement.getAttribute("data-theme") + "");
+  check("the picked mode reads as selected",
+    segBtn("dark").getAttribute("aria-pressed") === "true" &&
+    segBtn("light").getAttribute("aria-pressed") === "false");
+  check("the choice is stored, so it survives a reload",
+    ev('store.get("theme","")') === "dark", ev('store.get("theme","")'));
+  /* A forced theme has to take the browser chrome with it, or a dark app
+     sits under a light status bar. */
+  check("a forced theme drags the browser chrome with it",
+    doc.getElementById("tc-light").getAttribute("content") ===
+    doc.getElementById("tc-dark").getAttribute("content"),
+    doc.getElementById("tc-light").getAttribute("content") + " / " +
+    doc.getElementById("tc-dark").getAttribute("content"));
+  segBtn("light").dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(150);
+  check("switching again forces light",
+    doc.documentElement.getAttribute("data-theme") === "light");
+  segBtn("system").dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(150);
+  check("auto hands the theme back to the system",
+    !doc.documentElement.hasAttribute("data-theme"),
+    doc.documentElement.getAttribute("data-theme") + "");
+  check("auto lets the browser chrome follow the system again",
+    doc.getElementById("tc-light").getAttribute("content") !==
+    doc.getElementById("tc-dark").getAttribute("content"));
+  /* Both controls are on screen together above 1000px, so the segment must
+     follow the rail button and not only its own taps. */
+  ev('cycleTheme();'); await wait(150);
+  check("the segment follows the rail's Theme button",
+    segBtn(ev('store.get("theme","")')).getAttribute("aria-pressed") === "true",
+    "theme=" + ev('store.get("theme","")'));
+  ev('store.set("theme","system"); applyTheme();'); await wait(100);
+
+  /* The channel link. It leaves the app, so what matters is that it points
+     at the right handle and cannot hand the opened tab a window.opener
+     reference back into this one. The rail footer carries it too, but the
+     rail is desktop-only, so the profile copy is the one most readers see. */
+  const tg = doc.querySelector("#stage .tgbtn");
+  check("the profile offers the Telegram channel", !!tg);
+  check("the channel link points at @parikramapath",
+    !!tg && tg.getAttribute("href") === "https://t.me/parikramapath",
+    tg ? tg.getAttribute("href") : "absent");
+  check("the channel link opens safely in a new tab",
+    !!tg && tg.getAttribute("target") === "_blank" &&
+    /\bnoopener\b/.test(tg.getAttribute("rel") || ""),
+    tg ? tg.getAttribute("target") + " / " + tg.getAttribute("rel") : "absent");
+  const tgrail = doc.querySelector(".rail-foot .tg");
+  check("the sidebar footer carries the same link",
+    !!tgrail && tgrail.getAttribute("href") === (tg && tg.getAttribute("href")),
+    tgrail ? tgrail.getAttribute("href") : "absent");
+  check("the sidebar copy is also safe to open",
+    !!tgrail && tgrail.getAttribute("target") === "_blank" &&
+    /\bnoopener\b/.test(tgrail.getAttribute("rel") || ""));
+
   check("the profile draws three streak rings",
     doc.querySelectorAll(".rings .rg-p").length === 3,
     "rg-p=" + doc.querySelectorAll(".rings .rg-p").length);

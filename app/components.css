@@ -448,6 +448,36 @@ button.card:hover{border-color:var(--accent-line);transform:translateY(-1px)}
 .rnext .wn{font-family:var(--f-mono);font-size:10px;color:var(--ink-3)}
 .rnsay{font-size:13px;color:var(--ink-2);line-height:1.5;margin:11px 0 12px;max-width:62ch}
 
+/* ---------- appearance ---------- */
+/* A circle, not a pill: it sits next to the account button, which carries a
+   name and has to be allowed to be wide, so this one stays a fixed 32px and
+   never competes with it for the strip. 32px is also the tap floor that
+   keeps it usable on a phone, where it is the only theme control there is. */
+#themetog{display:grid;place-items:center;width:32px;height:32px;flex:0 0 32px;
+  padding:0;border:1px solid var(--line);border-radius:50%;
+  background:var(--surface);color:var(--ink-2);cursor:pointer}
+#themetog:hover{border-color:var(--accent-line);color:var(--accent)}
+#themetog:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#themetog .ic{width:16px;height:16px;stroke:currentColor;fill:none;
+  stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+
+/* .seg already carries the pill and the pressed state; this only keeps the
+   three from stretching edge to edge inside .pdata's flex row. */
+.themeseg{flex-wrap:nowrap}
+.themeseg button{min-width:62px;justify-content:center}
+
+/* ---------- the Telegram channel ---------- */
+/* An <a>, not a <button>, in both places it appears: it leaves the app, so
+   it should behave like a link — middle-click, long-press, copy address. */
+.tgbtn{display:inline-flex;align-items:center;gap:7px;text-decoration:none;color:var(--ink)}
+.tgbtn:hover{border-color:var(--accent-line)}
+.tgbtn svg{width:16px;height:16px;flex:0 0 16px;fill:none;stroke:var(--accent);
+  stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.rail-foot .tg{display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.rail-foot .tg svg{width:14px;height:14px;flex:0 0 14px;fill:none;stroke:currentColor;
+  stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
 button.tile:hover{border-color:var(--accent-line)}
 /* Now at the foot of Exams, under the nine exams, rather than on the hub. */
 .syllabus{margin-top:34px}
