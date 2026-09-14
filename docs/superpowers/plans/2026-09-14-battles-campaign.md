@@ -1453,40 +1453,40 @@ Append inside the async test body of `test/harness.html`, following the existing
 /* The campaign map must answer a tap and ignore a drag. This is the same
    discipline the Atlas map needs and the same bug it once had. */
 {
-  const doc = document.getElementById("app").contentDocument;
-  const win = document.getElementById("app").contentWindow;
-  win.location.hash = "#/battles";
+  const frame = document.getElementById("app");
+  const doc = frame.contentDocument;
+  const win = frame.contentWindow;
+  const ev = src => win.eval(src);
+  /* `S` and `D` are top-level `const`s in a classic script, so they are NOT
+     window properties — win.S is undefined. Reach them through win.eval. */
+  ev('location.hash = "#/battles"');
   await wait(120);
-  win.S.battleMode = "campaign";
-  win.campaignStart(false);
+  ev('S.battleMode = "campaign"; campaignStart(false);');
   /* Fast-forward to the place pass without playing passes 1 and 2. */
-  for(const id of win.S.campaignRun.pool){
-    win.recordAttempt(win.S.campaignRun, id, "band", true);
-    win.recordAttempt(win.S.campaignRun, id, "year", true);
-  }
-  win.S.campaignRun.pass = "place";
-  win.render();
+  ev("S.campaignRun.pool.forEach(id => { recordAttempt(S.campaignRun, id, 'band', true); recordAttempt(S.campaignRun, id, 'year', true); })");
+  ev('S.campaignRun.pass = "place"');
+  ev("render()");
   await wait(120);
 
   const target = doc.querySelector('[data-cgplace]');
   check("campaign map renders its place targets", !!target);
 
-  const before = win.scoreRun(win.S.campaignRun).score;
+  const before = ev("scoreRun(S.campaignRun).score");
   pointerAt(target, "pointerdown", 10, 10);
   pointerAt(target, "pointermove", 200, 200);
   pointerAt(target, "pointerup", 200, 200);
   await wait(60);
   check("a drag across the campaign map places nothing",
-    win.scoreRun(win.S.campaignRun).score === before);
+    ev("scoreRun(S.campaignRun).score") === before);
 
-  const first = win.S.campaignRun.pool[0];
+  const first = ev("S.campaignRun.pool[0]");
   const right = doc.querySelector('[data-cgplace="' +
-    win.D.battles.find(b => b.id === first).place + '"]');
+    ev("D.battles.find(b => b.id === " + JSON.stringify(first) + ").place") + '"]');
   pointerAt(right, "pointerdown", 10, 10);
   pointerAt(right, "pointerup", 10, 10);
   await wait(60);
   check("a tap on the right place scores",
-    win.scoreRun(win.S.campaignRun).score === before + 1);
+    ev("scoreRun(S.campaignRun).score") === before + 1);
 }
 ```
 
@@ -1629,40 +1629,46 @@ A fifteen-minute board that loses its run on a closed tab is worse than no board
 
 ```js
 /* Resume. Play part of a board, reload the frame, and assert the run comes
-   back on the same pass with the same chips placed and the same score. */
+   back on the same pass with the same chips placed and the same score.
+
+   NOTE the access pattern. `S` and `D` are top-level `const`s in a classic
+   script, so they are NOT properties of the frame's window — `win.S` is
+   undefined. Top-level `function` declarations (campaignStart, campaignTouch,
+   render, scoreRun, recordAttempt) DO land on window, but reaching everything
+   through win.eval keeps one convention and matches the rest of this file. */
 {
   const frame = document.getElementById("app");
-  const win0 = frame.contentWindow;
-  win0.location.hash = "#/battles";
+  const evIn = w => src => w.eval(src);
+  let ev = evIn(frame.contentWindow);
+  ev('location.hash = "#/battles"');
   await wait(120);
-  win0.S.battleMode = "campaign";
-  win0.campaignStart(false);
-  const first = win0.S.campaignRun.pool[0];
-  const second = win0.S.campaignRun.pool[1];
-  win0.recordAttempt(win0.S.campaignRun, first, "band", true);
-  win0.recordAttempt(win0.S.campaignRun, second, "band", false);
-  win0.recordAttempt(win0.S.campaignRun, second, "band", true);
-  win0.campaignTouch();
-  const wantScore = win0.scoreRun(win0.S.campaignRun).score;
-  check("a partial run scores one of two first-try", wantScore === 1);
+  ev('S.battleMode = "campaign"; campaignStart(false);');
+
+  const first = ev('S.campaignRun.pool[0]');
+  ev('recordAttempt(S.campaignRun, S.campaignRun.pool[0], "band", true)');
+  ev('recordAttempt(S.campaignRun, S.campaignRun.pool[1], "band", false)');
+  ev('recordAttempt(S.campaignRun, S.campaignRun.pool[1], "band", true)');
+  ev('campaignTouch()');
+  const wantScore = ev('scoreRun(S.campaignRun).score');
+  check("a partial run scores one of two first-try", wantScore === 1, "got " + wantScore);
 
   await new Promise(r => { frame.onload = r; frame.contentWindow.location.reload(); });
   await wait(250);
-  const win1 = frame.contentWindow;
-  win1.location.hash = "#/battles";
+  ev = evIn(frame.contentWindow);          /* the old window is gone */
+  ev('location.hash = "#/battles"');
   await wait(120);
-  win1.S.battleMode = "campaign";
-  win1.S.campaignRun = win1.campaignState().run;
-  check("the run survives a reload", !!win1.S.campaignRun);
-  check("resume restores the same pass",
-    win1.S.campaignRun && win1.S.campaignRun.pass === "band");
+  ev('S.battleMode = "campaign"; S.campaignRun = campaignState().run;');
+
+  check("the run survives a reload", ev('!!S.campaignRun'));
+  check("resume restores the same pass", ev('S.campaignRun && S.campaignRun.pass') === "band");
   check("resume restores the placed chips",
-    win1.S.campaignRun && win1.S.campaignRun.done[first] &&
-    win1.S.campaignRun.done[first].band === true);
+    ev('!!(S.campaignRun && S.campaignRun.done[' + JSON.stringify(first) + '] && ' +
+       'S.campaignRun.done[' + JSON.stringify(first) + '].band)'));
   check("resume restores the score",
-    win1.S.campaignRun && win1.scoreRun(win1.S.campaignRun).score === wantScore);
+    ev('S.campaignRun ? scoreRun(S.campaignRun).score : -1') === wantScore);
+
   /* Leave no run behind for the checks that follow. */
-  win1.campaignSave({run: null});
+  ev('campaignSave({run: null})');
 }
 ```
 
