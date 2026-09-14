@@ -829,3 +829,19 @@ button.brow:hover .blab{color:var(--accent)}
 .cg-side:hover{border-color:var(--accent)}
 .cg-sides .vs{color:var(--ink-2);font-size:.8rem;text-transform:uppercase;letter-spacing:.08em}
 @media(max-width:560px){.cg-side{flex:1 1 100%}}
+.cg-chain{list-style:none;counter-reset:ch;margin:0 0 18px;padding:0;display:grid;gap:8px}
+.cg-chain li{border:1px dashed var(--line);border-radius:10px;padding:11px 13px;min-height:46px}
+.cg-chain li.full{border-style:solid;background:var(--card)}
+.cg-chain li b{display:block;font-size:.78rem;text-transform:uppercase;
+  letter-spacing:.07em;color:var(--gold);margin-bottom:4px}
+.cg-chain li p{margin:0;font-size:.88rem;line-height:1.5}
+.cg-chain .slot{color:var(--ink-2);font-size:.85rem}
+.cg-parts{display:grid;gap:8px}
+.cg-part{border:1px solid var(--line);background:var(--card);color:var(--ink);
+  border-radius:10px;padding:12px 13px;font:inherit;text-align:left;cursor:pointer}
+.cg-part:hover{border-color:var(--accent)}
+.cg-part p{margin:0;font-size:.88rem;line-height:1.5}
+.cg-done .cg-final{font-size:2.6rem;font-weight:700;color:var(--gold);margin:6px 0 14px;
+  font-variant-numeric:tabular-nums}
+.cg-done .cg-final span{font-size:1.1rem;color:var(--ink-2);font-weight:400}
+.cg-done .cg-chip i{font-style:normal;color:var(--ink-2)}

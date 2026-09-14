@@ -673,6 +673,49 @@ window.addEventListener("load", async () => {
       ev("scoreRun(S.campaignRun).score") === before + 1);
   }
 
+  /* Resume. Play part of a board, reload the frame, and assert the run comes
+     back on the same pass with the same chips placed and the same score.
+
+     NOTE the access pattern. `S` and `D` are top-level `const`s in a classic
+     script, so they are NOT properties of the frame's window — `win.S` is
+     undefined. Top-level `function` declarations (campaignStart, campaignTouch,
+     render, scoreRun, recordAttempt) DO land on window, but reaching everything
+     through win.eval keeps one convention and matches the rest of this file. */
+  {
+    const frame = document.getElementById("app");
+    const evIn = w => src => w.eval(src);
+    let ev = evIn(frame.contentWindow);
+    ev('location.hash = "#/battles"');
+    await wait(120);
+    ev('S.battleMode = "campaign"; campaignStart(false);');
+
+    const first = ev('S.campaignRun.pool[0]');
+    ev('recordAttempt(S.campaignRun, S.campaignRun.pool[0], "band", true)');
+    ev('recordAttempt(S.campaignRun, S.campaignRun.pool[1], "band", false)');
+    ev('recordAttempt(S.campaignRun, S.campaignRun.pool[1], "band", true)');
+    ev('campaignTouch()');
+    const wantScore = ev('scoreRun(S.campaignRun).score');
+    check("a partial run scores one of two first-try", wantScore === 1, "got " + wantScore);
+
+    await new Promise(r => { frame.onload = r; frame.contentWindow.location.reload(); });
+    await wait(250);
+    ev = evIn(frame.contentWindow);          /* the old window is gone */
+    ev('location.hash = "#/battles"');
+    await wait(120);
+    ev('S.battleMode = "campaign"; S.campaignRun = campaignState().run;');
+
+    check("the run survives a reload", ev('!!S.campaignRun'));
+    check("resume restores the same pass", ev('S.campaignRun && S.campaignRun.pass') === "band");
+    check("resume restores the placed chips",
+      ev('!!(S.campaignRun && S.campaignRun.done[' + JSON.stringify(first) + '] && ' +
+         'S.campaignRun.done[' + JSON.stringify(first) + '].band)'));
+    check("resume restores the score",
+      ev('S.campaignRun ? scoreRun(S.campaignRun).score : -1') === wantScore);
+
+    /* Leave no run behind for the checks that follow. */
+    ev('campaignSave({run: null})');
+  }
+
   out.innerHTML += "\n" + pass + " passed, " + fail + " failed";
   document.title = fail ? "FAIL (" + fail + ")" : "PASS";
 });

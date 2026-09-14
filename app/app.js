@@ -1970,6 +1970,50 @@ function mountCampaignMap(){
   });
 }
 
+function viewCampaignChain(){
+  const run = S.campaignRun;
+  if(isRunComplete(run)) return viewCampaignDone();
+  const id = campaignPool()[0];
+  const ch = campaignChip(id);
+  run.chain = run.chain || {};
+  const placed = run.chain[id] || [];
+  const parts  = shuffleChain(D, id, run.salt);
+  const left   = parts.filter(p => placed.indexOf(p.key) < 0);
+  const byKey  = k => parts.find(p => p.key === k);
+  return '<div class="pagewrap cg">'+
+    campaignHeader("Chain", "Cause, then course, then result, then why it matters.")+
+    '<p class="cg-ask">'+ch.name+' <span>'+ch.yr+'</span></p>'+
+    '<ol class="cg-chain">'+CHAIN_KEYS.map((k, i) => {
+      const got = placed[i];
+      return '<li class="'+(got?"full":"")+'">'+
+        (got ? '<b>'+byKey(got).label+'</b><p>'+byKey(got).text+'</p>'
+             : '<span class="slot">Slot '+(i+1)+'</span>')+'</li>';
+    }).join('')+'</ol>'+
+    '<div class="cg-parts">'+left.map(p =>
+      '<button class="cg-part" type="button" data-cgchain="'+p.key+'"><p>'+p.text+'</p></button>'
+    ).join('')+'</div></div>';
+}
+
+function viewCampaignDone(){
+  const run = S.campaignRun;
+  const s = scoreRun(run);
+  const missed = runMisses(run);
+  const ids = Object.keys(missed).sort((a, b) => missed[b] - missed[a]);
+  return '<div class="pagewrap cg cg-done">'+
+    '<h3>Campaign complete</h3>'+
+    '<p class="cg-final">'+s.score+' <span>/ '+s.max+'</span></p>'+
+    (ids.length
+      ? '<p class="lede">These are the ones that cost you. They come first next time.</p>'+
+        '<div class="cg-pool">'+ids.map(id =>
+          '<button class="cg-chip" type="button" data-c="'+id+'">'+campaignChip(id).name+
+          ' <i>'+missed[id]+'</i></button>').join('')+'</div>'
+      : '<p class="lede">Clean sweep — every chip first try.</p>')+
+    '<div class="chipset">'+
+      '<button class="tog" type="button" data-bm="march">Watch the march</button>'+
+      '<button class="tog" type="button" data-cg="new">Play again</button>'+
+    '</div></div>';
+}
+
 function viewCampaign(){
   if(!S.campaignRun) return viewCampaignStart();
   if(S.campaignRun.pass === "band")   return viewCampaignBand();
@@ -2926,6 +2970,28 @@ document.addEventListener("click", e => {
     const ok = gradeWinner(campaignChip(id), +cw.dataset.cgwin);
     recordAttempt(run, id, "winner", ok);
     if(ok) campaignAdvance(); else toast("The other side");
+    campaignTouch(); render(); return;
+  }
+  const cn = hit("[data-cgchain]"); if(cn){
+    const run = S.campaignRun, id = campaignPool()[0];
+    run.chain = run.chain || {};
+    run.chain[id] = run.chain[id] || [];
+    const want = CHAIN_KEYS[run.chain[id].length];
+    const ok = cn.dataset.cgchain === want;
+    if(ok){
+      run.chain[id].push(cn.dataset.cgchain);
+      if(run.chain[id].length === CHAIN_KEYS.length){
+        /* Always `true` here: the pass IS complete. recordAttempt zeroes the
+           mark by itself if a wrong part was tapped earlier. Passing `false`
+           would leave run.done[id].chain unset and the chip could never
+           leave the pool — an infinite chain round. */
+        recordAttempt(run, id, "chain", true);
+        campaignAdvance();
+      }
+    } else {
+      recordAttempt(run, id, "chain", false);
+      toast("Something comes before that");
+    }
     campaignTouch(); render(); return;
   }
   const ts  = hit("[data-ts]");     if(ts){ S.topicSec = ts.dataset.ts; render(); return; }
