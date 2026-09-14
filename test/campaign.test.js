@@ -411,13 +411,15 @@ test("orderInPool narrows canonicalOrder to only the ids present in the pool", (
 /* ------------------------------------------------------------------
    Regression: pass 3 (place) must be winnable for every chip.
 
-   viewCampaignPlace() draws its tappable circles by filtering
-   MAP.places, and gradePlace() only ever accepts a tap that matches
-   chip.place exactly. Those two must be driven off the SAME set of ids
-   or a chip whose place is never drawn can never be graded correct —
-   deadlocking that pass forever. This asserts against placeOptions(), the SAME function the renderer draws from, so the view and the test cannot each keep their own copy of the rule. (It used to mirror the renderer's own
-   filter (see the WHY comment on viewCampaignPlace in app/app.js) so a
-   future edit that narrows the rule catches itself here.)
+   viewCampaignPlace() draws its tappable circles from placeOptions(),
+   and gradePlace() only ever accepts a tap matching chip.place exactly.
+   Both sides must come off that one function: if the drawn set were
+   ever narrower than the graded set, a chip whose marker is missing
+   could never be graded correct and the pass would deadlock forever.
+   That is what happened to b-dhami, whose place is authored k:"state".
+
+   This asserts against placeOptions() itself rather than restating the
+   rule, so the view and the test cannot each keep a copy and drift.
    ------------------------------------------------------------------ */
 
 test("every chip's place exists on the map and is among the rendered pass-3 options", () => {
