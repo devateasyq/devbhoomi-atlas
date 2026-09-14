@@ -2710,6 +2710,19 @@ function viewProfile(){
     '<div class="pcols">'+
     '<div class="syllabus"><div class="secthead"><h3>Your notes — '+ids.length+'</h3></div>'+
       noteList+'</div>'+
+    /* The rail footer carries this too, but the rail is desktop-only — it is
+       hidden below 1000px, which is where most readers are. The profile is
+       the one page reachable at every width, via the header account button,
+       and it is already the page about the reader rather than the syllabus. */
+    '<div class="syllabus" style="margin-top:26px">'+
+      '<div class="secthead"><h3>Updates</h3></div>'+
+      '<p class="pmuted">The Telegram channel carries what changes in the atlas — '+
+        'new records, new past papers, corrections.</p>'+
+      '<div class="pdata"><a class="btn tgbtn" href="https://t.me/parikramapath" '+
+        'target="_blank" rel="noopener">'+
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.5 4.3L2.9 11.4c-.9.3-.9 1.6 0 1.9l4.6 1.5 1.8 5.5c.2.7 1.1.9 1.6.3l2.5-2.7 4.6 3.4c.6.4 1.4.1 1.6-.6l3.1-15c.2-.8-.6-1.5-1.2-1.4z"/><path d="M7.5 14.8L18 7.2l-8 8.6"/></svg>'+
+        '<span>Join @parikramapath</span></a></div>'+
+    '</div>'+
     '<div class="syllabus" style="margin-top:26px">'+
       '<div class="secthead"><h3>Your data</h3></div>'+
       '<div class="pdata"><button class="btn" type="button" id="pexport">Export everything</button>'+

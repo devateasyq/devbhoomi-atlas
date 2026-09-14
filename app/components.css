@@ -448,6 +448,17 @@ button.card:hover{border-color:var(--accent-line);transform:translateY(-1px)}
 .rnext .wn{font-family:var(--f-mono);font-size:10px;color:var(--ink-3)}
 .rnsay{font-size:13px;color:var(--ink-2);line-height:1.5;margin:11px 0 12px;max-width:62ch}
 
+/* ---------- the Telegram channel ---------- */
+/* An <a>, not a <button>, in both places it appears: it leaves the app, so
+   it should behave like a link — middle-click, long-press, copy address. */
+.tgbtn{display:inline-flex;align-items:center;gap:7px;text-decoration:none;color:var(--ink)}
+.tgbtn:hover{border-color:var(--accent-line)}
+.tgbtn svg{width:16px;height:16px;flex:0 0 16px;fill:none;stroke:var(--accent);
+  stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.rail-foot .tg{display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.rail-foot .tg svg{width:14px;height:14px;flex:0 0 14px;fill:none;stroke:currentColor;
+  stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
 button.tile:hover{border-color:var(--accent-line)}
 /* Now at the foot of Exams, under the nine exams, rather than on the hub. */
 .syllabus{margin-top:34px}

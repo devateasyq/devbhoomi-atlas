@@ -744,6 +744,27 @@ window.addEventListener("load", async () => {
   win.go("profile");
   await wait(350);
 
+  /* The channel link. It leaves the app, so what matters is that it points
+     at the right handle and cannot hand the opened tab a window.opener
+     reference back into this one. The rail footer carries it too, but the
+     rail is desktop-only, so the profile copy is the one most readers see. */
+  const tg = doc.querySelector("#stage .tgbtn");
+  check("the profile offers the Telegram channel", !!tg);
+  check("the channel link points at @parikramapath",
+    !!tg && tg.getAttribute("href") === "https://t.me/parikramapath",
+    tg ? tg.getAttribute("href") : "absent");
+  check("the channel link opens safely in a new tab",
+    !!tg && tg.getAttribute("target") === "_blank" &&
+    /\bnoopener\b/.test(tg.getAttribute("rel") || ""),
+    tg ? tg.getAttribute("target") + " / " + tg.getAttribute("rel") : "absent");
+  const tgrail = doc.querySelector(".rail-foot .tg");
+  check("the sidebar footer carries the same link",
+    !!tgrail && tgrail.getAttribute("href") === (tg && tg.getAttribute("href")),
+    tgrail ? tgrail.getAttribute("href") : "absent");
+  check("the sidebar copy is also safe to open",
+    !!tgrail && tgrail.getAttribute("target") === "_blank" &&
+    /\bnoopener\b/.test(tgrail.getAttribute("rel") || ""));
+
   check("the profile draws three streak rings",
     doc.querySelectorAll(".rings .rg-p").length === 3,
     "rg-p=" + doc.querySelectorAll(".rings .rg-p").length);
