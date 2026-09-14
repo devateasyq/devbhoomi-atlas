@@ -345,6 +345,7 @@ function factsList(pairs){
 const S = {
   view:"home", sel:null, trail:[], seen:[], legendOpen:false, focus:"",
   era:"all", battleFilter:"all", topicSec:"all",
+  battleMode:"cards", campaignRun:null,
   cmpTab:"districts", cmpKey:"area", cmpDesc:true,
   revMode:"papers",
   qIdx:0, qSec:"all", qAnswered:null,
@@ -1755,12 +1756,80 @@ function viewTimeline(){
   return '<div id="tlview">'+bar+'<div class="tl">'+body+'</div></div>';
 }
 
+/* ---------- campaign persistence ----------
+   One store key holds the in-progress run, the best result and the
+   per-battle first-try miss counts that seed the next run's pool. Four
+   passes plus sixteen chain rounds is a fifteen-minute session, so losing
+   the run on a closed tab is worse than having no board at all: every
+   placement writes through. */
+function campaignState(){
+  return store.get("campaign", {run:null, best:null, misses:{}});
+}
+function campaignSave(patch){
+  const st = campaignState();
+  store.set("campaign", Object.assign(st, patch));
+}
+function campaignStart(weak){
+  const st = campaignState();
+  S.campaignRun = newRun(D, {misses: st.misses, weak: !!weak});
+  campaignSave({run: S.campaignRun});
+}
+/* Called after every graded placement. */
+function campaignTouch(){
+  const st = campaignState();
+  const patch = {run: S.campaignRun};
+  if(isRunComplete(S.campaignRun)){
+    const s = scoreRun(S.campaignRun);
+    const misses = Object.assign({}, st.misses);
+    const got = runMisses(S.campaignRun);
+    for(const id in got) misses[id] = (misses[id] || 0) + got[id];
+    patch.misses = misses;
+    patch.run = null;
+    if(!st.best || s.score > st.best.score) patch.best = {score:s.score, max:s.max, at:Date.now()};
+  }
+  campaignSave(patch);
+}
+
+function viewCampaignStart(){
+  const st = campaignState();
+  const weakN = seedPool(D, st.misses, true).length;
+  const hasWeak = weakN > 0 && weakN < D.battles.length;
+  return '<div class="pagewrap campaign-start">'+
+    '<p class="lede">Sixteen battles, four passes over the board — when, where, '+
+    'who won — and the cause-to-consequence chain for each. Nothing here is new '+
+    'material: every chip is one of the cards.</p>'+
+    (st.best ? '<p class="best">Best so far: <b>'+st.best.score+' / '+st.best.max+'</b></p>' : '')+
+    '<div class="chipset">'+
+      (st.run ? '<button class="tog primary" type="button" data-cg="resume">Resume</button>' : '')+
+      '<button class="tog" type="button" data-cg="new">'+(st.run ? 'Start over' : 'Start the campaign')+'</button>'+
+      (hasWeak ? '<button class="tog" type="button" data-cg="weak">Weak set ('+weakN+')</button>' : '')+
+    '</div></div>';
+}
+
+function viewCampaign(){
+  if(!S.campaignRun) return viewCampaignStart();
+  if(S.campaignRun.pass === "band")   return viewCampaignBand();
+  if(S.campaignRun.pass === "year")   return viewCampaignYear();
+  if(S.campaignRun.pass === "place")  return viewCampaignPlace();
+  if(S.campaignRun.pass === "winner") return viewCampaignWinner();
+  return viewCampaignChain();
+}
+
+/* Filled in by the March task; the shell renders the mode switch now. */
+function viewMarch(){ return '<div class="pagewrap"><div id="marchview"></div></div>'; }
+
 function viewBattles(){
+  const MODES = [["cards","Cards"],["march","March"],["campaign","Campaign"]];
+  const modebar = '<div class="chipset modebar">'+MODES.map(m =>
+    '<button class="tog" type="button" data-bm="'+m[0]+'" aria-pressed="'+
+    (S.battleMode===m[0])+'">'+m[1]+'</button>').join('')+'</div>';
+  if(S.battleMode === "march")    return modebar + viewMarch();
+  if(S.battleMode === "campaign") return modebar + viewCampaign();
   const KINDLB = {battle:"Battle", siege:"Siege", treaty:"Treaty", firing:"Confrontation"};
   const kinds = ["all","battle","siege","treaty","firing"];
   const list = [...D.battles].sort((a,b) => a.y-b.y)
     .filter(b => S.battleFilter === "all" || b.kind === S.battleFilter);
-  return '<div class="pagewrap">'+
+  return modebar + '<div class="pagewrap">'+
     '<p class="lede">Every war, siege, treaty and confrontation named in the syllabus, in order. Each card gives '+
     'the cause, the course, the result and why it matters — the four-part shape a mains answer needs.</p>'+
     '<div class="chipset" style="margin-bottom:16px">'+kinds.map(k =>
@@ -2646,6 +2715,13 @@ document.addEventListener("click", e => {
   const ev  = hit(".ev");           if(ev){ openRec(ev.dataset.e); return; }
   const card= hit("[data-c]");      if(card){ openRec(card.dataset.c); return; }
   const bf  = hit("[data-bf]");     if(bf){ S.battleFilter = bf.dataset.bf; render(); return; }
+  const bm  = hit("[data-bm]");     if(bm){ S.battleMode = bm.dataset.bm; render(); return; }
+  const cg  = hit("[data-cg]");     if(cg){
+    const a = cg.dataset.cg;
+    if(a === "resume") S.campaignRun = campaignState().run;
+    else campaignStart(a === "weak");
+    render(); return;
+  }
   const ts  = hit("[data-ts]");     if(ts){ S.topicSec = ts.dataset.ts; render(); return; }
   const rm  = hit("[data-rm]");     if(rm){ S.revMode = rm.dataset.rm; S.qAnswered = null; render(); return; }
   const rs  = hit("[data-rs]");     if(rs){

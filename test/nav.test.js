@@ -47,3 +47,23 @@ test("every dock tab is a real view with a title", () => {
       n.id + " has no entry in TITLE, so the router would send it home");
   }
 });
+
+/* The Battles view gains two sibling modes. These must NOT become nav
+   entries: the rail is full at nine and the phone dock is deliberately
+   four — a fifth dock tab is what clipped the labels to 9.5px. */
+test("campaign and march are modes of Battles, not nav entries", () => {
+  const src = fs.readFileSync(path.join(ROOT, "app", "app.js"), "utf8");
+  const nav = src.slice(src.indexOf("const NAV = ["), src.indexOf("const COUNTS"));
+  assert.ok(!/id:"campaign"/.test(nav), "campaign must not be a nav entry");
+  assert.ok(!/id:"march"/.test(nav), "march must not be a nav entry");
+  assert.ok(/function viewCampaign\(/.test(src), "viewCampaign is missing");
+  assert.ok(/function viewMarch\(/.test(src), "viewMarch is missing");
+});
+
+test("the campaign run persists through the shared store helper", () => {
+  const src = fs.readFileSync(path.join(ROOT, "app", "app.js"), "utf8");
+  assert.ok(/store\.(get|set)\("campaign"/.test(src),
+    "campaign state must go through store, which already prefixes hpatlas:");
+  assert.ok(!/localStorage\.[gs]etItem\("hpatlas:campaign/.test(src),
+    "do not bypass the store helper");
+});
