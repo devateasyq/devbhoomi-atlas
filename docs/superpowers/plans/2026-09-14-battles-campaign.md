@@ -1117,12 +1117,19 @@ The board itself. Tap a chip to select it, tap a band to place it; then order ea
   - `S.campaignSel` — the id of the currently selected chip, or `null`.
   - `campaignAdvance()` — moves `run.pass` to the next pass once every pooled chip has finished the current one.
 
-- [ ] **Step 1: Add the selection state**
+- [ ] **Step 1: Add the selection state and the chip index**
 
 In the `S` object, beside `campaignRun`, add:
 
 ```js
   campaignSel:null,
+```
+
+The chip set is derived from `D` and never changes, so build it once at load rather than per lookup. Add beside `const FACTS = buildFacts(D);` at `app/app.js:33`, matching that existing pattern:
+
+```js
+const CHIPS = buildChips(D);
+const CHIPS_BY_ID = Object.fromEntries(CHIPS.map(ch => [ch.id, ch]));
 ```
 
 - [ ] **Step 2: Write the band pass renderer**
@@ -1137,7 +1144,7 @@ function campaignPool(){
   return run.pool.filter(id => !(run.done[id] || {})[pass]);
 }
 function campaignChip(id){
-  return buildChips(D).find(ch => ch.id === id);
+  return CHIPS_BY_ID[id];
 }
 function campaignAdvance(){
   const run = S.campaignRun;
@@ -1702,12 +1709,12 @@ Replace the `viewMarch` stub from Task 7 with:
 /* The read half: no scoring, no pressure. It doubles as the replay — after
    a run, each chip is tinted by whether the reader got it first try. */
 function viewMarch(){
-  const chips = buildChips(D);
   const st = campaignState();
   const marks = (st.run && st.run.marks) || {};
-  const at = Math.min(S.marchAt, chips.length - 1);
-  const shown = chips.slice(0, at + 1);
-  const cur = chips[at];
+  /* CHIPS is built once at load (app.js:33) and is already chronological. */
+  const at = Math.min(S.marchAt, CHIPS.length - 1);
+  const shown = CHIPS.slice(0, at + 1);
+  const cur = CHIPS[at];
   const paths = Object.entries(MAP.paths).map(([n, d]) =>
     '<path class="dist" d="'+d+'" data-name="'+n+'"/>').join('');
   const pins = shown.map((ch, i) => {
@@ -1720,7 +1727,7 @@ function viewMarch(){
   return '<div class="pagewrap mc">'+
     '<svg id="mcmap" viewBox="0 0 1000 1000" role="img" '+
       'aria-label="Battles of Himachal Pradesh in chronological order">'+paths+pins+'</svg>'+
-    '<input id="mcscrub" type="range" min="0" max="'+(chips.length - 1)+'" value="'+at+'" '+
+    '<input id="mcscrub" type="range" min="0" max="'+(CHIPS.length - 1)+'" value="'+at+'" '+
       'aria-label="Scrub through the battles in order">'+
     '<div class="mc-cap" style="--ec:var('+ERA[cur.era].v+')">'+
       '<span class="yr">'+cur.yr+'</span>'+
