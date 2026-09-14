@@ -908,7 +908,7 @@ Three modes inside the Battles view, and the start screen: Resume, Start over, W
 - Produces:
   - `S.battleMode` — `"cards" | "march" | "campaign"`, default `"cards"`.
   - `S.campaignRun` — the live `Run` object or `null`.
-  - `campaignSave()` / `campaignLoad()` — persist to `store` key `"campaign"`, shape `{run, best:{score,max,at}, misses:{}}`.
+  - `campaignState()` reads and `campaignSave(patch)` merges-and-writes to `store` key `"campaign"`, shape `{run, best:{score,max,at}, misses:{}}`.
   - `viewCampaign() -> string` — renders the start screen when `S.campaignRun` is null, otherwise delegates to the pass renderers added in Tasks 8–10.
   - `viewMarch() -> string` — a stub returning an empty `<div id="marchview">` until Task 11.
 
