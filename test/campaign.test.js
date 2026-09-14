@@ -80,3 +80,72 @@ test("unknown era ids are placed last after known eras", () => {
   assert.ok(realEraIndex >= 0, "e7 should be included (1806 falls in e7 span)");
   assert.ok(realEraIndex < bands.length - 1, "real era e7 should come before unknown era eZZ");
 });
+
+test("canonical order within a band is by year", () => {
+  /* e7 is the band that matters: it holds the Gorkha war sequence, where
+     the fractional y keys are the only thing separating Kalanga (1814.8)
+     from Jaithak (1814.9) from Malaun (1815.4). */
+  assert.deepEqual(c.canonicalOrder(D, "e7"),
+    ["b-mahalmorian", "b-kalanga", "b-jaithak", "b-malaun", "b-segauli"]);
+  assert.deepEqual(c.canonicalOrder(D, "e5"),
+    ["b-kangra1620", "b-bhangani", "b-nadaun"]);
+  assert.deepEqual(c.canonicalOrder(D, "e9"),
+    ["b-shahpur", "b-dhami", "b-suket1948"]);
+});
+
+test("empty bands order to nothing", () => {
+  assert.deepEqual(c.canonicalOrder(D, "e1"), []);
+  assert.deepEqual(c.canonicalOrder(D, "e10"), []);
+});
+
+test("no band holds a single chip, so no slot is a free mark", () => {
+  for(const e of D.eras){
+    const n = c.canonicalOrder(D, e.id).length;
+    assert.ok(n !== 1, e.id + " holds exactly one chip — its year slot is unearnable");
+  }
+});
+
+test("year grading checks the chip against its slot", () => {
+  assert.equal(c.gradeYear(D, "e7", 0, "b-mahalmorian"), true);
+  assert.equal(c.gradeYear(D, "e7", 1, "b-kalanga"), true);
+  assert.equal(c.gradeYear(D, "e7", 1, "b-jaithak"), false);
+  assert.equal(c.gradeYear(D, "e7", 9, "b-segauli"), false);
+});
+
+test("place grading is exact", () => {
+  assert.equal(c.gradePlace(chip("b-mahalmorian"), "mahalmorian"), true);
+  assert.equal(c.gradePlace(chip("b-mahalmorian"), "kangrafort"), false);
+});
+
+test("six battles share kangrafort and all grade correct there", () => {
+  const atFort = CHIPS.filter(ch => ch.place === "kangrafort");
+  assert.equal(atFort.length, 6);
+  for(const ch of atFort) assert.equal(c.gradePlace(ch, "kangrafort"), true);
+});
+
+test("winner grading is by side index, not by prose", () => {
+  /* Bhangani is the trap: outcome:"loss" but sides[0] won it. */
+  assert.equal(c.gradeWinner(chip("b-bhangani"), 0), true);
+  assert.equal(c.gradeWinner(chip("b-bhangani"), 1), false);
+  /* Jaithak is the other direction: sides[1] won. */
+  assert.equal(c.gradeWinner(chip("b-jaithak"), 1), true);
+  assert.equal(c.gradeWinner(chip("b-jaithak"), 0), false);
+});
+
+test("side display order is a stable shuffle, and does shuffle", () => {
+  const a = c.sideOrder("b-bhangani", 7);
+  assert.deepEqual(c.sideOrder("b-bhangani", 7), a, "must be stable for one salt");
+  for(const ch of CHIPS){
+    const o = c.sideOrder(ch.id, 3);
+    assert.equal(o.length, 2);
+    assert.ok(o.includes(0) && o.includes(1), ch.id + " lost a side: " + o.join(","));
+  }
+  /* Across the sixteen chips at some salt, the winner must not sit on the
+     same side every time, or always-tap-left beats the pass. */
+  const salts = [0, 1, 2, 3, 4];
+  const anyMixed = salts.some(s => {
+    const left = CHIPS.map(ch => c.sideOrder(ch.id, s)[0] === ch.winSide);
+    return left.some(Boolean) && left.some(v => !v);
+  });
+  assert.ok(anyMixed, "the shuffle never mixes which side holds the winner");
+});

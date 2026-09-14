@@ -56,7 +56,48 @@ function gradeBand(D, chip, eraId){
   return acceptedBands(D, chip).indexOf(eraId) >= 0;
 }
 
+/* Pass 2 orders chips WITHIN a band, and it uses the authored era rather
+   than wherever the reader put the chip in pass 1. Pass 1 grades leniently
+   (see acceptedBands), so a chip can be correct in a band that is not its
+   canonical one; letting that follow through into pass 2 would make the
+   ordering non-deterministic. The board snaps every chip to its authored
+   band before pass 2 begins, and the lock-in card shows the authored era. */
+function canonicalOrder(D, eraId){
+  return (D.battles || [])
+    .filter(function(b){ return b.era === eraId; })
+    .sort(function(a, b){ return a.y - b.y; })
+    .map(function(b){ return b.id; });
+}
+
+function gradeYear(D, eraId, index, chipId){
+  return canonicalOrder(D, eraId)[index] === chipId;
+}
+
+function gradePlace(chip, placeId){
+  return chip.place === placeId;
+}
+
+/* sideIndex is an index into chip.sides, never a string. `winner` is prose
+   for a reader ("Gorkhas (tactically)") and matches neither side. */
+function gradeWinner(chip, sideIndex){
+  return sideIndex === chip.winSide;
+}
+
+/* Which side to show first. Eleven of the sixteen battles have winSide 0,
+   so an unshuffled pass hands 11/16 to a reader who always taps left. The
+   shuffle is derived from the chip id and a per-run salt so it is stable
+   within a run (a re-render must not move the buttons under a thumb) and
+   different between runs. */
+function sideOrder(chipId, salt){
+  var h = salt | 0;
+  for(var i = 0; i < chipId.length; i++) h = (h * 31 + chipId.charCodeAt(i)) | 0;
+  return (h & 1) ? [1, 0] : [0, 1];
+}
+
 if(typeof module !== "undefined" && module.exports){
   module.exports = {PASSES: PASSES, buildChips: buildChips,
-                    acceptedBands: acceptedBands, gradeBand: gradeBand};
+                    acceptedBands: acceptedBands, gradeBand: gradeBand,
+                    canonicalOrder: canonicalOrder, gradeYear: gradeYear,
+                    gradePlace: gradePlace, gradeWinner: gradeWinner,
+                    sideOrder: sideOrder};
 }
