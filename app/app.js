@@ -1877,9 +1877,9 @@ function viewCampaignYear(){
   /* Ordering runs over the AUTHORED band, not wherever the reader put the
      chip in pass 1 — pass 1 grades leniently, so following the reader's
      choice through would make the slots non-deterministic. */
-  const bands = D.eras.filter(e => canonicalOrder(D, e.id).length)
+  const bands = D.eras.filter(e => orderInPool(D, e.id, run.pool).length)
     .map(e => {
-      const order  = canonicalOrder(D, e.id).filter(id => run.pool.indexOf(id) >= 0);
+      const order  = orderInPool(D, e.id, run.pool);
       const placed = (run.year || {})[e.id] || [];
       const left   = order.filter(id => placed.indexOf(id) < 0);
       const slots  = order.map((_, i) => {
@@ -2840,7 +2840,7 @@ document.addEventListener("click", e => {
     const run = S.campaignRun;
     run.year = run.year || {};
     run.year[era] = run.year[era] || [];
-    const ok = gradeYear(D, era, run.year[era].length, id);
+    const ok = gradeYear(D, era, run.year[era].length, id, run.pool);
     recordAttempt(run, id, "year", ok);
     if(ok){ run.year[era].push(id); campaignAdvance(); }
     else toast("Something came before that one");

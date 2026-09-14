@@ -326,3 +326,69 @@ test("misses are reported for merging into the stored counts", () => {
   c.recordAttempt(run, "b-bhangani", "band", true);
   assert.deepEqual(c.runMisses(run), {"b-segauli": 2});
 });
+
+/* ------------------------------------------------------------------
+   Regression: weak-set pass 2 must not deadlock.
+
+   viewCampaignYear() shows canonicalOrder(D, era) NARROWED to run.pool,
+   but the [data-cgyear] click handler used to grade against the
+   UNFILTERED canonicalOrder. When the pool skips battles that are
+   non-contiguous in the full chronology, slot N of the displayed list
+   is not slot N of the graded list and a correct tap is rejected
+   forever. This simulates the view + click handler end to end, the
+   way a real weak-set run plays out, and must complete every era.
+   ------------------------------------------------------------------ */
+function simulateYearPass(D, run, era){
+  /* Mirrors viewCampaignYear's slot list: full chronological order,
+     narrowed to what's actually in this run's pool. */
+  const order = c.canonicalOrder(D, era).filter(id => run.pool.indexOf(id) >= 0);
+  const placed = [];
+  for(let slot = 0; slot < order.length; slot++){
+    const leftover = order.filter(id => placed.indexOf(id) < 0);
+    /* Mirrors the [data-cgyear] click handler: grade every available chip
+       against this slot index. Exactly one must be accepted, or the pass
+       either deadlocks (zero accepted) or is ambiguous (more than one). */
+    const accepted = leftover.filter(id => c.gradeYear(D, era, slot, id, run.pool));
+    assert.equal(accepted.length, 1,
+      era + " slot " + slot + ": expected exactly one accepted chip among [" +
+      leftover.join(",") + "], got " + accepted.length + " (" + accepted.join(",") + ")");
+    placed.push(accepted[0]);
+  }
+  return placed;
+}
+
+test("weak-set pass 2 completes e7 even though the pool skips non-contiguous battles", () => {
+  /* e7 full order: [b-mahalmorian, b-kalanga, b-jaithak, b-malaun, b-segauli].
+     A weak pool of just the last two is non-contiguous in that order. */
+  const run = c.newRun(D, {weak: true, misses: {"b-malaun": 1, "b-segauli": 1}});
+  assert.deepEqual(run.pool.slice().sort(), ["b-malaun", "b-segauli"].sort());
+  const placed = simulateYearPass(D, run, "e7");
+  assert.deepEqual(placed, ["b-malaun", "b-segauli"], "e7 must order earliest first");
+});
+
+test("weak-set pass 2 completes e6 even though the pool skips a middle battle", () => {
+  /* e6 full order: [b-kangra1809, b-lahore, b-anglosikh2]. A weak pool of
+     the first and last skips the middle one, b-lahore. */
+  const run = c.newRun(D, {weak: true, misses: {"b-kangra1809": 1, "b-anglosikh2": 1}});
+  assert.deepEqual(run.pool.slice().sort(), ["b-anglosikh2", "b-kangra1809"].sort());
+  const placed = simulateYearPass(D, run, "e6");
+  assert.deepEqual(placed, ["b-kangra1809", "b-anglosikh2"], "e6 must order earliest first");
+});
+
+/* Pins the backwards-compatible path: with no pool filter, orderInPool
+   must be indistinguishable from canonicalOrder, so gradeYear's existing
+   four-argument callers (and every era with no weak-set narrowing) keep
+   working exactly as before. */
+test("orderInPool with a null pool is exactly canonicalOrder", () => {
+  for(const e of D.eras){
+    assert.deepEqual(c.orderInPool(D, e.id, null), c.canonicalOrder(D, e.id));
+    assert.deepEqual(c.orderInPool(D, e.id, undefined), c.canonicalOrder(D, e.id));
+  }
+});
+
+test("orderInPool narrows canonicalOrder to only the ids present in the pool", () => {
+  assert.deepEqual(c.orderInPool(D, "e7", ["b-malaun", "b-segauli"]),
+    ["b-malaun", "b-segauli"]);
+  assert.deepEqual(c.orderInPool(D, "e6", ["b-anglosikh2", "b-kangra1809"]),
+    ["b-kangra1809", "b-anglosikh2"]);
+});

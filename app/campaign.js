@@ -69,8 +69,26 @@ function canonicalOrder(D, eraId){
     .map(function(b){ return b.id; });
 }
 
-function gradeYear(D, eraId, index, chipId){
-  return canonicalOrder(D, eraId)[index] === chipId;
+/* WHY this exists: the view and the grader must index the SAME list, or
+   a correct tap can be rejected forever. viewCampaignYear() displays
+   canonicalOrder(D, eraId) narrowed to whatever battles are actually in
+   this run's pool (a weak-set run only pools previously-missed battles),
+   but gradeYear used to grade slot N against the FULL, unfiltered
+   canonicalOrder. When the pool's battles are non-contiguous in the full
+   chronology, slot N of the displayed (filtered) list is a different
+   battle than slot N of the full list, so the tap the player is shown as
+   correct is graded wrong — permanently, since nothing else ever advances
+   the pass. Routing both the view and gradeYear through this one function
+   makes that drift impossible: pass the run's pool (or omit/null it for
+   the unfiltered, full-board case) and both sides always agree. */
+function orderInPool(D, eraId, poolIds){
+  var order = canonicalOrder(D, eraId);
+  if(poolIds == null) return order;
+  return order.filter(function(id){ return poolIds.indexOf(id) >= 0; });
+}
+
+function gradeYear(D, eraId, index, chipId, poolIds){
+  return orderInPool(D, eraId, poolIds)[index] === chipId;
 }
 
 function gradePlace(chip, placeId){
@@ -287,7 +305,8 @@ function runMisses(run){
 if(typeof module !== "undefined" && module.exports){
   module.exports = {PASSES: PASSES, buildChips: buildChips,
                     acceptedBands: acceptedBands, gradeBand: gradeBand,
-                    canonicalOrder: canonicalOrder, gradeYear: gradeYear,
+                    canonicalOrder: canonicalOrder, orderInPool: orderInPool,
+                    gradeYear: gradeYear,
                     gradePlace: gradePlace, gradeWinner: gradeWinner,
                     sideOrder: sideOrder,
                     CHAIN_KEYS: CHAIN_KEYS, CHAIN_LABELS: CHAIN_LABELS,
