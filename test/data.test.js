@@ -224,7 +224,7 @@ test("every era carries a numeric span that brackets its display span", () => {
   }
 });
 
-test("every battle year falls inside some era span, or its own authored era", () => {
+test("every battle points at an existing era and falls inside some era's numeric span", () => {
   const spans = Object.fromEntries(D.eras.map(e => [e.id, e]));
   for(const b of D.battles){
     const own = spans[b.era];
@@ -273,6 +273,7 @@ function winVocabTokens(str){
       .split(/[^a-z]+/)
       .filter(Boolean)
       .map(w => w.replace(/s$/, ""))
+      .filter(Boolean)
       .filter(w => !WINVOCAB_STOPWORDS.has(w))
   );
 }

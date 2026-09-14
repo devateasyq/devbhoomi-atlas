@@ -1786,7 +1786,8 @@ function campaignStart(weak){
    NOT null S.campaignRun: the completion screen still needs the finished
    run in memory to show the final score and the missed battles. */
 function campaignTouch(){
-  if(S.campaignRun && S.campaignRun.finalised) return;
+  if(!S.campaignRun) return;
+  if(S.campaignRun.finalised) return;
   const st = campaignState();
   const patch = {run: S.campaignRun};
   if(isRunComplete(S.campaignRun)){
@@ -1805,7 +1806,12 @@ function campaignTouch(){
 function viewCampaignStart(){
   const st = campaignState();
   const weakN = seedPool(D, st.misses, true).length;
-  const hasWeak = weakN > 0 && weakN < D.battles.length;
+  /* weakN alone cannot tell "nothing missed" from "everything missed":
+     seedPool(..., true) falls back to the full board when misses is empty,
+     so weakN === D.battles.length in BOTH cases. Read the misses set
+     directly instead — the one case that must still show the button is
+     exactly the one weakN < D.battles.length used to hide it in. */
+  const hasWeak = Object.keys(st.misses || {}).length > 0;
   return '<div class="pagewrap campaign-start">'+
     '<p class="lede">Sixteen battles, four passes over the board — when, where, '+
     'who won — and the cause-to-consequence chain for each. Nothing here is new '+
@@ -1903,8 +1909,18 @@ function viewCampaignPlace(){
   const pool = campaignPool();
   const id = pool[0];
   const ch = campaignChip(id);
+  /* WHY the OR: gradePlace() accepts a tap iff it matches chip.place
+     exactly, so the tappable set here must include every chip's place —
+     not just markers authored k:"battle". MAP.places.dhami is authored
+     k:"state" (Dhami is a hill state whose marker predates the 1939
+     firing recorded as b-dhami), so filtering on marker kind alone drew
+     no circle for it: gradePlace could never return true, the pass could
+     never advance, and every run that reached b-dhami hard-deadlocked.
+     The view's option list and the grader's accepted answer must be
+     drawn from one source, or they drift exactly like this. */
+  const chipPlaces = new Set(CHIPS.map(c => c.place));
   const pts = Object.entries(MAP.places)
-    .filter(([, p]) => p.k === "battle")
+    .filter(([pid, p]) => p.k === "battle" || chipPlaces.has(pid))
     .map(([pid, p]) => '<circle class="cg-pt" data-cgplace="'+pid+'" cx="'+p.x+'" cy="'+p.y+'" r="13"/>'+
       '<text class="cg-ptl" x="'+p.x+'" y="'+(p.y - 17)+'">'+p.n+'</text>').join('');
   const paths = Object.entries(MAP.paths).map(([n, d]) =>
@@ -3050,8 +3066,7 @@ document.addEventListener("click", e => {
     const run = S.campaignRun, id = campaignPool()[0];
     run.chain = run.chain || {};
     run.chain[id] = run.chain[id] || [];
-    const want = CHAIN_KEYS[run.chain[id].length];
-    const ok = cn.dataset.cgchain === want;
+    const ok = gradeChainStep(run.chain[id].length, cn.dataset.cgchain);
     if(ok){
       run.chain[id].push(cn.dataset.cgchain);
       if(run.chain[id].length === CHAIN_KEYS.length){

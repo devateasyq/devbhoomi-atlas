@@ -749,7 +749,7 @@ window.addEventListener("load", async () => {
       const max = ev2("CHIPS.length - 1");
       const fireInput = v => {
         scrubRef.value = v;
-        scrubRef.dispatchEvent(new Event("input", {bubbles: true}));
+        scrubRef.dispatchEvent(new w2.Event("input", {bubbles: true}));
       };
       fireInput(Math.min(3, max));
       fireInput(Math.min(9, max));

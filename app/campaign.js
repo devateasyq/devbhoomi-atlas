@@ -88,11 +88,34 @@ function orderInPool(D, eraId, poolIds){
 }
 
 function gradeYear(D, eraId, index, chipId, poolIds){
+  if(arguments.length < 5) throw new Error("gradeYear: pass the run's pool, or null for the full board");
   return orderInPool(D, eraId, poolIds)[index] === chipId;
 }
 
 function gradePlace(chip, placeId){
   return chip.place === placeId;
+}
+
+/* The ids pass 3 may offer as answers. gradePlace() accepts a tap only when
+   it equals chip.place exactly, so whatever the board draws MUST come from
+   here — if the drawn set is narrower than the graded set, a chip whose
+   marker is missing can never be graded correct and that pass deadlocks
+   forever. That is not hypothetical: MAP.places.dhami is authored k:"state"
+   (Dhami is a hill state whose marker predates the 1939 firing recorded as
+   b-dhami), so filtering on marker kind alone silently dropped it.
+
+   This lives in the module rather than in the view precisely so the view and
+   the test cannot each keep their own copy of the rule and drift apart. */
+function placeOptions(D, MAP){
+  var claimed = {};
+  var chips = buildChips(D);
+  for(var i = 0; i < chips.length; i++) claimed[chips[i].place] = true;
+  var out = [];
+  for(var pid in MAP.places){
+    if(!Object.prototype.hasOwnProperty.call(MAP.places, pid)) continue;
+    if(MAP.places[pid].k === "battle" || claimed[pid]) out.push(pid);
+  }
+  return out;
 }
 
 /* sideIndex is an index into chip.sides, never a string. `winner` is prose
@@ -225,10 +248,12 @@ function shuffleChain(D, chipId, salt){
   return out;
 }
 
-function gradeChain(keys){
-  if(!keys || keys.length !== CHAIN_KEYS.length) return false;
-  for(var i = 0; i < CHAIN_KEYS.length; i++) if(keys[i] !== CHAIN_KEYS[i]) return false;
-  return true;
+/* The op the [data-cgchain] tap handler actually performs: is `key` the
+   right part for slot `index` (0=cause, 1=course, 2=result, 3=sig)? An
+   out-of-range index simply never matches, since CHAIN_KEYS[index] is
+   undefined there and no real key equals that. */
+function gradeChainStep(index, key){
+  return CHAIN_KEYS[index] === key;
 }
 
 /* Most-missed first, ties chronological. This is the revision loop: the
@@ -247,6 +272,15 @@ function seedPool(D, misses, weakOnly){
             .map(function(x){ return x.id; });
 }
 
+/* The full run shape. `band`, `year` and `chain` are per-pass scratch
+   state that only app.js's UI writes to (band/year record where a chip
+   was placed during passes 1-2; chain records chain-round progress) —
+   they are authored here anyway so the shape a fresh run has and the
+   shape every unit test exercises are the same one, and so a run
+   resumed from storage (old or new) always has the same key set as a
+   freshly-made one. `finalised` is deliberately NOT part of this shape:
+   it is a flag app.js sets once, after the run completes, and its
+   absence means "not finalised yet" — see campaignTouch() in app.js. */
 function newRun(D, opts){
   opts = opts || {};
   return {v: 1,
@@ -255,6 +289,7 @@ function newRun(D, opts){
           pool: seedPool(D, opts.misses, !!opts.weak),
           pass: PASSES[0],
           done: {}, miss: {}, marks: {},
+          band: {}, year: {}, chain: {},
           startedAt: Date.now()};
 }
 
@@ -311,7 +346,7 @@ if(typeof module !== "undefined" && module.exports){
                     sideOrder: sideOrder,
                     CHAIN_KEYS: CHAIN_KEYS, CHAIN_LABELS: CHAIN_LABELS,
                     chainParts: chainParts, shuffleChain: shuffleChain,
-                    gradeChain: gradeChain,
+                    gradeChainStep: gradeChainStep,
                     seedPool: seedPool, newRun: newRun,
                     recordAttempt: recordAttempt, scoreRun: scoreRun,
                     isRunComplete: isRunComplete, runMisses: runMisses};

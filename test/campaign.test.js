@@ -4,7 +4,7 @@ const assert = require("node:assert");
 const {loadData} = require("./load");
 const c = require("../app/campaign.js");
 
-const {D} = loadData();
+const {D, MAP} = loadData();
 const CHIPS = c.buildChips(D);
 const chip = id => CHIPS.find(x => x.id === id);
 
@@ -98,7 +98,7 @@ test("empty bands order to nothing", () => {
   assert.deepEqual(c.canonicalOrder(D, "e10"), []);
 });
 
-test("no band holds a single chip, so no slot is a free mark", () => {
+test("on the full board, no band holds a single chip, so no slot is a free mark", () => {
   for(const e of D.eras){
     const n = c.canonicalOrder(D, e.id).length;
     assert.ok(n !== 1, e.id + " holds exactly one chip — its year slot is unearnable");
@@ -106,10 +106,15 @@ test("no band holds a single chip, so no slot is a free mark", () => {
 });
 
 test("year grading checks the chip against its slot", () => {
-  assert.equal(c.gradeYear(D, "e7", 0, "b-mahalmorian"), true);
-  assert.equal(c.gradeYear(D, "e7", 1, "b-kalanga"), true);
-  assert.equal(c.gradeYear(D, "e7", 1, "b-jaithak"), false);
-  assert.equal(c.gradeYear(D, "e7", 9, "b-segauli"), false);
+  assert.equal(c.gradeYear(D, "e7", 0, "b-mahalmorian", null), true);
+  assert.equal(c.gradeYear(D, "e7", 1, "b-kalanga", null), true);
+  assert.equal(c.gradeYear(D, "e7", 1, "b-jaithak", null), false);
+  assert.equal(c.gradeYear(D, "e7", 9, "b-segauli", null), false);
+});
+
+test("gradeYear throws when the pool argument is omitted entirely", () => {
+  assert.throws(() => c.gradeYear(D, "e7", 0, "b-mahalmorian"),
+    /pass the run's pool, or null/);
 });
 
 test("place grading is exact", () => {
@@ -249,11 +254,21 @@ test("shuffleChain produces many distinct orderings across salts", () => {
     orderings.size);
 });
 
-test("a chain is correct only in full order", () => {
-  assert.equal(c.gradeChain(["cause", "course", "result", "sig"]), true);
-  assert.equal(c.gradeChain(["cause", "result", "course", "sig"]), false);
-  assert.equal(c.gradeChain(["cause", "course", "result"]), false);
-  assert.equal(c.gradeChain([]), false);
+test("gradeChainStep accepts only the right key at each slot", () => {
+  assert.equal(c.gradeChainStep(0, "cause"), true);
+  assert.equal(c.gradeChainStep(1, "course"), true);
+  assert.equal(c.gradeChainStep(2, "result"), true);
+  assert.equal(c.gradeChainStep(3, "sig"), true);
+});
+
+test("gradeChainStep rejects a wrong key for the slot", () => {
+  assert.equal(c.gradeChainStep(0, "sig"), false);
+  assert.equal(c.gradeChainStep(1, "cause"), false);
+});
+
+test("gradeChainStep is false, not throwing, for an out-of-range index", () => {
+  assert.equal(c.gradeChainStep(4, "cause"), false);
+  assert.equal(c.gradeChainStep(-1, "sig"), false);
 });
 
 test("a new run pools every chip and starts on the band pass", () => {
@@ -391,4 +406,31 @@ test("orderInPool narrows canonicalOrder to only the ids present in the pool", (
     ["b-malaun", "b-segauli"]);
   assert.deepEqual(c.orderInPool(D, "e6", ["b-anglosikh2", "b-kangra1809"]),
     ["b-kangra1809", "b-anglosikh2"]);
+});
+
+/* ------------------------------------------------------------------
+   Regression: pass 3 (place) must be winnable for every chip.
+
+   viewCampaignPlace() draws its tappable circles by filtering
+   MAP.places, and gradePlace() only ever accepts a tap that matches
+   chip.place exactly. Those two must be driven off the SAME set of ids
+   or a chip whose place is never drawn can never be graded correct —
+   deadlocking that pass forever. This mirrors the renderer's own
+   filter (see the WHY comment on viewCampaignPlace in app/app.js) so a
+   future edit that narrows the filter back down catches itself here.
+   ------------------------------------------------------------------ */
+function renderedPlaceIds(D, MAP){
+  var chipPlaces = new Set(c.buildChips(D).map(function(ch){ return ch.place; }));
+  return new Set(Object.keys(MAP.places).filter(function(pid){
+    return MAP.places[pid].k === "battle" || chipPlaces.has(pid);
+  }));
+}
+
+test("every chip's place exists on the map and is among the rendered pass-3 options", () => {
+  const rendered = renderedPlaceIds(D, MAP);
+  for(const ch of CHIPS){
+    assert.ok(MAP.places[ch.place], ch.id + " points at missing place " + ch.place);
+    assert.ok(rendered.has(ch.place),
+      ch.id + "'s place '" + ch.place + "' is never drawn by the renderer — pass 3 would deadlock on it");
+  }
 });
