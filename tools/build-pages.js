@@ -149,7 +149,12 @@ function page(id, entry){
   const k = KINDS[kind] || {lb: "Record", view: "map"};
   const name = nameOf(r);
   const title = name + " — " + k.lb + " | Parikrama Path";
-  const desc = clamp(firstProse(r) || (name + ", in the Himachal Pradesh section of the HPAS syllabus."), 155);
+  /* Used by the 39 records that carry no prose block. It is a meta
+     description on a real page, so it must not describe the site as
+     HPAS-only any more than the hand-written ones do. */
+  const desc = clamp(firstProse(r) ||
+    (name + " \u2014 " + (KINDS[entry.kind] || {lb:"record"}).lb.toLowerCase() +
+     " in the Himachal Pradesh material shared by HPAS, HPRCA, Police and TET exams."), 155);
   const url = SITE + "/r/" + id + "/";
   const app = SITE + "/#/" + k.view + "/" + id;
 
