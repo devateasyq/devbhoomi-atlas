@@ -31,6 +31,8 @@ const IDX = new Map();
 const PLACE_REC = new Map((D.features || []).map(r => [r.pid, r.id]));
 /* Facts are a projection of the records, built once at load like SEARCH. */
 const FACTS = buildFacts(D);
+const CHIPS = buildChips(D);
+const CHIPS_BY_ID = Object.fromEntries(CHIPS.map(ch => [ch.id, ch]));
 
 /* Every marker's district, resolved once at load. A record's own
    `districts` list wins where it has one — it is curated, and it is right
@@ -345,6 +347,7 @@ function factsList(pairs){
 const S = {
   view:"home", sel:null, trail:[], seen:[], legendOpen:false, focus:"",
   era:"all", battleFilter:"all", topicSec:"all",
+  battleMode:"cards", campaignRun:null, campaignSel:null, marchAt:0, marchPlaying:false,
   cmpTab:"districts", cmpKey:"area", cmpDesc:true,
   revMode:"papers",
   qIdx:0, qSec:"all", qAnswered:null,
@@ -1906,12 +1909,431 @@ function viewTimeline(){
   return '<div id="tlview">'+bar+'<div class="tl">'+body+'</div></div>';
 }
 
+/* ---------- campaign persistence ----------
+   One store key holds the in-progress run, the best result and the
+   per-battle first-try miss counts that seed the next run's pool. Four
+   passes plus sixteen chain rounds is a fifteen-minute session, so losing
+   the run on a closed tab is worse than having no board at all: every
+   placement writes through. */
+function campaignState(){
+  return store.get("campaign", {run:null, best:null, misses:{}});
+}
+function campaignSave(patch){
+  const st = campaignState();
+  store.set("campaign", Object.assign(st, patch));
+}
+function campaignStart(weak){
+  const st = campaignState();
+  S.campaignRun = newRun(D, {misses: st.misses, weak: !!weak});
+  campaignSave({run: S.campaignRun});
+}
+/* Called after every graded placement. Safe to call repeatedly: it
+   finalises a completed run at most once. The first call on a completed
+   run merges this run's first-try misses into the stored per-battle
+   totals, updates the best score if beaten, clears the stored run, and
+   marks the run object itself `finalised` — a later call on that same
+   run (a duplicate event, a re-render, the completion screen re-touching
+   it) sees the flag and returns without merging anything again. It does
+   NOT null S.campaignRun: the completion screen still needs the finished
+   run in memory to show the final score and the missed battles. */
+function campaignTouch(){
+  if(!S.campaignRun) return;
+  if(S.campaignRun.finalised) return;
+  const st = campaignState();
+  const patch = {run: S.campaignRun};
+  if(isRunComplete(S.campaignRun)){
+    const s = scoreRun(S.campaignRun);
+    const misses = Object.assign({}, st.misses);
+    const got = runMisses(S.campaignRun);
+    for(const id in got) misses[id] = (misses[id] || 0) + got[id];
+    patch.misses = misses;
+    patch.run = null;
+    if(!st.best || s.score > st.best.score) patch.best = {score:s.score, max:s.max, at:Date.now()};
+    S.campaignRun.finalised = true;
+  }
+  campaignSave(patch);
+}
+
+function viewCampaignStart(){
+  const st = campaignState();
+  const weakN = seedPool(D, st.misses, true).length;
+  /* weakN alone cannot tell "nothing missed" from "everything missed":
+     seedPool(..., true) falls back to the full board when misses is empty,
+     so weakN === D.battles.length in BOTH cases. Read the misses set
+     directly instead — the one case that must still show the button is
+     exactly the one weakN < D.battles.length used to hide it in. */
+  const hasWeak = Object.keys(st.misses || {}).length > 0;
+  return '<div class="pagewrap campaign-start">'+
+    '<p class="lede">Sixteen battles, four passes over the board — when, where, '+
+    'who won — and the cause-to-consequence chain for each. Nothing here is new '+
+    'material: every chip is one of the cards.</p>'+
+    (st.best ? '<p class="best">Best so far: <b>'+st.best.score+' / '+st.best.max+'</b></p>' : '')+
+    '<div class="chipset">'+
+      (st.run ? '<button class="tog primary" type="button" data-cg="resume">Resume</button>' : '')+
+      '<button class="tog" type="button" data-cg="new">'+(st.run ? 'Start over' : 'Start the campaign')+'</button>'+
+      (hasWeak ? '<button class="tog" type="button" data-cg="weak">Weak set ('+weakN+')</button>' : '')+
+    '</div></div>';
+}
+
+/* Tap-to-select, then tap-to-place. Never HTML5 drag: it is unusable on
+   touch, and this app is phone-first. */
+function campaignPool(){
+  const run = S.campaignRun, pass = run.pass;
+  return run.pool.filter(id => !(run.done[id] || {})[pass]);
+}
+function campaignChip(id){
+  return CHIPS_BY_ID[id];
+}
+function campaignAdvance(){
+  const run = S.campaignRun;
+  const pass = run.pass;
+  const left = run.pool.some(id => !(run.done[id] || {})[pass]);
+  if(left) return;
+  const i = PASSES.indexOf(pass);
+  if(i < PASSES.length - 1) run.pass = PASSES[i + 1];
+  S.campaignSel = null;
+}
+
+function campaignHeader(label, hint){
+  const run = S.campaignRun;
+  const s = scoreRun(run);
+  const left = campaignPool().length;
+  return '<div class="cg-head"><div><h3>'+label+'</h3><p>'+hint+'</p></div>'+
+    '<span class="cg-score">'+s.score+' / '+s.max+'</span></div>'+
+    '<div class="cg-prog"><i style="width:'+
+      Math.round(100 * (run.pool.length - left) / run.pool.length)+'%"></i></div>';
+}
+
+function campaignChipRow(ids){
+  return '<div class="cg-pool">'+ids.map(id => {
+    const ch = campaignChip(id);
+    return '<button class="cg-chip'+(S.campaignSel===id?" sel":"")+'" type="button" '+
+      'data-cgchip="'+id+'" aria-pressed="'+(S.campaignSel===id)+'">'+ch.name+'</button>';
+  }).join('')+'</div>';
+}
+
+function viewCampaignBand(){
+  const pool = campaignPool();
+  const bands = D.eras.map(e => {
+    const run = S.campaignRun;
+    const inBand = run.pool.filter(id =>
+      (run.done[id] || {}).band && (run.band || {})[id] === e.id);
+    return '<button class="cg-band" type="button" data-cgband="'+e.id+'" '+
+      'style="--ec:var('+e.v+')"><span class="nm">'+e.name+'</span>'+
+      '<span class="sp">'+e.span+'</span>'+
+      '<span class="got">'+inBand.map(id => campaignChip(id).name).join(' · ')+'</span></button>';
+  }).join('');
+  return '<div class="pagewrap cg">'+
+    campaignHeader("Pass 1 — When", "Tap a battle, then tap the era it belongs to.")+
+    campaignChipRow(pool)+
+    '<div class="cg-bands">'+bands+'</div></div>';
+}
+
+function viewCampaignYear(){
+  const run = S.campaignRun;
+  /* Ordering runs over the AUTHORED band, not wherever the reader put the
+     chip in pass 1 — pass 1 grades leniently, so following the reader's
+     choice through would make the slots non-deterministic. */
+  const bands = D.eras.filter(e => orderInPool(D, e.id, run.pool).length)
+    .map(e => {
+      const order  = orderInPool(D, e.id, run.pool);
+      const placed = (run.year || {})[e.id] || [];
+      const left   = order.filter(id => placed.indexOf(id) < 0);
+      const slots  = order.map((_, i) => {
+        const id = placed[i];
+        return '<span class="cg-slot'+(id?" full":"")+'">'+
+          (id ? campaignChip(id).name+' <i>'+campaignChip(id).yr+'</i>' : (i+1))+'</span>';
+      }).join('');
+      return '<div class="cg-yband" style="--ec:var('+e.v+')">'+
+        '<h4>'+e.name+' <span>'+e.span+'</span></h4>'+
+        '<div class="cg-slots">'+slots+'</div>'+
+        '<div class="cg-pool">'+left.map(id =>
+          '<button class="cg-chip" type="button" data-cgyear="'+e.id+'|'+id+'">'+
+          campaignChip(id).name+'</button>').join('')+'</div></div>';
+    }).join('');
+  return '<div class="pagewrap cg">'+
+    campaignHeader("Pass 2 — Order", "Earliest first. Tap the battle that comes next in each era.")+
+    bands+'</div>';
+}
+
+function viewCampaignPlace(){
+  const pool = campaignPool();
+  const id = pool[0];
+  const ch = campaignChip(id);
+  /* WHY the OR: gradePlace() accepts a tap iff it matches chip.place
+     exactly, so the tappable set here must include every chip's place —
+     not just markers authored k:"battle". MAP.places.dhami is authored
+     k:"state" (Dhami is a hill state whose marker predates the 1939
+     firing recorded as b-dhami), so filtering on marker kind alone drew
+     no circle for it: gradePlace could never return true, the pass could
+     never advance, and every run that reached b-dhami hard-deadlocked.
+     The view's option list and the grader's accepted answer must be
+     drawn from one source, or they drift exactly like this. */
+  const pts = placeOptions(D, MAP).map(pid => {
+    const p = MAP.places[pid];
+    return '<circle class="cg-pt" data-cgplace="'+pid+'" cx="'+p.x+'" cy="'+p.y+'" r="13"/>'+
+      '<text class="cg-ptl" x="'+p.x+'" y="'+(p.y - 17)+'">'+p.n+'</text>';
+  }).join('');
+  const paths = Object.entries(MAP.paths).map(([n, d]) =>
+    '<path class="dist" d="'+d+'" data-name="'+n+'"/>').join('');
+  return '<div class="pagewrap cg">'+
+    campaignHeader("Pass 3 — Where", "Tap the place this was fought.")+
+    '<p class="cg-ask">'+ch.name+'</p>'+
+    '<svg id="cgmap" viewBox="0 0 '+MAP.w+' '+MAP.h+'" role="img" aria-label="Map of Himachal Pradesh">'+
+      paths+pts+'</svg></div>';
+}
+
+function viewCampaignWinner(){
+  const pool = campaignPool();
+  const id = pool[0];
+  const ch = campaignChip(id);
+  /* Twelve of sixteen have winSide 0. Without this shuffle, always-tap-left
+     scores 12/16 while knowing nothing. */
+  const order = sideOrder(id, S.campaignRun.salt);
+  return '<div class="pagewrap cg">'+
+    campaignHeader("Pass 4 — Who won", "Tap the side that came out on top.")+
+    '<p class="cg-ask">'+ch.name+' <span>'+ch.yr+'</span></p>'+
+    '<div class="cg-sides">'+order.map(i =>
+      '<button class="cg-side" type="button" data-cgwin="'+i+'">'+ch.sides[i]+'</button>'
+    ).join('<span class="vs">vs</span>')+'</div></div>';
+}
+
+/* Mirrors mountMap()'s drag discipline: capture is taken only once movement
+   passes the threshold, and the action fires on pointerup against the element
+   recorded at pointerdown. Do not simplify this to a click handler with
+   pointer capture on pointerdown — that is the bug that silently swallowed
+   every map tap. */
+function mountCampaignMap(){
+  const svg = $("#cgmap"); if(!svg) return;
+  const DRAG = 8;
+  let down = null, moved = false;
+  svg.addEventListener("pointerdown", e => {
+    down = {x: e.clientX, y: e.clientY, target: e.target.closest("[data-cgplace]")};
+    moved = false;
+  });
+  /* Distance is measured from the recorded pointerdown position (as
+     mountMap() does), not from e.movementX/e.movementY. movementX/Y is a
+     per-event delta that the browser only fills in for real HID input —
+     a synthetic dispatchEvent(new PointerEvent(...)) leaves it at 0, which
+     would make the drag threshold below unreachable and let a drag place
+     an answer, exactly the bug this pattern exists to avoid. */
+  svg.addEventListener("pointermove", e => {
+    if(!down || moved) return;
+    const dx = e.clientX - down.x, dy = e.clientY - down.y;
+    if(Math.abs(dx) + Math.abs(dy) > DRAG){
+      moved = true;
+      try{ svg.setPointerCapture(e.pointerId); }catch(err){}
+    }
+  });
+  svg.addEventListener("pointerup", () => {
+    const el = down && down.target; down = null;
+    if(!el || moved) return;
+    const run = S.campaignRun;
+    const id = campaignPool()[0];
+    const ok = gradePlace(campaignChip(id), el.dataset.cgplace);
+    recordAttempt(run, id, "place", ok);
+    if(ok) campaignAdvance(); else toast("Not there — look again");
+    campaignTouch(); render();
+  });
+}
+
+function viewCampaignChain(){
+  const run = S.campaignRun;
+  if(isRunComplete(run)) return viewCampaignDone();
+  const id = campaignPool()[0];
+  const ch = campaignChip(id);
+  run.chain = run.chain || {};
+  const placed = run.chain[id] || [];
+  const parts  = shuffleChain(D, id, run.salt);
+  const left   = parts.filter(p => placed.indexOf(p.key) < 0);
+  const byKey  = k => parts.find(p => p.key === k);
+  return '<div class="pagewrap cg">'+
+    campaignHeader("Chain", "Cause, then course, then result, then why it matters.")+
+    '<p class="cg-ask">'+ch.name+' <span>'+ch.yr+'</span></p>'+
+    '<ol class="cg-chain">'+CHAIN_KEYS.map((k, i) => {
+      const got = placed[i];
+      return '<li class="'+(got?"full":"")+'">'+
+        (got ? '<b>'+byKey(got).label+'</b><p>'+byKey(got).text+'</p>'
+             : '<span class="slot">Slot '+(i+1)+'</span>')+'</li>';
+    }).join('')+'</ol>'+
+    '<div class="cg-parts">'+left.map(p =>
+      '<button class="cg-part" type="button" data-cgchain="'+p.key+'"><p>'+p.text+'</p></button>'
+    ).join('')+'</div></div>';
+}
+
+function viewCampaignDone(){
+  const run = S.campaignRun;
+  const s = scoreRun(run);
+  const missed = runMisses(run);
+  const ids = Object.keys(missed).sort((a, b) => missed[b] - missed[a]);
+  return '<div class="pagewrap cg cg-done">'+
+    '<h3>Campaign complete</h3>'+
+    '<p class="cg-final">'+s.score+' <span>/ '+s.max+'</span></p>'+
+    (ids.length
+      ? '<p class="lede">These are the ones that cost you. They come first next time.</p>'+
+        '<div class="cg-pool">'+ids.map(id =>
+          '<button class="cg-chip" type="button" data-c="'+id+'">'+campaignChip(id).name+
+          ' <i>'+missed[id]+'</i></button>').join('')+'</div>'
+      : '<p class="lede">Clean sweep — every chip first try.</p>')+
+    '<div class="chipset">'+
+      '<button class="tog" type="button" data-bm="march">Watch the march</button>'+
+      '<button class="tog" type="button" data-cg="new">Play again</button>'+
+    '</div></div>';
+}
+
+function viewCampaign(){
+  if(!S.campaignRun) return viewCampaignStart();
+  if(S.campaignRun.pass === "band")   return viewCampaignBand();
+  if(S.campaignRun.pass === "year")   return viewCampaignYear();
+  if(S.campaignRun.pass === "place")  return viewCampaignPlace();
+  if(S.campaignRun.pass === "winner") return viewCampaignWinner();
+  return viewCampaignChain();
+}
+
+/* The read half: no scoring, no pressure. It doubles as the replay — after
+   a run, each chip is tinted by whether the reader got it first try. */
+function viewMarch(){
+  /* campaignTouch() clears the persisted run the instant it finalises (it
+     merges the misses and nulls the stored run so a stale board never
+     resumes) but deliberately leaves S.campaignRun in memory so screens
+     like this one can still read it. campaignState().run would therefore
+     be null the moment a run finishes — exactly the case this replay
+     exists for — so the in-memory run is the only correct source here. */
+  /* CHIPS is built once at load (app.js:34) and is already chronological. */
+  const at = marchAt();
+  const paths = Object.entries(MAP.paths).map(([n, d]) =>
+    '<path class="dist" d="'+d+'" data-name="'+n+'"/>').join('');
+  return '<div class="pagewrap mc">'+
+    '<svg id="mcmap" viewBox="0 0 '+MAP.w+' '+MAP.h+'" role="img" '+
+      'aria-label="Battles of Himachal Pradesh in chronological order">'+
+      paths+'<g id="mcpins">'+marchPins()+'</g></svg>'+
+    '<div class="mc-controls"><button id="mcplay" class="mc-play" type="button" '+
+      'aria-pressed="false" aria-label="Play the march">'+marchPlayIcon()+'</button>'+
+    '<input id="mcscrub" type="range" min="0" max="'+(CHIPS.length - 1)+'" value="'+at+'" '+
+      'aria-label="Scrub through the battles in order"></div>'+
+    '<div class="mc-cap" id="mccap" style="--ec:var('+ERA[CHIPS[at].era].v+')">'+
+      marchCaption()+'</div></div>';
+}
+
+/* ---------- March playback ----------
+   A presentation mode: hold each battle on screen, then advance. The timer
+   lives outside S because it is a live handle, not state worth persisting —
+   a run resumed from localStorage must never come back mid-playback. */
+let marchTimer = null;
+const MARCH_STEP = 1800;   /* ms each battle holds before the next lights up */
+
+function marchPlayIcon(){
+  return S.marchPlaying
+    ? '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="6" width="3.5" height="12"/><rect x="13.5" y="6" width="3.5" height="12"/></svg>'
+    : '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>';
+}
+
+/* Only the button's own contents change, so the node — and the listener
+   bound to it in mountMarch — survives, exactly as the scrubber does. */
+function paintMarchControls(){
+  const b = $("#mcplay"); if(!b) return;
+  b.innerHTML = marchPlayIcon();
+  b.setAttribute("aria-pressed", String(S.marchPlaying));
+  b.setAttribute("aria-label", S.marchPlaying ? "Pause the march" : "Play the march");
+}
+
+function stopMarch(){
+  if(marchTimer){ clearInterval(marchTimer); marchTimer = null; }
+  S.marchPlaying = false;
+}
+
+function toggleMarch(){
+  if(marchTimer){ stopMarch(); paintMarchControls(); return; }
+  /* Pressing play at the end replays from the start rather than sitting still. */
+  if(marchAt() >= CHIPS.length - 1) S.marchAt = 0;
+  S.marchPlaying = true;
+  marchTimer = setInterval(() => {
+    if(marchAt() >= CHIPS.length - 1){ stopMarch(); paintMarchControls(); return; }
+    S.marchAt = marchAt() + 1;
+    paintMarch();
+  }, MARCH_STEP);
+  paintMarchControls();
+  paintMarch();
+}
+
+/* Clamped at BOTH ends: a stale S.marchAt above the range would index past
+   the last chip, and a negative one would index backwards from it. */
+function marchAt(){
+  return Math.max(0, Math.min(S.marchAt | 0, CHIPS.length - 1));
+}
+
+/* The pins and the caption are the only two things a scrub changes, so they
+   live in their own functions and viewMarch() and paintMarch() share them.
+   Building the markup in one place is what keeps the first render and every
+   repaint from drifting apart. */
+function marchPins(){
+  const at = marchAt();
+  /* campaignTouch() nulls the PERSISTED run the instant it finalises but
+     deliberately leaves S.campaignRun in memory, so the in-memory run is the
+     only source that still has marks the moment a run ends — which is exactly
+     when this replay is worth watching. */
+  const marks = (S.campaignRun && S.campaignRun.marks) || {};
+  return CHIPS.slice(0, at + 1).map((ch, i) => {
+    const p = MAP.places[ch.place]; if(!p) return "";
+    const m = marks[ch.id];
+    const cls = !m ? "" : (Object.keys(m).every(k => m[k] === 1) ? " ok" : " off");
+    return '<circle class="mc-pin'+cls+(i === at ? " now" : "")+'" cx="'+p.x+'" cy="'+p.y+
+      '" r="'+(i === at ? 16 : 9)+'" style="--ec:var('+ERA[ch.era].v+')"/>';
+  }).join('');
+}
+
+function marchCaption(){
+  const cur = CHIPS[marchAt()];
+  return '<span class="yr">'+cur.yr+'</span>'+
+    '<button class="nm" type="button" data-c="'+cur.id+'">'+cur.name+'</button>'+
+    '<p>'+D.battles.find(b => b.id === cur.id).sig.split(". ")[0]+'.</p>';
+}
+
+/* Repaint ONLY the pins and the caption. Never re-render the stage from the
+   scrubber's own input handler: render() does s.innerHTML = viewBattles(),
+   which destroys and recreates the <input> being dragged. A native range
+   thumb's tracking is bound to that specific element instance, so replacing
+   it mid-gesture drops the drag — the thumb moves one step and then stops
+   until the user releases and presses again. The live input's own value is
+   left alone here; during a drag the browser owns it. */
+function paintMarch(){
+  const pins = $("#mcpins"), cap = $("#mccap");
+  if(!pins || !cap) return;
+  pins.innerHTML = marchPins();
+  cap.innerHTML = marchCaption();
+  cap.style.setProperty("--ec", "var("+ERA[CHIPS[marchAt()].era].v+")");
+  /* Drive the thumb only while playing. During a drag the browser owns the
+     input's value and writing to it would fight the user's thumb. */
+  const r = $("#mcscrub");
+  if(r && S.marchPlaying) r.value = marchAt();
+}
+
+function mountMarch(){
+  const r = $("#mcscrub"); if(!r) return;
+  /* Taking hold of the scrubber takes over from playback — nobody wants the
+     film advancing under the thumb they are dragging. */
+  r.addEventListener("input", e => {
+    if(marchTimer){ stopMarch(); paintMarchControls(); }
+    S.marchAt = +e.target.value;
+    paintMarch();
+  });
+  const b = $("#mcplay");
+  if(b) b.addEventListener("click", toggleMarch);
+  paintMarchControls();
+}
+
 function viewBattles(){
+  const MODES = [["cards","Cards"],["march","March"],["campaign","Campaign"]];
+  const modebar = '<div class="chipset modebar">'+MODES.map(m =>
+    '<button class="tog" type="button" data-bm="'+m[0]+'" aria-pressed="'+
+    (S.battleMode===m[0])+'">'+m[1]+'</button>').join('')+'</div>';
+  if(S.battleMode === "march")    return modebar + viewMarch();
+  if(S.battleMode === "campaign") return modebar + viewCampaign();
   const KINDLB = {battle:"Battle", siege:"Siege", treaty:"Treaty", firing:"Confrontation"};
   const kinds = ["all","battle","siege","treaty","firing"];
   const list = [...D.battles].sort((a,b) => a.y-b.y)
     .filter(b => S.battleFilter === "all" || b.kind === S.battleFilter);
-  return '<div class="pagewrap">'+
+  return modebar + '<div class="pagewrap">'+
     '<p class="lede">Every war, siege, treaty and confrontation named in the syllabus, in order. Each card gives '+
     'the cause, the course, the result and why it matters — the four-part shape a mains answer needs.</p>'+
     '<div class="chipset" style="margin-bottom:16px">'+kinds.map(k =>
@@ -2769,13 +3191,21 @@ function mountProfile(){
 /* ---------- render dispatcher ---------- */
 function render(){
   const s = $("#stage");
+  /* Leaving March tears down the DOM the playback timer repaints into, so
+     stop it here rather than leaving an interval firing at a dead #mcpins. */
+  if(!(S.view === "battles" && S.battleMode === "march")) stopMarch();
   /* #stage scrolls itself; a scroll-snap feed nested inside it would give
      two scrollbars and snapping that fights the outer scroll. */
   s.classList.toggle("noscroll", S.view === "rounds");
   if(S.view === "home")           s.innerHTML = viewHome();
   else if(S.view === "map")     { s.innerHTML = viewMap(); mountMap(); }
   else if(S.view === "timeline"){ s.innerHTML = viewTimeline(); paintSelection(); }
-  else if(S.view === "battles") { s.innerHTML = viewBattles(); paintSelection(); }
+  else if(S.view === "battles") {
+    s.innerHTML = viewBattles();
+    if(S.battleMode === "march") mountMarch();
+    else if(S.battleMode === "campaign" && S.campaignRun && S.campaignRun.pass === "place") mountCampaignMap();
+    else paintSelection();
+  }
   else if(S.view === "topics")  { s.innerHTML = viewTopics(); paintSelection(); }
   else if(S.view === "people")  { s.innerHTML = viewPeople(); paintSelection(); }
   else if(S.view === "trends")    s.innerHTML = viewTrends();
@@ -2834,6 +3264,72 @@ document.addEventListener("click", e => {
   const ev  = hit(".ev");           if(ev){ openRec(ev.dataset.e); return; }
   const card= hit("[data-c]");      if(card){ openRec(card.dataset.c); return; }
   const bf  = hit("[data-bf]");     if(bf){ S.battleFilter = bf.dataset.bf; render(); return; }
+  const bm  = hit("[data-bm]");     if(bm){ S.battleMode = bm.dataset.bm; render(); return; }
+  const cg  = hit("[data-cg]");     if(cg){
+    const a = cg.dataset.cg;
+    if(a === "resume") S.campaignRun = campaignState().run;
+    else campaignStart(a === "weak");
+    render(); return;
+  }
+  const cc = hit("[data-cgchip]");  if(cc){
+    S.campaignSel = (S.campaignSel === cc.dataset.cgchip) ? null : cc.dataset.cgchip;
+    render(); return;
+  }
+  const cb = hit("[data-cgband]");  if(cb){
+    if(!S.campaignSel){ toast("Pick a battle first"); return; }
+    const run = S.campaignRun, id = S.campaignSel, band = cb.dataset.cgband;
+    const ok = gradeBand(D, campaignChip(id), band);
+    recordAttempt(run, id, "band", ok);
+    if(ok){
+      run.band = run.band || {};
+      /* The board snaps the chip to its AUTHORED era even when the reader
+         picked a different, equally defensible overlapping band — pass 2
+         needs one deterministic home per chip. */
+      run.band[id] = campaignChip(id).era;
+      S.campaignSel = null;
+      campaignAdvance();
+    } else toast("Not that era — try again");
+    campaignTouch(); render(); return;
+  }
+  const cy = hit("[data-cgyear]");  if(cy){
+    const parts = cy.dataset.cgyear.split("|"), era = parts[0], id = parts[1];
+    const run = S.campaignRun;
+    run.year = run.year || {};
+    run.year[era] = run.year[era] || [];
+    const ok = gradeYear(D, era, run.year[era].length, id, run.pool);
+    recordAttempt(run, id, "year", ok);
+    if(ok){ run.year[era].push(id); campaignAdvance(); }
+    else toast("Something came before that one");
+    campaignTouch(); render(); return;
+  }
+  const cw = hit("[data-cgwin]");   if(cw){
+    const run = S.campaignRun, id = campaignPool()[0];
+    const ok = gradeWinner(campaignChip(id), +cw.dataset.cgwin);
+    recordAttempt(run, id, "winner", ok);
+    if(ok) campaignAdvance(); else toast("The other side");
+    campaignTouch(); render(); return;
+  }
+  const cn = hit("[data-cgchain]"); if(cn){
+    const run = S.campaignRun, id = campaignPool()[0];
+    run.chain = run.chain || {};
+    run.chain[id] = run.chain[id] || [];
+    const ok = gradeChainStep(run.chain[id].length, cn.dataset.cgchain);
+    if(ok){
+      run.chain[id].push(cn.dataset.cgchain);
+      if(run.chain[id].length === CHAIN_KEYS.length){
+        /* Always `true` here: the pass IS complete. recordAttempt zeroes the
+           mark by itself if a wrong part was tapped earlier. Passing `false`
+           would leave run.done[id].chain unset and the chip could never
+           leave the pool — an infinite chain round. */
+        recordAttempt(run, id, "chain", true);
+        campaignAdvance();
+      }
+    } else {
+      recordAttempt(run, id, "chain", false);
+      toast("Something comes before that");
+    }
+    campaignTouch(); render(); return;
+  }
   const ts  = hit("[data-ts]");     if(ts){ S.topicSec = ts.dataset.ts; render(); return; }
   const rm  = hit("[data-rm]");     if(rm){ S.revMode = rm.dataset.rm; S.qAnswered = null; render(); return; }
   const rs  = hit("[data-rs]");     if(rs){

@@ -2,3 +2,6 @@ _test.html
 .DS_Store
 node_modules/
 .vercel
+
+# scratch debugging pages (test/_*.html) — never part of the suite
+test/_*.html

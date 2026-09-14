@@ -344,9 +344,14 @@ D.events = [
 
 
 /* ---------- BATTLES, SIEGES & TREATIES ---------- */
+
+/* winSide is the index into this record's own `sides` of the side that won.
+   It exists because `winner` is prose for a reader and `outcome` reads from
+   the hill states' point of view — Bhangani is outcome:"loss" while sides[0],
+   Guru Gobind Singh, won it. Do not try to derive one from the other. */
 D.battles = [
 {id:"b-kangra1620", name:"Siege of Kangra Fort", kind:"siege", era:"e5", y:1620, yr:"1620", place:"kangrafort",
- sides:["Mughal Empire (Jahangir)","Kangra (Katoch)"], outcome:"win", winner:"Mughals",
+ sides:["Mughal Empire (Jahangir)","Kangra (Katoch)"], outcome:"win", winner:"Mughals", winSide:0,
  cause:"Akbar had failed to take Nagarkot; Jahangir made its capture a point of imperial prestige and a key to controlling the Punjab hills.",
  course:"The siege was pressed from 1615 by Murtaza Khan and then Suraj Mal, and completed by an army under Prince Khurram (the future Shah Jahan) with Raja Suraj Mal and Raja Jagat Singh of Nurpur. The garrison was starved into surrender.",
  result:"Kangra fort fell to the Mughals in 1620 — the first time it had been held by an outside power for any length of time. Jahangir visited in 1622, ordered a mosque built inside the fort, and considered building a residence in the valley. Nawab Ali Khan was made the first Mughal keeper.",
@@ -354,7 +359,7 @@ D.battles = [
  rel:["s-kangra","s-nurpur","ev-akbar-tribute","t-mughal-relations","d-kangra"]},
 
 {id:"b-bhangani", name:"Battle of Bhangani", kind:"battle", era:"e5", y:1688, yr:"1688", place:"bhangani",
- sides:["Guru Gobind Singh","Confederacy of hill rajas under Bhim Chand of Kahlur"], outcome:"loss", winner:"Guru Gobind Singh",
+ sides:["Guru Gobind Singh","Confederacy of hill rajas under Bhim Chand of Kahlur"], outcome:"loss", winner:"Guru Gobind Singh", winSide:0,
  cause:"The hill rajas resented the Guru's growing military establishment at Paonta Sahib and his refusal to pay tribute to Bhim Chand of Kahlur, on whose former territory Anandpur stood.",
  course:"Fought near Paonta Sahib on the Yamuna in Sirmaur. Bhim Chand of Kahlur led the hill chiefs, joined by Fateh Shah of Garhwal; the Guru's force included Pathan mercenaries who deserted, and Udai Singh and Pir Budhu Shah's men who stayed.",
  result:"The hill confederacy was defeated. It was Guru Gobind Singh's first battle.",
@@ -362,7 +367,7 @@ D.battles = [
  rel:["s-sirmaur","s-kahlur","ev-paonta","t-sikh-relations","d-sirmaur"]},
 
 {id:"b-nadaun", name:"Battle of Nadaun", kind:"battle", era:"e5", y:1691, yr:"1691", place:"mahalmorian",
- sides:["Hill rajas + Guru Gobind Singh","Mughal force under Alif Khan"], outcome:"win", winner:"Hill rajas and the Guru",
+ sides:["Hill rajas + Guru Gobind Singh","Mughal force under Alif Khan"], outcome:"win", winner:"Hill rajas and the Guru", winSide:0,
  cause:"Bhim Chand of Kahlur and other hill chiefs refused the tribute demanded by the Mughal governor of Jammu; Alif Khan was sent to enforce it.",
  course:"Fought on the Beas at Nadaun (Hamirpur). Three years after fighting each other at Bhangani, Bhim Chand of Kahlur and Guru Gobind Singh fought on the same side against the Mughal detachment.",
  result:"Alif Khan was defeated and withdrew.",
@@ -370,7 +375,7 @@ D.battles = [
  rel:["s-kahlur","ev-paonta","t-sikh-relations","d-hamirpur"]},
 
 {id:"b-mahalmorian", name:"Battle of Mahal Morian", kind:"battle", era:"e7", y:1806, yr:"1806", place:"mahalmorian",
- sides:["Gorkhas under Amar Singh Thapa + hill chiefs","Kangra under Sansar Chand II"], outcome:"loss", winner:"Gorkhas",
+ sides:["Gorkhas under Amar Singh Thapa + hill chiefs","Kangra under Sansar Chand II"], outcome:"loss", winner:"Gorkhas", winSide:0,
  cause:"Sansar Chand had reduced most of the hill states to tribute. The chiefs — led by Kahlur — invited Amar Singh Thapa across the Sutlej to break him.",
  course:"The armies met at Mahal Morian in present-day Hamirpur district. Sansar Chand's forces were broken; he fled to Sujanpur Tira and then shut himself into Kangra fort.",
  result:"Katoch supremacy over the hills ended in a single afternoon. The Gorkhas overran the Kangra valley and besieged the fort for four years, but never took it.",
@@ -378,7 +383,7 @@ D.battles = [
  rel:["p-sansarchand","p-amarsingh","s-kangra","ev-gorkha-kangra","b-kangra1809","d-hamirpur"]},
 
 {id:"b-kangra1809", name:"Relief of Kangra Fort", kind:"siege", era:"e6", y:1809, yr:"1809", place:"kangrafort",
- sides:["Sikhs under Ranjit Singh + Kangra","Gorkhas under Amar Singh Thapa"], outcome:"treaty", winner:"Sikhs",
+ sides:["Sikhs under Ranjit Singh + Kangra","Gorkhas under Amar Singh Thapa"], outcome:"treaty", winner:"Sikhs", winSide:0,
  cause:"Sansar Chand, besieged in Kangra fort since 1806 and near starvation, appealed to Maharaja Ranjit Singh for relief.",
  course:"By the agreement concluded at Jwalamukhi, Ranjit Singh's army marched into the valley and drove the Gorkhas back across the Sutlej. The price was the fort itself.",
  result:"The Gorkhas withdrew east of the Sutlej permanently. Ranjit Singh took possession of Kangra fort and 66 villages; Sansar Chand became a Sikh tributary and retired to Sujanpur Tira.",
@@ -386,7 +391,7 @@ D.battles = [
  rel:["p-sansarchand","p-ranjitsingh","p-amarsingh","ev-jwalamukhi-treaty","t-sikh-relations","ev-punjab-reorg"]},
 
 {id:"b-jaithak", name:"Battle of Jaithak", kind:"battle", era:"e7", y:1814.9, yr:"December 1814 – January 1815", place:"jaithak",
- sides:["British East India Company","Gorkhas under Ranjor Singh Thapa"], outcome:"loss", winner:"Gorkhas (tactically)",
+ sides:["British East India Company","Gorkhas under Ranjor Singh Thapa"], outcome:"loss", winner:"Gorkhas (tactically)", winSide:1,
  cause:"Jaithak fort above Nahan commanded Sirmaur; Major-General Martindell was ordered to take it as the first step of the western campaign.",
  course:"Ranjor Singh Thapa, son of Amar Singh Thapa, held the ridge with a small garrison. Two British assaults in December 1814 were thrown back with heavy loss; Martindell then settled into a blockade rather than storm the position.",
  result:"The British failed to take Jaithak by assault. The fort held out until Amar Singh Thapa's capitulation at Malaun in May 1815 made further resistance pointless.",
@@ -394,7 +399,7 @@ D.battles = [
  rel:["s-sirmaur","p-amarsingh","ev-anglo-gorkha","b-malaun","d-sirmaur"]},
 
 {id:"b-malaun", name:"Fall of Malaun", kind:"battle", era:"e7", y:1815.4, yr:"15 May 1815", place:"malaun",
- sides:["British East India Company under David Ochterlony","Gorkhas under Amar Singh Thapa"], outcome:"win", winner:"British",
+ sides:["British East India Company under David Ochterlony","Gorkhas under Amar Singh Thapa"], outcome:"win", winner:"British", winSide:0,
  cause:"Malaun, in Hindur (Nalagarh), was Amar Singh Thapa's headquarters west of the Sutlej and the last Gorkha stronghold in the Shimla hills.",
  course:"Ochterlony advanced methodically, detaching the hill chiefs from the Gorkhas with promises of restoration, and took the ridge position by position. Ramgarh fell first. In the assault on Malaun the veteran Gorkha commander Bhakti Thapa was killed leading a counter-attack.",
  result:"Amar Singh Thapa capitulated on 15 May 1815 and was allowed to march out with his arms and withdraw to Nepal. Many of his soldiers immediately took service with the British.",
@@ -402,7 +407,7 @@ D.battles = [
  rel:["p-amarsingh","p-ochterlony","s-nalagarh","ev-malaun","ev-1857","d-solan"]},
 
 {id:"b-segauli", name:"Treaty of Segauli (Sugauli)", kind:"treaty", era:"e7", y:1816, yr:"Signed 2 Dec 1815 · ratified 4 March 1816", place:"malaun",
- sides:["British East India Company","Kingdom of Nepal"], outcome:"treaty", winner:"British",
+ sides:["British East India Company","Kingdom of Nepal"], outcome:"treaty", winner:"British", winSide:0,
  cause:"To end the Anglo-Gorkha War of 1814–16 and fix Nepal's boundaries permanently.",
  course:"Negotiated after the fall of Malaun and the Gorkha reverses in the east; signed at Segauli on 2 December 1815 and ratified on 4 March 1816 after a renewed British advance.",
  result:"Nepal ceded all territory west of the Kali river — Kumaon, Garhwal and the hill states up to the Sutlej — gave up Sikkim and much of the Tarai, accepted a British Resident at Kathmandu, and conceded the right to recruit Gorkhas into British service. Nepal lost roughly a third of its territory.",
@@ -410,7 +415,7 @@ D.battles = [
  rel:["ev-segauli","p-amarsingh","p-ochterlony","t-colonial-admin","t-gorkha"]},
 
 {id:"b-lahore", name:"Treaty of Lahore", kind:"treaty", era:"e6", y:1846, yr:"9 March 1846", place:"kangrafort",
- sides:["British East India Company","Sikh Empire"], outcome:"treaty", winner:"British",
+ sides:["British East India Company","Sikh Empire"], outcome:"treaty", winner:"British", winSide:0,
  cause:"To settle the First Anglo-Sikh War (1845–46) after the Sikh defeats at Ferozeshah, Aliwal and Sobraon.",
  course:"Imposed on the Lahore darbar after Sobraon. The Sikhs paid an indemnity, reduced their army, ceded the Jalandhar Doab and the hill country between the Beas and the Sutlej.",
  result:"Kangra, Kullu, Lahaul and Spiti, and the trans-Sutlej hill tracts passed to the East India Company and were constituted as the district of Kangra under the Punjab administration.",
@@ -418,7 +423,7 @@ D.battles = [
  rel:["ev-lahore-treaty","p-ranjitsingh","ev-punjab-reorg","t-colonial-admin","d-kangra"]},
 
 {id:"b-shahpur", name:"Ram Singh Pathania's Rising", kind:"battle", era:"e9", y:1848, yr:"1848", place:"shahpurkandi",
- sides:["Nurpur rebels under Ram Singh Pathania","British East India Company"], outcome:"loss", winner:"British",
+ sides:["Nurpur rebels under Ram Singh Pathania","British East India Company"], outcome:"loss", winner:"British", winSide:1,
  cause:"The British had annexed Nurpur and pensioned off its royal house. Ram Singh, the wazir, rose in the name of the minor heir Jaswant Singh during the Second Anglo-Sikh War.",
  course:"He seized the fort of Shahpur Kandi and raised the Nurpur hills, evading British columns for months in the Dhameri country before being brought to action near Shahpur.",
  result:"Defeated after being betrayed, captured, and transported to Singapore, where he died in 1849.",
@@ -426,7 +431,7 @@ D.battles = [
  rel:["p-ramsingh","s-nurpur","ev-ramsingh","t-freedom","d-kangra"]},
 
 {id:"b-dhami", name:"The Dhami Firing", kind:"firing", era:"e9", y:1939.6, yr:"16 July 1939", place:"dhami",
- sides:["Dhami Praja Mandal","Rana Dalip Singh of Dhami"], outcome:"loss", winner:"The state, momentarily",
+ sides:["Dhami Praja Mandal","Rana Dalip Singh of Dhami"], outcome:"loss", winner:"The state, momentarily", winSide:1,
  cause:"The Rana banned the Dhami Prem Prachani Sabha. Bhagmal Sautha led a procession to Halog to present the Praja Mandal's demands and was arrested on the way.",
  course:"The crowd, angered by the arrest, pressed on to Halog Chowk. The Rana's men opened fire.",
  result:"Durga Das was killed and many were injured. Bhagmal Sautha, Mansa Ram and Dharam Das were arrested. Nehru took up the case and the lawyer Duni Chand was deputed to enquire; a delegation including Rajkumari Amrit Kaur carried it to Gandhi.",
@@ -434,7 +439,7 @@ D.battles = [
  rel:["ev-dhami","s-dhami","p-bhagmalsautha","p-amritkaur","t-freedom","d-shimla"]},
 
 {id:"b-ghazni1009", name:"Sack of Nagarkot", kind:"battle", era:"e4", y:1009, yr:"1009", place:"kangrafort",
- sides:["Mahmud of Ghazni","Kangra (Katoch)"], outcome:"loss", winner:"Mahmud of Ghazni",
+ sides:["Mahmud of Ghazni","Kangra (Katoch)"], outcome:"loss", winner:"Mahmud of Ghazni", winSide:0,
  cause:"The wealth accumulated in the Brajeshwari temple at Nagarkot, reported to Mahmud after his victory over the Hindu Shahi confederacy.",
  course:"Mahmud turned aside from the Punjab plains and invested Nagarkot, which surrendered after a short siege.",
  result:"The temple treasury was carried off — the Tarikh-i-Yamini of Utbi gives an extravagant inventory. The fort was later recovered by the hill chiefs.",
@@ -442,7 +447,7 @@ D.battles = [
  rel:["ev-ghazni","s-kangra","d-kangra","t-temples"]},
 
 {id:"b-tughlaq1360", name:"Firoz Shah Tughlaq's Raid on Nagarkot", kind:"battle", era:"e4", y:1360, yr:"1360", place:"kangrafort",
- sides:["Delhi Sultanate (Firoz Shah Tughlaq)","Kangra (Katoch)"], outcome:"loss", winner:"Delhi Sultanate",
+ sides:["Delhi Sultanate (Firoz Shah Tughlaq)","Kangra (Katoch)"], outcome:"loss", winner:"Delhi Sultanate", winSide:0,
  cause:"To reassert Sultanate authority over the hills after Muhammad bin Tughlaq's inconclusive expedition of 1337.",
  course:"Firoz Shah besieged the fort; the raja submitted and was restored as a tributary.",
  result:"The sultan took 1,300 Sanskrit manuscripts from the library of the Jwalamukhi temple, some of which were translated into Persian as the Dalail-i-Firoz Shahi.",
@@ -450,7 +455,7 @@ D.battles = [
  rel:["ev-tughlaq","s-kangra","d-kangra","t-temples"]},
 
 {id:"b-kalanga", name:"Battle of Kalanga (Nalapani)", kind:"battle", era:"e7", y:1814.8, yr:"31 October 1814", place:"jaithak",
- sides:["British East India Company under Rollo Gillespie","Gorkhas under Balbhadra Kunwar"], outcome:"loss", winner:"Gorkhas (tactically)",
+ sides:["British East India Company under Rollo Gillespie","Gorkhas under Balbhadra Kunwar"], outcome:"loss", winner:"Gorkhas (tactically)", winSide:1,
  cause:"The opening British assault of the Anglo-Gorkha War, against the fort covering Dehra Dun.",
  course:"Major-General Rollo Gillespie attacked without waiting for his siege guns and was killed at the gate on 31 October 1814. Balbhadra Kunwar held out with about 600 men against a far larger force before cutting his way out.",
  result:"A British tactical defeat, though the position was abandoned. Gillespie was the most senior British officer killed in the war.",
@@ -458,7 +463,7 @@ D.battles = [
  rel:["ev-anglo-gorkha","b-jaithak","t-gorkha","p-ochterlony"]},
 
 {id:"b-anglosikh2", name:"Second Anglo-Sikh War", kind:"battle", era:"e6", y:1849, yr:"1848–49", place:"kangrafort",
- sides:["British East India Company","Sikh Empire"], outcome:"win", winner:"British",
+ sides:["British East India Company","Sikh Empire"], outcome:"win", winner:"British", winSide:0,
  cause:"The revolt at Multan and the wider Sikh rising against the British residency established after 1846.",
  course:"Decided at Chillianwala and Gujrat. In the hills, several rajas who had backed the Sikhs were dispossessed.",
  result:"The Punjab was annexed. The hill states of Jaswan, Datarpur and Siba were annexed outright and their rulers pensioned; Ram Singh Pathania's rising in Nurpur was crushed in the same period.",
@@ -466,7 +471,7 @@ D.battles = [
  rel:["s-jaswan","s-siba","s-datarpur","b-shahpur","t-colonial-admin"]},
 
 {id:"b-suket1948", name:"The Suket Satyagraha", kind:"firing", era:"e9", y:1948.1, yr:"18 February 1948", place:"tattapani",
- sides:["Suket Praja Mandal under Pandit Padam Dev","Raja Lakshman Sen of Suket"], outcome:"win", winner:"The people's movement",
+ sides:["Suket Praja Mandal under Pandit Padam Dev","Raja Lakshman Sen of Suket"], outcome:"win", winner:"The people's movement", winSide:0,
  cause:"Suket's ruler resisted accession to the proposed hill province after the other states had agreed at the Solan convention.",
  course:"Volunteers crossed into Suket from Tattapani on 18 February 1948 and marched on Sundernagar. The state's authority collapsed without serious resistance.",
  result:"Suket acceded. Within two months the Chief Commissioner's Province of Himachal Pradesh was proclaimed on 15 April 1948.",

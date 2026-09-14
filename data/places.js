@@ -6,17 +6,23 @@
    ============================================================ */
 const D = {};
 
+/* y0/y1 are the numeric form of `span`, used by the Campaign band pass to
+   grade a placement. They are authored rather than parsed because `span` is
+   not one format: "c. 40,000 BCE – 1000 BCE" and "1948 – present" share no
+   grammar. y1:9999 stands for "present". Note that the spans deliberately
+   OVERLAP (e6/e7, e8/e9) — that is real history, not an error, and the band
+   grading rule accounts for it. */
 D.eras = [
- {id:"e1", name:"Prehistory & the Vedic Hills", span:"c. 40,000 BCE – 1000 BCE", v:"--e1"},
- {id:"e2", name:"Janapadas & Hill Republics",   span:"c. 1000 BCE – 300 CE",     v:"--e2"},
- {id:"e3", name:"Empires: Maurya to Harsha",    span:"326 BCE – 647 CE",         v:"--e3"},
- {id:"e4", name:"Rise of the Hill States",      span:"c. 550 – 1526",            v:"--e4"},
- {id:"e5", name:"Hill States & the Mughals",    span:"1526 – 1752",              v:"--e5"},
- {id:"e6", name:"Sansar Chand & the Sikhs",     span:"1752 – 1846",              v:"--e6"},
- {id:"e7", name:"The Gorkha Invasion",          span:"1790 – 1816",              v:"--e7"},
- {id:"e8", name:"British Paramountcy",          span:"1815 – 1947",              v:"--e8"},
- {id:"e9", name:"Praja Mandal & Freedom",       span:"1848 – 1948",              v:"--e9"},
- {id:"e10",name:"Making Himachal Pradesh",      span:"1948 – present",           v:"--e10"}
+ {id:"e1", name:"Prehistory & the Vedic Hills", span:"c. 40,000 BCE – 1000 BCE", v:"--e1", y0:-40000, y1:-1000},
+ {id:"e2", name:"Janapadas & Hill Republics",   span:"c. 1000 BCE – 300 CE",     v:"--e2", y0:-1000,  y1:300},
+ {id:"e3", name:"Empires: Maurya to Harsha",    span:"326 BCE – 647 CE",         v:"--e3", y0:-326,   y1:647},
+ {id:"e4", name:"Rise of the Hill States",      span:"c. 550 – 1526",            v:"--e4", y0:550,    y1:1526},
+ {id:"e5", name:"Hill States & the Mughals",    span:"1526 – 1752",              v:"--e5", y0:1526,   y1:1752},
+ {id:"e6", name:"Sansar Chand & the Sikhs",     span:"1752 – 1846",              v:"--e6", y0:1752,   y1:1846},
+ {id:"e7", name:"The Gorkha Invasion",          span:"1790 – 1816",              v:"--e7", y0:1790,   y1:1816},
+ {id:"e8", name:"British Paramountcy",          span:"1815 – 1947",              v:"--e8", y0:1815,   y1:1947},
+ {id:"e9", name:"Praja Mandal & Freedom",       span:"1848 – 1948",              v:"--e9", y0:1848,   y1:1948},
+ {id:"e10",name:"Making Himachal Pradesh",      span:"1948 – present",           v:"--e10",y0:1948,   y1:9999}
 ];
 
 /* ---------- 12 DISTRICTS ---------- */
