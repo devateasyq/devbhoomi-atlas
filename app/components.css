@@ -438,7 +438,18 @@ button.card:hover{border-color:var(--accent-line);transform:translateY(-1px)}
   .strow{margin-inline:-14px;padding-inline:14px;gap:14px}
 }
 
+/* ---------- what to revise next ---------- */
+/* Closes the hub. The tiles above say where things are; this says what to
+   do now, so it is the last thing on the page rather than another list of
+   doors. The miss count rides in the chip because "Pahari Painting 4" is
+   a reason to tap and "Pahari Painting" on its own is not. */
+.rnext{margin-top:30px}
+.rnext .weak{margin-top:0}
+.rnext .wn{font-family:var(--f-mono);font-size:10px;color:var(--ink-3)}
+.rnsay{font-size:13px;color:var(--ink-2);line-height:1.5;margin:11px 0 12px;max-width:62ch}
+
 button.tile:hover{border-color:var(--accent-line)}
+/* Now at the foot of Exams, under the nine exams, rather than on the hub. */
 .syllabus{margin-top:34px}
 .sylrow{display:grid;grid-template-columns:26px 1fr;gap:12px;padding:11px 0;
   border-bottom:1px solid var(--line-soft);align-items:start;text-align:left;width:100%;cursor:pointer}

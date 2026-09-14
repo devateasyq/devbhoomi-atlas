@@ -1597,6 +1597,7 @@ function viewExams(){
     'share — geography, history, polity, economy and culture. The past-paper bank '+
     'is HPAS only, and each exam below says plainly what is here for it.</p>'+
     '<div class="exlist">'+rows+'</div>'+
+    syllabusBlock()+
     '<p class="exnote">Conducting bodies last checked '+esc(when)+'. '+
     'They do change — the state\'s previous staff selection board was dissolved in '+
     '2023 and its recruitment moved to HPRCA — '+
@@ -1770,20 +1771,73 @@ function storyDlg(id){
     '<button class="btn sm" type="button" data-dlgclose="1">Close</button>';
 }
 
+/* ---------- the syllabus, as eleven blocks ---------- */
+/* It sits on Exams, not on the Overview. On the hub it was a second
+   navigation list stacked straight after the section tiles — the same job
+   in a different visual language — and it was the one thing on a page that
+   now opens with a daily rail that never changed. Under the nine exams it
+   is answering the question the page already asks: the intro there says
+   this atlas is the Himachal material those exams share, and this is that
+   material, enumerated.
+
+   Each row still opens a single record. That is an honest shortcut rather
+   than a coverage map, which is why the heading says "start here" and not
+   "everything in this block": D.topics carries five sections, not eleven,
+   so a real per-block coverage figure needs a block-to-records mapping the
+   data does not have yet. */
+const SYLLABUS = [
+  ["01","Ancient Himachal","Pre-history, Vedic references and the janapadas","t-janapadas"],
+  ["02","Early medieval states","Kangra, Kullu and Chamba emerge","s-chamba"],
+  ["03","Mughals and Sikhs","The hill states and their neighbours","t-mughal-relations"],
+  ["04","The Gorkha invasion","Its nature, and the Treaty of Segauli","t-gorkha"],
+  ["05","Under colonial power","Sanads, grants, agency administration","t-colonial-admin"],
+  ["06","Praja Mandal, 1848–1948","The national movement in the hill states","t-freedom"],
+  ["07","Making Himachal","1948, the 1966 transfer, statehood in 1971","t-statehood"],
+  ["08","Art and culture","Temples, monasteries and Pahari painting","t-pahari-painting"],
+  ["09","Geography","Physiography, rivers, passes, peaks, lakes","t-physio"],
+  ["10","Polity and governance","Constitutional evolution and panchayati raj","t-polity"],
+  ["11","Economy","Horticulture, hydropower, industry and tourism","t-economy"]
+];
+function syllabusBlock(){
+  return '<div class="syllabus">'+
+    '<div class="secthead"><h3>The syllabus, as eleven blocks</h3>'+
+      '<span class="n">tap any row to start there</span></div>'+
+    SYLLABUS.map(x => '<button class="sylrow" type="button" data-go="'+x[3]+'">'+
+      '<span class="sn">'+x[0]+'</span><span><span class="st">'+x[1]+'</span>'+
+      '<span class="sd">'+x[2]+'</span></span></button>').join('')+
+    '</div>';
+}
+
+/* ---------- what to revise next ---------- */
+/* The beat the hub was missing. The tiles say where everything is; this
+   says what to do now, which is the question a reader actually arrives
+   with. Every chip is a topic whose questions you have got wrong, worst
+   first — the tally quizUI() has always computed, except that there it
+   only appears once you are already on the quiz tab and is narrowed to
+   whatever section filter is set. Here it runs over the whole bank.
+
+   With nothing attempted there is no tally to show, so the block falls
+   back to progressLine's invitation, which is what the progress strip
+   used to carry: the page keeps a next step on day one. */
+function reviseNext(){
+  const weak = weakTopics(D.quiz, store.get("quiz", {}), 4, answerValue)
+    .filter(t => IDX.has(t.id));
+  const msg = progressLine(trackData((S.seen || []).length));
+  const chips = weak.map(t =>
+    '<button class="relchip" type="button" data-go="'+esc(t.id)+'">'+
+      '<i class="k" style="background:var(--crit)"></i>'+
+      esc(nameOf(IDX.get(t.id)) || t.id)+
+      ' <span class="wn">'+t.misses+'</span></button>').join('');
+  return '<div class="rnext">'+
+    '<div class="secthead"><h3>'+(weak.length ? "What to revise next" : esc(msg.h))+'</h3>'+
+      (weak.length ? '<span class="n">where the answers went wrong</span>' : '')+'</div>'+
+    (weak.length ? '<div class="weak">'+chips+'</div>' : '')+
+    '<p class="rnsay">'+esc(msg.s)+'</p>'+
+    '<button class="btn sm" type="button" data-view="'+esc(msg.view)+'">Go there</button>'+
+    '</div>';
+}
+
 function viewHome(){
-  const syl = [
-    ["01","Ancient Himachal","Pre-history, Vedic references and the janapadas","t-janapadas"],
-    ["02","Early medieval states","Kangra, Kullu and Chamba emerge","s-chamba"],
-    ["03","Mughals and Sikhs","The hill states and their neighbours","t-mughal-relations"],
-    ["04","The Gorkha invasion","Its nature, and the Treaty of Segauli","t-gorkha"],
-    ["05","Under colonial power","Sanads, grants, agency administration","t-colonial-admin"],
-    ["06","Praja Mandal, 1848–1948","The national movement in the hill states","t-freedom"],
-    ["07","Making Himachal","1948, the 1966 transfer, statehood in 1971","t-statehood"],
-    ["08","Art and culture","Temples, monasteries and Pahari painting","t-pahari-painting"],
-    ["09","Geography","Physiography, rivers, passes, peaks, lakes","t-physio"],
-    ["10","Polity and governance","Constitutional evolution and panchayati raj","t-polity"],
-    ["11","Economy","Horticulture, hydropower, industry and tourism","t-economy"]
-  ];
   const cover = COVERS[Math.floor(Math.random()*COVERS.length)];
   const cpic  = PICS[cover];
   const fact  = FACTS.length ? FACTS[Math.floor(Math.random()*FACTS.length)] : null;
@@ -1826,12 +1880,7 @@ function viewHome(){
     '<span class="covcred">'+cpic.t+' &middot; '+cpic.a+' / '+cpic.l+'</span>'+
   '</div>'+
   '<div class="sections">'+sections+'</div>'+
-  '<div class="syllabus">'+
-    '<div class="secthead"><h3>The syllabus, as eleven blocks</h3><span class="n">tap any row</span></div>'+
-    syl.map(x => '<button class="sylrow" type="button" data-go="'+x[3]+'">'+
-      '<span class="sn">'+x[0]+'</span><span><span class="st">'+x[1]+'</span>'+
-      '<span class="sd">'+x[2]+'</span></span></button>').join('')+
-  '</div>'+
+  reviseNext()+
   '</div>';
 }
 
@@ -2015,9 +2064,9 @@ function quizUI(){
   const attempted = pool.filter(q => answerValue(prog[q.q]) !== undefined).length;
   const correct = pool.filter(q => answerValue(prog[q.q]) === 1).length;
   const pct = attempted ? Math.round(correct/attempted*100) : 0;
-  const weak = {};
-  pool.forEach(q => { if(answerValue(prog[q.q]) === 0) weak[q.t] = (weak[q.t]||0)+1; });
-  const weakList = Object.entries(weak).sort((a,b) => b[1]-a[1]).slice(0,6);
+  /* Same tally the Overview shows, narrowed to the section filter in force
+     here. It lives in revise.js so the two cannot drift. */
+  const weakList = weakTopics(pool, prog, 6, answerValue);
   if(S.qIdx >= pool.length) S.qIdx = 0;
   const q = pool[S.qIdx];
   if(!q) return '<div class="qcard">No questions in this section.</div>';
@@ -2028,9 +2077,9 @@ function quizUI(){
     '<div class="stat"><span class="v">'+pct+'%</span><span class="l">accuracy</span></div>'+
     '<div class="meter"><i style="width:'+pct+'%"></i></div></div>'+
     (weakList.length ? '<div class="blk" style="margin-bottom:14px"><h5>Weakest topics so far</h5>'+
-      '<div class="weak">'+weakList.map(w => '<button class="relchip" type="button" data-go="'+w[0]+'">'+
+      '<div class="weak">'+weakList.map(w => '<button class="relchip" type="button" data-go="'+esc(w.id)+'">'+
       '<i class="k" style="background:var(--crit)"></i>'+
-      (IDX.has(w[0]) ? IDX.get(w[0]).r.title : w[0])+' · '+w[1]+'</button>').join('')+'</div></div>' : "");
+      esc(IDX.has(w.id) ? (nameOf(IDX.get(w.id)) || w.id) : w.id)+' &middot; '+w.misses+'</button>').join('')+'</div></div>' : "");
   const opts = q.o.map((o,i) => {
     let cls = "opt";
     if(ans !== null){ if(i === q.a) cls += " right"; else if(i === ans) cls += " wrong"; }
