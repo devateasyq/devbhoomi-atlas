@@ -13,7 +13,7 @@ js   = "\n".join(pathlib.Path("data", f).read_text()
                  for f in ("geo.js","places.js","history.js","topics.js",
                            "rivers.js","features.js","quiz.js","pyq.js","economy.js","exams.js"))
 js  += "\n" + "\n".join(pathlib.Path("app", f).read_text()
-                        for f in ("logo.js","trends.js","mapkit.js","credits.js","rounds.js","sync.js",
+                        for f in ("logo.js","trends.js","mapkit.js","credits.js","rounds.js","campaign.js","sync.js",
                                   "firebase-config.js","auth.js","app.js"))
 # The single-file build runs from file://, where Firebase auth cannot work.
 # Force guest mode rather than shipping a sign-in button that fails. This is
