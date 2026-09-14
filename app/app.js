@@ -1774,8 +1774,17 @@ function campaignStart(weak){
   S.campaignRun = newRun(D, {misses: st.misses, weak: !!weak});
   campaignSave({run: S.campaignRun});
 }
-/* Called after every graded placement. */
+/* Called after every graded placement. Safe to call repeatedly: it
+   finalises a completed run at most once. The first call on a completed
+   run merges this run's first-try misses into the stored per-battle
+   totals, updates the best score if beaten, clears the stored run, and
+   marks the run object itself `finalised` — a later call on that same
+   run (a duplicate event, a re-render, the completion screen re-touching
+   it) sees the flag and returns without merging anything again. It does
+   NOT null S.campaignRun: the completion screen still needs the finished
+   run in memory to show the final score and the missed battles. */
 function campaignTouch(){
+  if(S.campaignRun && S.campaignRun.finalised) return;
   const st = campaignState();
   const patch = {run: S.campaignRun};
   if(isRunComplete(S.campaignRun)){
@@ -1786,6 +1795,7 @@ function campaignTouch(){
     patch.misses = misses;
     patch.run = null;
     if(!st.best || s.score > st.best.score) patch.best = {score:s.score, max:s.max, at:Date.now()};
+    S.campaignRun.finalised = true;
   }
   campaignSave(patch);
 }
