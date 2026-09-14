@@ -265,6 +265,115 @@ window.addEventListener("load", async () => {
   check("the Overview does not carry a profile card",
     !reach.has("profile"), [...reach].join(","));
 
+  /* Today's five, plus the reader's own ring at the head of the rail. The
+     node suite proves the selection is stable for a day; only the harness
+     can prove the rail reaches the DOM and that a ring opens the dialog
+     rather than sitting there as decoration. */
+  const rail = [...doc.querySelectorAll("#stage .stories .sring")];
+  check("the rail carries the You ring and today's five", rail.length === 6,
+    rail.length + " rings");
+  check("the You ring comes first",
+    !!(rail[0] && rail[0].classList.contains("syou")),
+    rail.map(b => b.className).join(" | "));
+  const rings = rail.slice(1);
+  check("the rail sits above the cover, not below it",
+    !!(rail[0] && doc.querySelector("#stage .cover") &&
+       (rail[0].closest(".stories").compareDocumentPosition(doc.querySelector("#stage .cover"))
+        & Node.DOCUMENT_POSITION_FOLLOWING)));
+  /* The strip it replaced must be gone, or progress is stated twice. */
+  check("the old progress block is gone from the Overview",
+    !doc.querySelector("#stage .hprog"));
+  const ringIds = rings.map(b => b.dataset.story);
+  check("every story ring points at a record the app can open",
+    ringIds.length === 5 && ringIds.every(id => ev('IDX.has(' + JSON.stringify(id) + ')')),
+    ringIds.join(","));
+  check("the five story rings are five different records",
+    new Set(ringIds).size === 5, ringIds.join(","));
+  check("every ring is labelled", rail.every(b => b.querySelector(".srn").textContent.trim()));
+  /* Re-rendering must not re-roll the set — that is the whole point of a
+     selection fixed for the day, and a Math.random() creeping back into
+     storyStrip is exactly how it would be lost. */
+  ev('render();'); await wait(200);
+  const again = [...doc.querySelectorAll("#stage .stories .sring[data-story]")]
+    .map(b => b.dataset.story);
+  check("the rail does not re-roll on a re-render",
+    again.join(",") === ringIds.join(","), ringIds.join(",") + " then " + again.join(","));
+
+  /* A story ring opens the dialog, not the page. */
+  const firstRing = () => doc.querySelector("#stage .stories .sring[data-story]");
+  const target = firstRing();
+  const wantId = target.dataset.story;
+  check("an unread ring is not greyed", !target.classList.contains("seen"), target.className);
+  /* Earlier sections of this harness leave a record selected, so the test
+     is that the tap does not MOVE the selection — not that nothing is
+     selected. Asserting S.sel === null here would be testing the tidiness
+     of the checks above rather than anything about the rail. */
+  const selBefore = ev("S.sel");
+  target.dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(250);
+  const sdlg = doc.getElementById("storydlg");
+  check("tapping a story ring opens the dialog", !sdlg.hidden);
+  check("the dialog stays on the Overview rather than navigating",
+    ev("S.view") === "home" && ev("S.sel") === selBefore && ev("S.sel") !== wantId,
+    "view=" + ev("S.view") + " sel=" + ev("S.sel") + " before=" + selBefore);
+  check("the dialog names the record and offers a way through",
+    !!sdlg.querySelector('[data-dlggo="' + wantId + '"]'),
+    sdlg.textContent.slice(0, 60));
+
+  /* Instagram's rule: a read ring loses its colour and drops to the end. */
+  const afterRead = [...doc.querySelectorAll("#stage .stories .sring[data-story]")];
+  const readRing = afterRead.find(b => b.dataset.story === wantId);
+  check("a read ring is greyed", !!readRing && readRing.classList.contains("seen"),
+    readRing ? readRing.className : "ring vanished");
+  check("a read ring drops to the end of the rail",
+    afterRead[afterRead.length - 1].dataset.story === wantId,
+    afterRead.map(b => b.dataset.story).join(","));
+  check("the rail still carries all five records after a read",
+    afterRead.length === 5 &&
+    new Set(afterRead.map(b => b.dataset.story)).size === 5,
+    afterRead.map(b => b.dataset.story).join(","));
+  check("the You ring stays at the head of the rail",
+    doc.querySelector("#stage .stories .sring").classList.contains("syou"));
+  /* The read must survive a re-render, or it is not persisted at all. */
+  ev('render();'); await wait(200);
+  check("the read survives a re-render",
+    doc.querySelectorAll("#stage .stories .sring.seen[data-story]").length === 1,
+    doc.querySelectorAll("#stage .stories .sring.seen[data-story]").length + " greyed");
+
+  /* Escape closes it without leaving the page. */
+  doc.dispatchEvent(new KeyboardEvent("keydown", {key:"Escape", bubbles:true}));
+  await wait(150);
+  check("Escape closes the ring dialog", sdlg.hidden);
+
+  /* And the way through actually opens the record. */
+  const nextRing = firstRing();
+  const nextId = nextRing.dataset.story;
+  nextRing.dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(250);
+  sdlg.querySelector('[data-dlggo]').dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(250);
+  check("the dialog's button opens that record's panel",
+    ev("S.sel") === nextId && !doc.getElementById("panel").hidden,
+    "sel=" + ev("S.sel") + " want=" + nextId);
+  check("opening the record closes the dialog behind it", sdlg.hidden);
+
+  /* The You ring opens the progress dialog instead. */
+  ev('S.view="home"; S.sel=null; document.getElementById("panel").hidden=true; render();');
+  await wait(250);
+  doc.querySelector("#stage .stories .syou").dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(200);
+  check("the You ring opens the progress dialog",
+    !sdlg.hidden && !!sdlg.querySelector(".sdlgrings"), sdlg.textContent.slice(0, 60));
+  check("the progress dialog offers a route onward", !!sdlg.querySelector("[data-dlgview]"));
+  sdlg.querySelector('[data-dlgclose]').dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(150);
+  check("the progress dialog closes on its own button", sdlg.hidden);
+  /* The You ring is the reader's own, so it never greys or moves. */
+  check("the You ring does not grey when opened",
+    !doc.querySelector("#stage .stories .syou").classList.contains("seen"));
+  ev('localStorage.removeItem("hpatlas:storyseen"); S.view="home"; render();');
+  await wait(200);
+
   const mtabs = [...doc.querySelectorAll("#mtabs .mtab")].map(b => b.dataset.view);
   /* Four, not five. Profile was briefly a fifth tab; the dock that replaced
      the old bar carries four and a search circle, and the route to the

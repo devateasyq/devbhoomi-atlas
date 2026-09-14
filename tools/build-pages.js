@@ -62,19 +62,9 @@ const esc = v => String(v == null ? "" : v)
 const strip = v => String(v == null ? "" : v).replace(/<[^>]*>/g, "");
 const nameOf = r => r.name || r.t || r.title || r.id;
 
-function firstProse(r){
-  for(const b of (r.blocks || [])) if(b[0] === "p") return strip(b[1]);
-  for(const b of (r.blocks || [])) if(b[0] === "ul" && Array.isArray(b[1])) return strip(b[1][0]);
-  return "";
-}
-/* Cut on a word boundary — a description sliced mid-word reads as broken
-   rather than as truncated. */
-function clamp(s, n){
-  s = String(s || "").replace(/\s+/g, " ").trim();
-  if(s.length <= n) return s;
-  const cut = s.slice(0, n);
-  return cut.slice(0, cut.lastIndexOf(" ")).replace(/[,;:]$/, "") + "…";
-}
+/* Shared with the Overview's story strip, so a record's meta description
+   and its story card cannot end up saying different things. */
+const {firstProse, clamp} = require("../app/stories.js");
 
 function blocksHtml(r){
   let out = "";

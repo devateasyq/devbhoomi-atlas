@@ -15,15 +15,30 @@ re-roll on *every render*, so they flicker as you navigate and nothing is ever
 
 ## The feature
 
-A strip of five **stories** on the Overview, directly beneath the cover. Each
-is a card carrying a record's kind, name and opening line; tapping one opens
-that record's panel — the same destination every other `[data-go]` in the app
-leads to. The five are chosen at random but **fixed for the calendar day**: the
-same five all day, on every device, changing at local midnight.
+A ring rail at the **top of the Overview**, above the cover.
 
-The daily fixing is the point, not a detail. A selection that re-rolls on every
-render is wallpaper. A selection that holds for the day is something you can
-finish.
+The first ring is the reader's own: the three coverage arcs (facts read,
+quiz answered, records noted) that used to sit in a block halfway down the
+page. The five after it are records, chosen at random but **fixed for the
+calendar day** — the same five all day, on every device, turning over at
+local midnight.
+
+The daily fixing is the point, not a detail. A selection that re-rolls on
+every render is wallpaper. A selection that holds for the day is something
+you can finish.
+
+**Every ring opens a dialog, not a page.** A rail is a glance, and a glance
+should not cost you the page you were on. The story dialog carries the
+record's kind, name, photograph and opening paragraph, with one button
+through to the full note; the You ring's dialog carries the three arcs
+large, the per-track percentages, quiz accuracy and a route to whichever
+track is thinnest.
+
+**A ring that has been opened today goes grey and drops to the end of the
+rail**, so the colour still in front of you is exactly what is left to read.
+That read-state is scoped to the day and expires with the rail — a reader
+who opens the app after midnight finds five fresh rings, not five spent
+ones. The You ring is the reader's own: it never greys and never moves.
 
 ## Why not the other two shapes
 
@@ -38,9 +53,11 @@ to "when would I use this instead of Rounds".
 source note. A separate article corpus breaks that rule and makes authoring
 time, not implementation time, the bottleneck.
 
-We take the daily-rotation idea and *not* Instagram's visual idiom. Cards that
-sit with the section tiles, not avatar rings — a ring promises tap-through
-panes and 24-hour expiry, and we deliver neither.
+The rail borrows Instagram's idiom deliberately, and then honours it. The
+circle, the ring that greys once opened, the read one sliding to the end and
+the whole set expiring overnight are what the shape already promises, so a
+reader needs no instruction to use it. What we do *not* borrow is the
+tap-through pane sequence — that is Rounds, above.
 
 ## Selection
 
@@ -100,17 +117,39 @@ Registration follows every other module: a `<script>` tag in `index.html` and an
 entry in `build-single.sh`'s ordered list, which must stay in the same order as
 the tags.
 
-## The card
+## The rail
 
-Kind label in the kind's legend colour (`KINDS[k].c`, as Rounds does), name,
-clamped teaser. A photograph where `PIC_REC` has one for that exact record;
-otherwise the HP outline with the record's own geometry highlighted, via
-`factGeom` — which `rounds.js` already exports and which is record-specific,
-unlike the per-kind fallback photos, where five cards would show four copies of
-the same generic hillside.
+64px circles in an 84px column, horizontally scrollable, bleeding to the
+screen edge on a phone. The ring takes the map legend's colour for that
+record's kind (`KINDS[k].c`, as the Rounds cards do), so the rail also reads
+as a spread of the syllabus rather than five of the same thing.
 
-Horizontal scroll on a phone, wrapping grid above the breakpoint. Styles go in
-`app/components.css` beside `.sect`.
+A record's own photograph where `PIC_REC` has one; otherwise the per-kind
+photograph. The distinct-kinds rule does double duty here — five kinds means
+five different fallback photographs, so the rail cannot repeat a picture,
+except where two kinds share one (battle borrows the state's fort, person
+the event's lodge). A circle crops hard enough that a repeat is obvious, so
+the second of such a pair falls back to a tinted disc carrying the record's
+initial.
+
+Labels are not Instagram handles: the median record name is sixteen
+characters but the events run to fifty-seven, and events are the commonest
+kind in the rail. Three lines in an 84px column takes about thirty-eight
+characters, which covers nine names in ten; the full name stays on the
+button's `title`.
+
+The dialog follows `#acctdlg` exactly — a fixed backdrop toggled by
+`[hidden]`, not `<dialog>` — because that is what the rest of the app
+already does. It closes on its own button, on the backdrop, and on Escape.
+
+## What this replaces
+
+The progress block that sat between the cover and the section tiles
+(`progressStrip`) is **removed**. Its content now lives in the You ring's
+dialog, and its helpers (`progressLine`, `coverRings`, `ringArcs`,
+`ringLegendPct`, `ringSpokenPct`) are reused there unchanged, so the small
+ring in the rail is a thumbnail of the large one in the dialog rather than a
+different chart.
 
 ## Testing
 
@@ -124,9 +163,18 @@ Horizontal scroll on a phone, wrapping grid above the breakpoint. Styles go in
 - the shuffle is unbiased — over many seeds, selection frequency across the pool
   is flat (the same property `a34e96c` had to fix in the campaign shuffle)
 - `pickStories` does not mutate the array it is handed
+- a read ring moves to the end and is flagged, unread ones keep their order
+- `orderBySeen` does not write its flag onto the live `IDX` entries
+- read-state is scoped to the day: yesterday's reads do not grey today's
+  rail, a new day discards the old list, and junk in storage reads as
+  "nothing read yet" rather than throwing on the Overview
 
-`test/nav.test.js` and the harness cover that the Overview renders and that a
-card's `data-go` opens a panel.
+The harness covers what node cannot: that the rail reaches the DOM above the
+cover, that the old progress block is gone, that a ring opens the dialog
+without navigating, that a read ring greys and drops to the end and stays
+that way across a re-render, that Escape closes the dialog, that the
+dialog's button opens the record's panel, and that the You ring opens the
+progress dialog and never greys.
 
 ## Out of scope
 

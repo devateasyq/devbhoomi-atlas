@@ -1411,25 +1411,6 @@ function coverRings(d){
     {v: d.notes.n, goal: d.notes.of, lb: "Records noted", r: 32, c: "var(--vermilion)"}
   ];
 }
-function progressStrip(seen, done, right){
-  const d = trackData(seen);
-  const msg = progressLine(d);
-  const items = coverRings(d);
-  /* Accuracy is a share too, so it can stay: it says how well the reading
-     is going without saying how much there is left to read. */
-  const acc = done ? '<p class="hacc">'+Math.round(right/done*100)+
-    '% of the quiz questions you have answered were right.</p>' : '';
-  return '<div class="hprog">'+
-    '<div class="rings"><svg viewBox="0 0 200 200" role="img" '+
-      'aria-label="Covered so far: '+ringSpokenPct(items)+'">'+ringArcs(items)+'</svg></div>'+
-    '<div class="hprog-say">'+
-      '<b>'+esc(msg.h)+'</b>'+
-      '<div class="rg-legend">'+ringLegendPct(items)+'</div>'+
-      '<span>'+esc(msg.s)+'</span>'+acc+
-      '<button class="btn sm" type="button" data-view="'+msg.view+'">Go there</button>'+
-    '</div></div>';
-}
-
 /* ---------- Compare ---------- */
 /* The superlative is the question type: "largest district", "highest
    density", "which state merged last". A table that makes you scan for
@@ -1663,6 +1644,132 @@ function viewCompare(){
     '<tbody>'+body+'</tbody></table></div></div>';
 }
 
+/* ---------- today's stories ---------- */
+/* A ring rail at the very top of the Overview. The first ring is the
+   reader's own — the three coverage arcs that used to sit in a block
+   halfway down the page — and the five after it are records picked once a
+   day. Circles, deliberately: the reader already knows what this shape
+   means and that the first one is theirs.
+
+   The selection lives in stories.js and is a pure function of the date, so
+   the five seen at breakfast are the five still there at night — which is
+   what makes the set something you can finish.
+
+   Every ring opens a dialog rather than navigating. A rail is a glance, and
+   a glance should not cost you the page you were on; the dialog carries the
+   way through to the full record for when it is wanted. */
+function youRing(){
+  const d = trackData((S.seen || []).length);
+  const items = coverRings(d);
+  const pct = Math.round(items.reduce((a, g) =>
+    a + (g.goal ? Math.min(1, g.v / g.goal) : 0), 0) / items.length * 100);
+  return '<button class="sring syou" type="button" data-progress="1" '+
+      'title="Your coverage so far — '+ringSpokenPct(items)+'">'+
+    '<span class="srdisc"><span class="syoub">'+
+      '<svg viewBox="0 0 200 200" aria-hidden="true">'+ringArcs(items)+'</svg>'+
+    '</span></span>'+
+    '<span class="srn">You &middot; '+pct+'%</span>'+
+    '</button>';
+}
+/* Read-state lives under its own key and carries the day it belongs to,
+   so it expires with the rail rather than accumulating for ever. */
+function storySeen(){ return seenForDay(store.get("storyseen", null), dayKey()); }
+function markStoryRead(id){
+  store.set("storyseen", markSeen(store.get("storyseen", null), dayKey(), id));
+}
+function storyStrip(){
+  const picked = todayStories([...IDX.values()], STORY_N, dayKey());
+  /* Five distinct kinds means five different fallback photographs, so the
+     rail cannot show the same hillside twice — except where two kinds
+     share one (battle borrows the state's fort, person the event's lodge).
+     A circle crops hard enough that a repeat is obvious, so the second one
+     falls back to a tinted disc carrying the record's initial.
+
+     Assigned over the PICKED order, not the displayed one. Reading a ring
+     moves it to the end, and deciding "who gets the shared photograph" on
+     the displayed order would hand it to the other record as the rail
+     reorders — a picture visibly jumping between two rings on a tap. */
+  const used = {}, picOf = {};
+  picked.forEach(e => {
+    const cand = PIC_REC[e.r.id] || PICS[e.kind];
+    if(cand && !used[cand.s]){ used[cand.s] = 1; picOf[e.r.id] = cand; }
+  });
+  const rings = orderBySeen(picked, storySeen()).map(e => {
+    const k = KINDS[e.kind];
+    const nm = nameOf(e) || e.r.id;
+    const pic = picOf[e.r.id] || null;
+    /* A ring already opened today goes grey and sits at the end: the
+       colour is the signal for what is still to read. */
+    return '<button class="sring'+(e.seen ? " seen" : "")+'" type="button" '+
+        'data-story="'+esc(e.r.id)+'" '+
+        'style="--kc:'+(k ? k.c : "var(--accent)")+'" '+
+        'title="'+esc(nm + (k ? " \u2014 " + k.lb : "") + (e.seen ? " (read)" : ""))+'">'+
+      '<span class="srdisc">'+
+        (pic ? '<img src="'+pic.s+'" alt="" loading="lazy" decoding="async">'
+             : '<span class="srin" aria-hidden="true">'+esc(nm.slice(0,1))+'</span>')+
+      '</span>'+
+      /* Names here are not Instagram handles: the median is sixteen
+         characters but the events run to fifty-seven, and they are the
+         commonest kind in the rail. Three lines in an 84px column takes
+         about thirty-eight, which covers nine names in ten; the full name
+         stays on the button's title. */
+      '<span class="srn">'+esc(clamp(nm, 38))+'</span>'+
+      '</button>';
+  }).join('');
+  return '<div class="stories">'+
+    '<div class="strow" role="list" aria-label="Your progress and today\u2019s five records">'+
+      youRing()+rings+'</div>'+
+    '</div>';
+}
+
+/* ---------- the ring dialog ---------- */
+/* One overlay serves both kinds of ring. It follows #acctdlg exactly —
+   a fixed backdrop toggled by [hidden], not <dialog>, which is what the
+   rest of the app already does. */
+function showDlg(html){
+  const dlg = $("#storydlg"); if(!dlg) return;
+  $("#sdlgcard").innerHTML = html;
+  dlg.hidden = false;
+  const first = dlg.querySelector("button");
+  if(first) first.focus();
+}
+function closeDlg(){
+  const dlg = $("#storydlg"); if(!dlg) return;
+  dlg.hidden = true;
+  $("#sdlgcard").innerHTML = "";
+}
+function progressDlg(){
+  const d = trackData((S.seen || []).length);
+  const msg = progressLine(d);
+  const items = coverRings(d);
+  const prog = store.get("quiz", {});
+  const done = Object.keys(prog).length;
+  const right = Object.values(prog).filter(v => answerValue(v) === 1).length;
+  /* Accuracy is a share, so it can stay: it says how well the reading is
+     going without saying how much there is left to read. */
+  const acc = done ? '<p class="hacc">'+Math.round(right/done*100)+
+    '% of the quiz questions you have answered were right.</p>' : '';
+  return '<h3>'+esc(msg.h)+'</h3>'+
+    '<div class="sdlgrings"><svg viewBox="0 0 200 200" role="img" '+
+      'aria-label="Covered so far: '+ringSpokenPct(items)+'">'+ringArcs(items)+'</svg></div>'+
+    '<div class="rg-legend">'+ringLegendPct(items)+'</div>'+
+    '<p>'+esc(msg.s)+'</p>'+acc+
+    '<button class="btn" type="button" data-dlgview="'+esc(msg.view)+'">Go there</button>'+
+    '<button class="btn sm" type="button" data-dlgclose="1">Close</button>';
+}
+function storyDlg(id){
+  const o = IDX.get(id); if(!o) return "";
+  const k = KINDS[o.kind];
+  const pic = PIC_REC[id] || PICS[o.kind];
+  return (pic ? '<img class="sdlgpic" src="'+pic.s+'" alt="" decoding="async">' : '')+
+    '<span class="sdlgk" style="--kc:'+(k ? k.c : "var(--accent)")+'">'+
+      esc(k ? k.lb : "Record")+'</span>'+
+    '<h3>'+esc(nameOf(o) || id)+'</h3>'+
+    '<p>'+esc(teaser(o.r, 320))+'</p>'+
+    '<button class="btn" type="button" data-dlggo="'+esc(id)+'">Open the full note &rarr;</button>'+
+    '<button class="btn sm" type="button" data-dlgclose="1">Close</button>';
+}
+
 function viewHome(){
   const syl = [
     ["01","Ancient Himachal","Pre-history, Vedic references and the janapadas","t-janapadas"],
@@ -1677,25 +1784,20 @@ function viewHome(){
     ["10","Polity and governance","Constitutional evolution and panchayati raj","t-polity"],
     ["11","Economy","Horticulture, hydropower, industry and tourism","t-economy"]
   ];
-  const prog  = store.get("quiz",{});
-  const done  = Object.keys(prog).length;
-  const right = Object.values(prog).filter(v => answerValue(v) === 1).length;
-  const seen  = (S.seen || []).length;
-
   const cover = COVERS[Math.floor(Math.random()*COVERS.length)];
   const cpic  = PICS[cover];
   const fact  = FACTS.length ? FACTS[Math.floor(Math.random()*FACTS.length)] : null;
 
-  /* a live fact on the cover, as the invitation in */
-  const teaser = fact
+  /* a live fact on the cover, as the invitation in. Named covfact, not
+     teaser: stories.js defines a global teaser(), and a local of that name
+     here shadows it for the whole function. */
+  const covfact = fact
     ? '<button class="covfact" type="button" data-view="rounds">'+
         '<span class="cfk">'+(KINDS[fact.kind] ? KINDS[fact.kind].lb : "Fact")+'</span>'+
         '<span class="cfn">'+fact.name+'</span>'+
         '<span class="cft">'+fact.text+'</span>'+
         '<span class="cfg">Start scrolling &rarr;</span></button>'
     : '';
-
-  const strip = progressStrip(seen, done, right);
 
   /* The hub lists the content sections. Profile is not one of them — it is
      yours, not the syllabus — and it has the phone bar and the header's
@@ -1712,17 +1814,17 @@ function viewHome(){
   }).join('');
 
   return '<div class="home">'+
+  storyStrip()+
   '<div class="cover">'+
     '<img class="covpic" src="'+cpic.s+'" alt="" decoding="async">'+
     '<div class="covbody">'+
       '<div class="kicker">Himachal Pradesh · competitive exams</div>'+
       '<h1>Everything Himachal, connected.</h1>'+
       '<p class="pitch">Revision, not repetition.</p>'+
-      teaser+
+      covfact+
     '</div>'+
     '<span class="covcred">'+cpic.t+' &middot; '+cpic.a+' / '+cpic.l+'</span>'+
   '</div>'+
-  strip+
   '<div class="sections">'+sections+'</div>'+
   '<div class="syllabus">'+
     '<div class="secthead"><h3>The syllabus, as eleven blocks</h3><span class="n">tap any row</span></div>'+
@@ -2624,6 +2726,25 @@ document.addEventListener("click", e => {
   const t = e.target;
   const hit = sel => t.closest(sel);
 
+  /* The ring dialog, before anything else: its own buttons must not fall
+     through to the generic [data-view] / [data-go] handlers below. */
+  if(hit("[data-dlgclose]")){ closeDlg(); return; }
+  const dgo = hit("[data-dlggo]");
+  if(dgo){ const id = dgo.dataset.dlggo; closeDlg(); goTo(id); return; }
+  const dvw = hit("[data-dlgview]");
+  if(dvw){ const v = dvw.dataset.dlgview; closeDlg(); go(v); return; }
+  /* A tap on the backdrop, but not inside the card, closes it. */
+  if(e.target && e.target.id === "storydlg"){ closeDlg(); return; }
+  const sty = hit("[data-story]");
+  if(sty){
+    /* Opening the dialog is the read, not the trip through to the record:
+       the dialog carries the teaser, which is the thing the ring promised. */
+    markStoryRead(sty.dataset.story);
+    showDlg(storyDlg(sty.dataset.story));
+    if(S.view === "home") render();
+    return;
+  }
+  if(hit("[data-progress]")){ showDlg(progressDlg()); return; }
   if(hit("#msearch")){ openSearch(); return; }
   if(hit("#msx")){ closeSearch(); return; }
 
@@ -2742,6 +2863,8 @@ document.addEventListener("keydown", e => {
     if(PHONE.matches) openSearch();
     $("#search").focus(); $("#search").select(); return; }
   if(e.key === "Escape"){
+    const sdlg = $("#storydlg");
+    if(sdlg && !sdlg.hidden){ closeDlg(); return; }
     const dlg = $("#acctdlg");
     if(dlg && !dlg.hidden){ dlg.hidden = true; return; }
     if(!$("#panel").hidden) closePanel();

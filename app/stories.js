@@ -127,6 +127,49 @@ function pickStories(entries, seed, n){
   return out;
 }
 
+/* ---------- what has been read today ---------- */
+
+/* Instagram's rule, and the right one here: a ring you have opened drops to
+   the end of the rail and loses its colour, so what is still to read is
+   always what is in front of you. Order within each group stays the picked
+   order, so one tap moves one ring and the rail never shuffles under you.
+
+   The entries handed in are the app's live IDX values, so the flag goes on
+   a fresh object — writing `seen` onto the index would put one view's state
+   where every other view can trip over it. */
+function orderBySeen(picks, seen){
+  var s = seen || {}, un = [], rd = [], i, e;
+  for(i = 0; i < picks.length; i++){
+    e = {r: picks[i].r, kind: picks[i].kind, seen: !!s[picks[i].r.id]};
+    if(e.seen) rd.push(e); else un.push(e);
+  }
+  return un.concat(rd);
+}
+
+/* Scoped to the day, and stored as {day, ids}: yesterday's reads must not
+   grey out today's rail, and a reader who opens the app after midnight
+   should find five fresh rings rather than five spent ones. Anything else
+   in storage — an older shape, a truncated write, a hand-edited value —
+   reads as "nothing read yet" rather than throwing on the Overview. */
+function seenForDay(saved, key){
+  var out = {}, i;
+  if(!saved || typeof saved !== "object") return out;
+  if(saved.day !== key) return out;
+  if(Object.prototype.toString.call(saved.ids) !== "[object Array]") return out;
+  for(i = 0; i < saved.ids.length; i++) out[saved.ids[i]] = 1;
+  return out;
+}
+
+function markSeen(saved, key, id){
+  var ids = [], i;
+  if(saved && typeof saved === "object" && saved.day === key &&
+     Object.prototype.toString.call(saved.ids) === "[object Array]")
+    ids = saved.ids.slice();
+  for(i = 0; i < ids.length; i++) if(ids[i] === id) return {day: key, ids: ids};
+  ids.push(id);
+  return {day: key, ids: ids};
+}
+
 /* `key` is a local YYYY-MM-DD date, as sync.js's dayKey() returns. */
 function todayStories(entries, n, key){
   return pickStories(entries, daySeed(key), n || STORY_N);
@@ -136,5 +179,6 @@ if(typeof module !== "undefined" && module.exports){
   module.exports = {daySeed: daySeed, mulberry32: mulberry32,
                     strip: strip, firstProse: firstProse, clamp: clamp, teaser: teaser,
                     pickStories: pickStories, todayStories: todayStories,
+                    orderBySeen: orderBySeen, seenForDay: seenForDay, markSeen: markSeen,
                     STORY_N: STORY_N, TEASER_MAX: TEASER_MAX};
 }

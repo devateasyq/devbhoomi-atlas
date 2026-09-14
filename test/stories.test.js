@@ -200,3 +200,95 @@ test("todayStories turns over at local midnight", () => {
   const b = stories.todayStories(POOL, 5, sync.dayKey(new Date(2026, 8, 15, 0, 1, 0)));
   assert.notEqual(a.map(e => e.r.id).join(","), b.map(e => e.r.id).join(","));
 });
+
+/* ---------- seen: the ring drops to the end and loses its colour ---------- */
+
+test("an unread rail keeps the picked order", () => {
+  const picks = stories.pickStories(POOL, 101, 5);
+  const out = stories.orderBySeen(picks, {});
+  assert.deepEqual(out.map(e => e.r.id), picks.map(e => e.r.id));
+  assert.ok(out.every(e => e.seen === false), "nothing should be marked seen");
+});
+
+test("a read ring moves to the end of the rail", () => {
+  const picks = stories.pickStories(POOL, 101, 5);
+  const second = picks[1].r.id;
+  const out = stories.orderBySeen(picks, {[second]: 1});
+  assert.equal(out[out.length - 1].r.id, second, "the read ring did not move to the end");
+  assert.equal(out.length, 5, "a ring was lost or duplicated");
+});
+
+test("a read ring is flagged so the view can grey its border", () => {
+  const picks = stories.pickStories(POOL, 101, 5);
+  const first = picks[0].r.id;
+  const out = stories.orderBySeen(picks, {[first]: 1});
+  assert.equal(out.find(e => e.r.id === first).seen, true);
+  assert.ok(out.filter(e => e.r.id !== first).every(e => e.seen === false));
+});
+
+test("unread rings keep their order among themselves, so the rail does not shuffle", () => {
+  const picks = stories.pickStories(POOL, 101, 5);
+  const ids = picks.map(e => e.r.id);
+  const out = stories.orderBySeen(picks, {[ids[0]]: 1, [ids[2]]: 1});
+  assert.deepEqual(out.map(e => e.r.id), [ids[1], ids[3], ids[4], ids[0], ids[2]]);
+});
+
+test("a fully read rail keeps every ring, all flagged", () => {
+  const picks = stories.pickStories(POOL, 101, 5);
+  const all = {}; picks.forEach(e => { all[e.r.id] = 1; });
+  const out = stories.orderBySeen(picks, all);
+  assert.deepEqual(out.map(e => e.r.id), picks.map(e => e.r.id));
+  assert.ok(out.every(e => e.seen === true));
+});
+
+/* The entries handed in are the app's live IDX values. Writing a `seen`
+   flag onto them would put view state into the index for every other view
+   to trip over. */
+test("orderBySeen does not touch the entries it is handed", () => {
+  const picks = stories.pickStories(POOL, 101, 5);
+  stories.orderBySeen(picks, {[picks[0].r.id]: 1});
+  assert.ok(picks.every(e => !("seen" in e)), "a seen flag leaked onto the index entry");
+});
+
+/* ---------- the seen record is scoped to the day ---------- */
+
+test("seenForDay reads back the ids saved for that day", () => {
+  const saved = stories.markSeen(null, "2026-09-14", "d-kangra");
+  assert.deepEqual(stories.seenForDay(saved, "2026-09-14"), {"d-kangra": 1});
+});
+
+test("yesterday's reads do not grey out today's rail", () => {
+  const saved = stories.markSeen(null, "2026-09-14", "d-kangra");
+  assert.deepEqual(stories.seenForDay(saved, "2026-09-15"), {});
+});
+
+test("marking a second record on the same day keeps the first", () => {
+  let saved = stories.markSeen(null, "2026-09-14", "d-kangra");
+  saved = stories.markSeen(saved, "2026-09-14", "lk-nako");
+  assert.deepEqual(stories.seenForDay(saved, "2026-09-14"), {"d-kangra": 1, "lk-nako": 1});
+});
+
+test("a new day discards the previous day's reads rather than accumulating", () => {
+  let saved = stories.markSeen(null, "2026-09-14", "d-kangra");
+  saved = stories.markSeen(saved, "2026-09-15", "lk-nako");
+  assert.deepEqual(stories.seenForDay(saved, "2026-09-15"), {"lk-nako": 1});
+  assert.equal(saved.day, "2026-09-15");
+});
+
+test("marking the same record twice does not duplicate it", () => {
+  let saved = stories.markSeen(null, "2026-09-14", "d-kangra");
+  saved = stories.markSeen(saved, "2026-09-14", "d-kangra");
+  assert.equal(saved.ids.length, 1, JSON.stringify(saved.ids));
+});
+
+test("seenForDay survives junk from storage", () => {
+  for(const junk of [null, undefined, {}, {day:"2026-09-14"}, {day:"2026-09-14", ids:"nope"}, "string", 7])
+    assert.deepEqual(stories.seenForDay(junk, "2026-09-14"), {}, JSON.stringify(junk));
+});
+
+test("markSeen does not mutate the record it is handed", () => {
+  const saved = stories.markSeen(null, "2026-09-14", "d-kangra");
+  const before = JSON.stringify(saved);
+  stories.markSeen(saved, "2026-09-14", "lk-nako");
+  assert.equal(JSON.stringify(saved), before);
+});
