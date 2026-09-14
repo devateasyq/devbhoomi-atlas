@@ -22,7 +22,12 @@ const path = require("path");
 const {loadData} = require("../test/load.js");
 
 const ROOT = path.join(__dirname, "..");
-const SITE = "https://parikramapath.com";
+/* www, not the apex: parikramapath.com 308-redirects to www, and a
+   canonical pointing at a redirecting host is a canonical a search
+   engine is entitled to ignore. Verified against the live site, not
+   assumed. If Vercel is ever switched to serve the apex as primary,
+   change this one line and re-run. */
+const SITE = "https://www.parikramapath.com";
 const OUT  = path.join(ROOT, "r");
 
 const {D} = loadData();

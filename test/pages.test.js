@@ -60,7 +60,7 @@ test("canonical and og:url agree, and point at the real domain", () => {
     const canon = (h.match(/rel="canonical" href="([^"]+)"/) || [])[1];
     const og = (h.match(/property="og:url" content="([^"]+)"/) || [])[1];
     assert.equal(canon, og, id + ": canonical and og:url disagree");
-    assert.ok(canon.startsWith("https://parikramapath.com/r/" + id + "/"), id + ": " + canon);
+    assert.ok(canon.startsWith("https://www.parikramapath.com/r/" + id + "/"), id + ": " + canon);
   }
 });
 
@@ -82,20 +82,20 @@ test("the sitemap lists every page and is well formed", () => {
   assert.match(xml, /^<\?xml version="1\.0" encoding="UTF-8"\?>/);
   assert.match(xml, /xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9"/);
   for(const id of IDS)
-    assert.ok(xml.includes("https://parikramapath.com/r/" + id + "/"), id + " is not in the sitemap");
-  assert.ok(xml.includes("<loc>https://parikramapath.com/</loc>"), "the home page is not in the sitemap");
+    assert.ok(xml.includes("https://www.parikramapath.com/r/" + id + "/"), id + " is not in the sitemap");
+  assert.ok(xml.includes("<loc>https://www.parikramapath.com/</loc>"), "the home page is not in the sitemap");
 });
 
 test("robots.txt allows crawling and names the sitemap", () => {
   const t = fs.readFileSync(path.join(ROOT, "robots.txt"), "utf8");
   assert.match(t, /User-agent: \*/);
   assert.match(t, /Allow: \//);
-  assert.match(t, /Sitemap: https:\/\/parikramapath\.com\/sitemap\.xml/);
+  assert.match(t, /Sitemap: https:\/\/www\.parikramapath\.com\/sitemap\.xml/);
 });
 
 test("the app's own page points at the real domain", () => {
   const h = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   assert.ok(!h.includes("devateasyq.github.io"), "an old URL is still baked into index.html");
-  assert.match(h, /property="og:image" content="https:\/\/parikramapath\.com\/og\.jpg"/);
-  assert.match(h, /rel="canonical" href="https:\/\/parikramapath\.com\/"/);
+  assert.match(h, /property="og:image" content="https:\/\/www\.parikramapath\.com\/og\.jpg"/);
+  assert.match(h, /rel="canonical" href="https:\/\/www\.parikramapath\.com\/"/);
 });

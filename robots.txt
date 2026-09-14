@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://parikramapath.com/sitemap.xml
+Sitemap: https://www.parikramapath.com/sitemap.xml
