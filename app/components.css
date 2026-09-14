@@ -781,7 +781,7 @@ button.brow:hover .blab{color:var(--accent)}
 
 /* Battles mode switch — Cards / March / Campaign. Sits above the pagewrap,
    with side padding matching it; it scrolls with the rest of the page. */
-.modebar{margin:0 0 14px;padding:0 var(--pad,18px)}
+.modebar{margin:16px 0 14px;padding:0 var(--pad,18px)}
 .modebar .tog[aria-pressed="true"]{background:var(--accent);color:var(--bg)}
 .campaign-start .best{margin:14px 0;color:var(--ink-2)}
 .campaign-start .tog.primary{background:var(--accent);color:var(--bg);font-weight:600}
@@ -853,7 +853,14 @@ button.brow:hover .blab{color:var(--accent)}
 .mc-pin.now{opacity:1;stroke:var(--bg);stroke-width:3}
 .mc-pin.ok{fill:var(--good)}
 .mc-pin.off{fill:var(--warn)}
-#mcscrub{width:100%;margin:14px 0 12px;accent-color:var(--accent);min-height:34px}
+.mc-controls{display:flex;align-items:center;gap:12px;margin:14px 0 12px}
+.mc-play{flex:0 0 auto;width:42px;height:42px;border-radius:50%;cursor:pointer;
+  border:1px solid var(--line);background:var(--card);color:var(--ink);
+  display:grid;place-items:center;padding:0}
+.mc-play:hover{border-color:var(--accent)}
+.mc-play .ic{width:20px;height:20px;fill:currentColor;stroke:none}
+.mc-play[aria-pressed="true"]{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+#mcscrub{flex:1 1 auto;width:auto;margin:0;accent-color:var(--accent);min-height:34px}
 .mc-cap{border-left:3px solid var(--ec);padding:2px 0 2px 13px}
 .mc-cap .yr{font-size:.8rem;color:var(--ink-2);font-variant-numeric:tabular-nums}
 .mc-cap .nm{display:block;background:none;border:0;padding:0;color:var(--ink);

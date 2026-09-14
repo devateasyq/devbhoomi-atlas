@@ -347,7 +347,7 @@ function factsList(pairs){
 const S = {
   view:"home", sel:null, trail:[], seen:[], legendOpen:false, focus:"",
   era:"all", battleFilter:"all", topicSec:"all",
-  battleMode:"cards", campaignRun:null, campaignSel:null, marchAt:0,
+  battleMode:"cards", campaignRun:null, campaignSel:null, marchAt:0, marchPlaying:false,
   cmpTab:"districts", cmpKey:"area", cmpDesc:true,
   revMode:"papers",
   qIdx:0, qSec:"all", qAnswered:null,
@@ -2056,10 +2056,53 @@ function viewMarch(){
     '<svg id="mcmap" viewBox="0 0 '+MAP.w+' '+MAP.h+'" role="img" '+
       'aria-label="Battles of Himachal Pradesh in chronological order">'+
       paths+'<g id="mcpins">'+marchPins()+'</g></svg>'+
+    '<div class="mc-controls"><button id="mcplay" class="mc-play" type="button" '+
+      'aria-pressed="false" aria-label="Play the march">'+marchPlayIcon()+'</button>'+
     '<input id="mcscrub" type="range" min="0" max="'+(CHIPS.length - 1)+'" value="'+at+'" '+
-      'aria-label="Scrub through the battles in order">'+
+      'aria-label="Scrub through the battles in order"></div>'+
     '<div class="mc-cap" id="mccap" style="--ec:var('+ERA[CHIPS[at].era].v+')">'+
       marchCaption()+'</div></div>';
+}
+
+/* ---------- March playback ----------
+   A presentation mode: hold each battle on screen, then advance. The timer
+   lives outside S because it is a live handle, not state worth persisting —
+   a run resumed from localStorage must never come back mid-playback. */
+let marchTimer = null;
+const MARCH_STEP = 1800;   /* ms each battle holds before the next lights up */
+
+function marchPlayIcon(){
+  return S.marchPlaying
+    ? '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="6" width="3.5" height="12"/><rect x="13.5" y="6" width="3.5" height="12"/></svg>'
+    : '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>';
+}
+
+/* Only the button's own contents change, so the node — and the listener
+   bound to it in mountMarch — survives, exactly as the scrubber does. */
+function paintMarchControls(){
+  const b = $("#mcplay"); if(!b) return;
+  b.innerHTML = marchPlayIcon();
+  b.setAttribute("aria-pressed", String(S.marchPlaying));
+  b.setAttribute("aria-label", S.marchPlaying ? "Pause the march" : "Play the march");
+}
+
+function stopMarch(){
+  if(marchTimer){ clearInterval(marchTimer); marchTimer = null; }
+  S.marchPlaying = false;
+}
+
+function toggleMarch(){
+  if(marchTimer){ stopMarch(); paintMarchControls(); return; }
+  /* Pressing play at the end replays from the start rather than sitting still. */
+  if(marchAt() >= CHIPS.length - 1) S.marchAt = 0;
+  S.marchPlaying = true;
+  marchTimer = setInterval(() => {
+    if(marchAt() >= CHIPS.length - 1){ stopMarch(); paintMarchControls(); return; }
+    S.marchAt = marchAt() + 1;
+    paintMarch();
+  }, MARCH_STEP);
+  paintMarchControls();
+  paintMarch();
 }
 
 /* Clamped at BOTH ends: a stale S.marchAt above the range would index past
@@ -2108,11 +2151,24 @@ function paintMarch(){
   pins.innerHTML = marchPins();
   cap.innerHTML = marchCaption();
   cap.style.setProperty("--ec", "var("+ERA[CHIPS[marchAt()].era].v+")");
+  /* Drive the thumb only while playing. During a drag the browser owns the
+     input's value and writing to it would fight the user's thumb. */
+  const r = $("#mcscrub");
+  if(r && S.marchPlaying) r.value = marchAt();
 }
 
 function mountMarch(){
   const r = $("#mcscrub"); if(!r) return;
-  r.addEventListener("input", e => { S.marchAt = +e.target.value; paintMarch(); });
+  /* Taking hold of the scrubber takes over from playback — nobody wants the
+     film advancing under the thumb they are dragging. */
+  r.addEventListener("input", e => {
+    if(marchTimer){ stopMarch(); paintMarchControls(); }
+    S.marchAt = +e.target.value;
+    paintMarch();
+  });
+  const b = $("#mcplay");
+  if(b) b.addEventListener("click", toggleMarch);
+  paintMarchControls();
 }
 
 function viewBattles(){
@@ -2966,6 +3022,9 @@ function mountProfile(){
 /* ---------- render dispatcher ---------- */
 function render(){
   const s = $("#stage");
+  /* Leaving March tears down the DOM the playback timer repaints into, so
+     stop it here rather than leaving an interval firing at a dead #mcpins. */
+  if(!(S.view === "battles" && S.battleMode === "march")) stopMarch();
   /* #stage scrolls itself; a scroll-snap feed nested inside it would give
      two scrollbars and snapping that fights the outer scroll. */
   s.classList.toggle("noscroll", S.view === "rounds");
