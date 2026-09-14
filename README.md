@@ -125,6 +125,7 @@ app/app.js                  the application
 app/logo.js                 the brand mark, drawn from theme tokens
 app/mapkit.js               map glyphs, label placement and the legend's toggle/isolate reducers
 app/rounds.js               Rounds — fact extraction from the exam hooks, and the feed's ordering
+app/campaign.js             the battles game: chips, grading, run state
 app/trends.js               the Trends view — all figures computed from D.pyq at run time
 data/geo.js                 map geometry: district paths, centroids, 135 place markers, 29 rivers
 data/places.js              D.eras, D.districts, D.states
@@ -136,6 +137,7 @@ data/quiz.js                D.quiz
 data/pyq.js                 D.pyq — the past-paper bank
 sw.js                       offline cache
 manifest.webmanifest        PWA manifest
+test/run-harness.sh         runs the interaction harness headless in Chrome
 ```
 
 Load order matters: `data/places.js` creates the `D` object, so it must come before the
@@ -205,6 +207,34 @@ sync that still has an older server copy of it.
 Sansar Chand, the Gurkha wars and the Praja Mandal leaders never surface in the feed.
 Adding hooks to those records is the highest-value content work available; it needs no
 code change.
+
+## Campaign
+
+The sixteen battle records are read-only cards, which teaches nothing that
+sticks. Campaign turns them into a board reached from Battles → Campaign:
+four passes (era band, year order, place on the map, who won) and a
+cause → course → result → why-it-matters chain per battle, scored five marks
+a chip out of eighty, marks earned on the first try only.
+
+Two rules exist because the data has two traps. Era spans **overlap** —
+e6 is 1752–1846 and e7 is 1790–1816 — so Mahal Morian (1806, authored e7) and
+the Relief of Kangra (1809, authored e6) are indistinguishable to a reader; the
+band pass therefore accepts the authored era *or* any era whose numeric span
+contains the year. And `winner` is prose for a reader ("Gorkhas (tactically)")
+while `outcome` reads from the hill states' point of view — Bhangani is
+`outcome:"loss"` though `sides[0]` won it — so each record carries
+`winSide: 0|1`. Twelve of sixteen are side 0, so the winner pass shuffles which
+side it shows first; remove the shuffle and always-tap-left scores 12/16.
+
+All grading lives in `app/campaign.js`, which touches no DOM and is tested by
+`test/campaign.test.js` under `node --test`. Misses are counted per battle and
+seed the next run's pool most-missed-first, which is what makes it a revision
+loop rather than a quiz. The map pass follows `mountMap()`'s drag discipline:
+pointer capture only after the drag threshold, action on `pointerup`.
+
+**March** is the same sixteen without the scoring — a scrubber from 1009 to
+1948 that lights each battle on the map in turn. After a run it replays it,
+green for first-try, amber for the rest.
 
 ## Notes, streak and your profile
 
