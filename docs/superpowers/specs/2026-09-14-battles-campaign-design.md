@@ -143,9 +143,9 @@ The winner pass cannot be built by comparing `winner` against `sides`:
   reads from the hill states' point of view, which is a different question.
 
 **Rule:** each battle record gains `winSide: 0 | 1`, the index into its own
-`sides` array. Eleven of the sixteen are side 0, so the winner pass **must
+`sides` array. Twelve of the sixteen are side 0, so the winner pass **must
 shuffle which side is shown first, per chip, per run** — otherwise a reader who
-always taps the left-hand option scores eleven out of sixteen without knowing
+always taps the left-hand option scores twelve out of sixteen without knowing
 anything.
 
 The lock-in card still shows the full `winner` prose, so the nuance that Kalanga

@@ -135,8 +135,8 @@ test("every battle names which of its two sides won", () => {
   }
 });
 
-/* Guards the shuffle requirement: eleven of sixteen are side 0, so a reader
-   who always taps the left-hand option would score 11/16 on an unshuffled
+/* Guards the shuffle requirement: twelve of sixteen are side 0, so a reader
+   who always taps the left-hand option would score 12/16 on an unshuffled
    winner pass. This test documents the imbalance so the UI cannot forget it. */
 test("winSide is lopsided enough that the winner pass must shuffle", () => {
   const zero = D.battles.filter(b => b.winSide === 0).length;
@@ -527,8 +527,8 @@ function gradeWinner(chip, sideIndex){
   return sideIndex === chip.winSide;
 }
 
-/* Which side to show first. Eleven of the sixteen battles have winSide 0,
-   so an unshuffled pass hands 11/16 to a reader who always taps left. The
+/* Which side to show first. Twelve of the sixteen battles have winSide 0,
+   so an unshuffled pass hands 12/16 to a reader who always taps left. The
    shuffle is derived from the chip id and a per-run salt so it is stable
    within a run (a re-render must not move the buttons under a thumb) and
    different between runs. */
@@ -1350,8 +1350,8 @@ function viewCampaignWinner(){
   const pool = campaignPool();
   const id = pool[0];
   const ch = campaignChip(id);
-  /* Eleven of sixteen have winSide 0. Without this shuffle, always-tap-left
-     scores 11/16 while knowing nothing. */
+  /* Twelve of sixteen have winSide 0. Without this shuffle, always-tap-left
+     scores 12/16 while knowing nothing. */
   const order = sideOrder(id, S.campaignRun.salt);
   return '<div class="pagewrap cg">'+
     campaignHeader("Pass 4 — Who won", "Tap the side that came out on top.")+
@@ -1849,8 +1849,8 @@ band pass therefore accepts the authored era *or* any era whose numeric span
 contains the year. And `winner` is prose for a reader ("Gorkhas (tactically)")
 while `outcome` reads from the hill states' point of view — Bhangani is
 `outcome:"loss"` though `sides[0]` won it — so each record carries
-`winSide: 0|1`. Eleven of sixteen are side 0, so the winner pass shuffles which
-side it shows first; remove the shuffle and always-tap-left scores 11/16.
+`winSide: 0|1`. Twelve of sixteen are side 0, so the winner pass shuffles which
+side it shows first; remove the shuffle and always-tap-left scores 12/16.
 
 All grading lives in `app/campaign.js`, which touches no DOM and is tested by
 `test/campaign.test.js` under `node --test`. Misses are counted per battle and
