@@ -255,3 +255,74 @@ test("a chain is correct only in full order", () => {
   assert.equal(c.gradeChain(["cause", "course", "result"]), false);
   assert.equal(c.gradeChain([]), false);
 });
+
+test("a new run pools every chip and starts on the band pass", () => {
+  const run = c.newRun(D, {});
+  assert.equal(run.pool.length, D.battles.length);
+  assert.equal(run.pass, "band");
+  assert.equal(run.v, 1);
+  assert.deepEqual(run.pool.slice().sort(), CHIPS.map(ch => ch.id).sort());
+});
+
+test("the pool seeds most-missed first", () => {
+  const run = c.newRun(D, {misses: {"b-segauli": 5, "b-dhami": 2}});
+  assert.equal(run.pool[0], "b-segauli");
+  assert.equal(run.pool[1], "b-dhami");
+  assert.equal(run.pool.length, D.battles.length, "seeding must not drop chips");
+});
+
+test("the weak set keeps only previously missed chips", () => {
+  const run = c.newRun(D, {weak: true, misses: {"b-segauli": 5, "b-dhami": 2}});
+  assert.deepEqual(run.pool, ["b-segauli", "b-dhami"]);
+});
+
+test("a weak set with nothing missed falls back to the full board", () => {
+  const run = c.newRun(D, {weak: true, misses: {}});
+  assert.equal(run.pool.length, D.battles.length);
+});
+
+test("a first-try correct answer earns its mark", () => {
+  const run = c.newRun(D, {});
+  c.recordAttempt(run, "b-bhangani", "band", true);
+  assert.equal(c.scoreRun(run).score, 1);
+});
+
+test("a mark is lost after a wrong attempt but the pass still completes", () => {
+  const run = c.newRun(D, {});
+  c.recordAttempt(run, "b-bhangani", "band", false);
+  assert.equal(c.scoreRun(run).score, 0, "a wrong attempt must not earn");
+  c.recordAttempt(run, "b-bhangani", "band", true);
+  assert.equal(c.scoreRun(run).score, 0, "the mark stays lost");
+  assert.equal(run.done["b-bhangani"].band, true, "but the pass is done");
+});
+
+test("a completed pass ignores further attempts", () => {
+  const run = c.newRun(D, {});
+  c.recordAttempt(run, "b-bhangani", "band", true);
+  c.recordAttempt(run, "b-bhangani", "band", false);
+  assert.equal(c.scoreRun(run).score, 1, "a done pass cannot be un-earned");
+});
+
+test("max score is five marks per chip in the pool", () => {
+  assert.equal(c.scoreRun(c.newRun(D, {})).max, D.battles.length * 5);
+  const weak = c.newRun(D, {weak: true, misses: {"b-segauli": 1}});
+  assert.equal(c.scoreRun(weak).max, 5);
+});
+
+test("a perfect run scores full marks and reports complete", () => {
+  const run = c.newRun(D, {});
+  assert.equal(c.isRunComplete(run), false);
+  for(const id of run.pool) for(const p of c.PASSES) c.recordAttempt(run, id, p, true);
+  const s = c.scoreRun(run);
+  assert.equal(s.score, s.max);
+  assert.equal(c.isRunComplete(run), true);
+});
+
+test("misses are reported for merging into the stored counts", () => {
+  const run = c.newRun(D, {});
+  c.recordAttempt(run, "b-segauli", "year", false);
+  c.recordAttempt(run, "b-segauli", "year", true);
+  c.recordAttempt(run, "b-segauli", "place", false);
+  c.recordAttempt(run, "b-bhangani", "band", true);
+  assert.deepEqual(c.runMisses(run), {"b-segauli": 2});
+});

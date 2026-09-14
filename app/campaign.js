@@ -213,6 +213,77 @@ function gradeChain(keys){
   return true;
 }
 
+/* Most-missed first, ties chronological. This is the revision loop: the
+   battles the reader keeps dropping are the ones served first, so each
+   round genuinely goes higher rather than repeating the same sweep. */
+function seedPool(D, misses, weakOnly){
+  misses = misses || {};
+  var ids = buildChips(D).map(function(ch){ return ch.id; });
+  if(weakOnly){
+    var weak = ids.filter(function(id){ return (misses[id] || 0) > 0; });
+    /* A weak set with nothing weak in it is an empty board, not a feature. */
+    if(weak.length) ids = weak;
+  }
+  return ids.map(function(id, i){ return {id: id, m: misses[id] || 0, i: i}; })
+            .sort(function(a, b){ return (b.m - a.m) || (a.i - b.i); })
+            .map(function(x){ return x.id; });
+}
+
+function newRun(D, opts){
+  opts = opts || {};
+  return {v: 1,
+          weak: !!opts.weak,
+          salt: opts.salt == null ? (Date.now() & 0xffff) : opts.salt,
+          pool: seedPool(D, opts.misses, !!opts.weak),
+          pass: PASSES[0],
+          done: {}, miss: {}, marks: {},
+          startedAt: Date.now()};
+}
+
+/* A wrong attempt costs the mark but never blocks progress: the reader
+   re-places and moves on, and the score stays honest without the game
+   turning into a wall. */
+function recordAttempt(run, chipId, pass, correct){
+  run.done[chipId]  = run.done[chipId]  || {};
+  run.miss[chipId]  = run.miss[chipId]  || {};
+  run.marks[chipId] = run.marks[chipId] || {};
+  if(run.done[chipId][pass]) return run;
+  if(!correct){ run.miss[chipId][pass] = true; return run; }
+  run.done[chipId][pass]  = true;
+  run.marks[chipId][pass] = run.miss[chipId][pass] ? 0 : 1;
+  return run;
+}
+
+function scoreRun(run){
+  var score = 0;
+  for(var i = 0; i < run.pool.length; i++){
+    var m = run.marks[run.pool[i]] || {};
+    for(var j = 0; j < PASSES.length; j++) score += (m[PASSES[j]] || 0);
+  }
+  return {score: score, max: run.pool.length * PASSES.length};
+}
+
+function isRunComplete(run){
+  for(var i = 0; i < run.pool.length; i++){
+    var d = run.done[run.pool[i]] || {};
+    for(var j = 0; j < PASSES.length; j++) if(!d[PASSES[j]]) return false;
+  }
+  return true;
+}
+
+/* First-try misses only, keyed by chip, for merging into the stored counts
+   that seed the next run's pool. */
+function runMisses(run){
+  var out = {};
+  for(var id in run.miss){
+    if(!Object.prototype.hasOwnProperty.call(run.miss, id)) continue;
+    var n = 0;
+    for(var j = 0; j < PASSES.length; j++) if(run.miss[id][PASSES[j]]) n++;
+    if(n) out[id] = n;
+  }
+  return out;
+}
+
 if(typeof module !== "undefined" && module.exports){
   module.exports = {PASSES: PASSES, buildChips: buildChips,
                     acceptedBands: acceptedBands, gradeBand: gradeBand,
@@ -221,5 +292,8 @@ if(typeof module !== "undefined" && module.exports){
                     sideOrder: sideOrder,
                     CHAIN_KEYS: CHAIN_KEYS, CHAIN_LABELS: CHAIN_LABELS,
                     chainParts: chainParts, shuffleChain: shuffleChain,
-                    gradeChain: gradeChain};
+                    gradeChain: gradeChain,
+                    seedPool: seedPool, newRun: newRun,
+                    recordAttempt: recordAttempt, scoreRun: scoreRun,
+                    isRunComplete: isRunComplete, runMisses: runMisses};
 }
