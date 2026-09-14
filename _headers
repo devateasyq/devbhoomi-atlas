@@ -7,3 +7,9 @@
   Cache-Control: public, max-age=3600
 /data/*
   Cache-Control: public, max-age=3600
+/r/*
+  Cache-Control: public, max-age=3600
+/sitemap.xml
+  Cache-Control: public, max-age=3600
+/robots.txt
+  Cache-Control: public, max-age=3600
