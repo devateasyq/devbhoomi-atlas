@@ -6,7 +6,7 @@ const {loadData} = require("./load");
 const {D} = loadData();
 
 const VIEWS = ["home","map","timeline","battles","topics","people",
-               "trends","compare","rounds","revise"];
+               "trends","compare","rounds","revise","exams"];
 
 test("every exam is fully described", () => {
   assert.ok(EXAMS.rows.length >= 9, "got " + EXAMS.rows.length);
@@ -31,6 +31,24 @@ test("no exam claims past papers it does not have", () => {
     assert.equal(typeof e.papers.n, "number", e.id);
     if(e.id === "hpas") assert.equal(e.papers.n, held, "HPAS should claim exactly what is in data/pyq.js");
     else assert.equal(e.papers.n, 0, e.id + " claims papers this repo does not hold");
+  }
+});
+
+/* papers.n was tested from the start; papers.years was not, and it drifted:
+   it read "2020–2025" while the bank holds nothing from 2024. A range is a
+   coverage claim like any other, and it renders verbatim on /exams/. */
+test("the advertised paper years are years this repo actually holds", () => {
+  const held = new Set(D.pyq.map(q => String(q.y)));
+  for(const e of EXAMS.rows){
+    if(!e.papers || !e.papers.n) continue;
+    const years = String(e.papers.years).match(/\d{4}/g) || [];
+    assert.ok(years.length, e.id + " claims papers but names no year");
+    for(const y of years)
+      assert.ok(held.has(y), e.id + " advertises " + y + ", which is not in data/pyq.js");
+    /* An en-dash range promises every year between its ends. */
+    for(const m of String(e.papers.years).matchAll(/(\d{4})\s*[\u2013-]\s*(\d{4})/g))
+      for(let y = +m[1]; y <= +m[2]; y++)
+        assert.ok(held.has(String(y)), e.id + " advertises a range covering " + y + ", which is not in data/pyq.js");
   }
 });
 

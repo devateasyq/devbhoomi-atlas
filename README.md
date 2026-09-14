@@ -7,9 +7,10 @@ sortable comparison tables, a scrollable fact feed and a past-paper question ban
 
 Plain static files. No build step, no framework, no backend.
 
-**Live:** <https://devateasyq.github.io/devbhoomi-atlas/>
+**Live:** <https://www.parikramapath.com/>
 
-**Domain:** parikramapath.com *(not yet purchased or pointed here)*
+(The GitHub Pages copy at <https://devateasyq.github.io/devbhoomi-atlas/> still builds, but the
+canonical host is the custom domain — every pre-rendered page points there.)
 
 ---
 

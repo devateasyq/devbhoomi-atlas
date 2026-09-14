@@ -394,9 +394,15 @@ function writeHash(){
   const h = currentHash();
   if(location.hash !== h) location.hash = h;
 }
+/* Own keys only. A plain object literal inherits constructor, toString,
+   valueOf and hasOwnProperty, so `TITLE[x]` is truthy for names nobody put
+   there — #/constructor would set the header to the function's source.
+   This has bitten this codebase repeatedly; route every data-sourced key
+   lookup on a literal through here. */
+function has(o, k){ return Object.prototype.hasOwnProperty.call(o, k); }
 function readHash(){
   const parts = location.hash.replace(/^#\/?/,"").split("/").filter(Boolean);
-  const view = parts[0] && TITLE[parts[0]] ? parts[0] : "home";
+  const view = parts[0] && has(TITLE, parts[0]) ? parts[0] : "home";
   const id = parts[1] && IDX.has(parts[1]) ? parts[1] : null;
   return {view, id};
 }
@@ -1589,7 +1595,7 @@ function viewExams(){
       : '<span class="exnot">No past papers here yet</span>';
     const links = (e.covers || []).map(v =>
       '<button class="exlink" type="button" data-view="'+esc(v)+'">'+
-        esc(TITLE[v] || v)+'</button>').join('');
+        esc(has(TITLE, v) ? TITLE[v] : v)+'</button>').join('');
     return '<div class="exrow">'+
       '<div class="exhead"><h3>'+esc(e.name)+'</h3>'+
         '<a class="exbody" href="'+esc(e.bodyUrl)+'" target="_blank" rel="noopener">'+
@@ -1606,7 +1612,8 @@ function viewExams(){
     'is HPAS only, and each exam below says plainly what is here for it.</p>'+
     '<div class="exlist">'+rows+'</div>'+
     '<p class="exnote">Conducting bodies last checked '+esc(when)+'. '+
-    'They do change — HPSSC Hamirpur was dissolved in 2023 and replaced by HPRCA — '+
+    'They do change — the state\'s previous staff selection board was dissolved in '+
+    '2023 and its recruitment moved to HPRCA — '+
     'so confirm against the board\'s own site, linked above, before you rely on it.</p>'+
     '</div>';
 }

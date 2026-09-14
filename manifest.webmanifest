@@ -1,7 +1,7 @@
 {
   "name": "Parikrama Path — Himachal Pradesh revision",
   "short_name": "Parikrama",
-  "description": "Interactive revision atlas for the Himachal Pradesh section of the HPPSC HPAS syllabus.",
+  "description": "Interactive revision atlas for the Himachal Pradesh material shared by HP competitive exams \u2014 HPAS, HPRCA, Police and TET.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

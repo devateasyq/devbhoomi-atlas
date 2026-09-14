@@ -149,7 +149,7 @@ function page(id, entry){
   const k = KINDS[kind] || {lb: "Record", view: "map"};
   const name = nameOf(r);
   const title = name + " — " + k.lb + " | Parikrama Path";
-  /* Used by the 39 records that carry no prose block. It is a meta
+  /* Used by the records that carry no prose block. It is a meta
      description on a real page, so it must not describe the site as
      HPAS-only any more than the hand-written ones do. */
   const desc = clamp(firstProse(r) ||
@@ -194,7 +194,7 @@ ${factsHtml(r, kind)}${blocksHtml(r)}
 Revision notes for the <b>Himachal Pradesh</b> portion of HP competitive exam
 syllabuses — HPAS, HPRCA, Police and TET.
 <a href="${SITE}/">See the whole atlas</a> — a clickable map, five years of past papers,
-and a fact feed.
+and a fact feed — or <a href="${SITE}/exams/">which exams it helps with</a>.
 </footer>
 </main>
 </body>

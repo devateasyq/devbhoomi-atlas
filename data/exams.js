@@ -22,7 +22,7 @@ var EXAMS = {
     {id:"hpas", name:"HPAS — Combined Competitive Examination",
      body:"HPPSC, Shimla", bodyUrl:"https://www.hppsc.hp.gov.in/", level:"Class I / II",
      what:"The heaviest Himachal paper of the lot: geography, history from the janapadas to statehood, art and culture, polity and the state economy, in prelims and again in mains.",
-     papers:{n:448, years:"2020–2025"},
+     papers:{n:448, years:"2020–2023, 2025"},
      covers:["map","timeline","battles","topics","people","compare","revise"]},
 
     {id:"hppsc-asst-prof", name:"Assistant Professor",
