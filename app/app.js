@@ -347,7 +347,7 @@ function factsList(pairs){
 const S = {
   view:"home", sel:null, trail:[], seen:[], legendOpen:false, focus:"",
   era:"all", battleFilter:"all", topicSec:"all",
-  battleMode:"cards", campaignRun:null, campaignSel:null,
+  battleMode:"cards", campaignRun:null, campaignSel:null, marchAt:0,
   cmpTab:"districts", cmpKey:"area", cmpDesc:true,
   revMode:"papers",
   qIdx:0, qSec:"all", qAnswered:null,
@@ -2023,8 +2023,46 @@ function viewCampaign(){
   return viewCampaignChain();
 }
 
-/* Filled in by the March task; the shell renders the mode switch now. */
-function viewMarch(){ return '<div class="pagewrap"><div id="marchview"></div></div>'; }
+/* The read half: no scoring, no pressure. It doubles as the replay — after
+   a run, each chip is tinted by whether the reader got it first try. */
+function viewMarch(){
+  /* campaignTouch() clears the persisted run the instant it finalises (it
+     merges the misses and nulls the stored run so a stale board never
+     resumes) but deliberately leaves S.campaignRun in memory so screens
+     like this one can still read it. campaignState().run would therefore
+     be null the moment a run finishes — exactly the case this replay
+     exists for — so the in-memory run is the only correct source here. */
+  const run = S.campaignRun;
+  const marks = (run && run.marks) || {};
+  /* CHIPS is built once at load (app.js:34) and is already chronological. */
+  const at = Math.min(S.marchAt, CHIPS.length - 1);
+  const shown = CHIPS.slice(0, at + 1);
+  const cur = CHIPS[at];
+  const paths = Object.entries(MAP.paths).map(([n, d]) =>
+    '<path class="dist" d="'+d+'" data-name="'+n+'"/>').join('');
+  const pins = shown.map((ch, i) => {
+    const p = MAP.places[ch.place]; if(!p) return "";
+    const m = marks[ch.id];
+    const cls = !m ? "" : (Object.keys(m).every(k => m[k] === 1) ? " ok" : " off");
+    return '<circle class="mc-pin'+cls+(i === at ? " now" : "")+'" cx="'+p.x+'" cy="'+p.y+
+      '" r="'+(i === at ? 16 : 9)+'" style="--ec:var('+ERA[ch.era].v+')"/>';
+  }).join('');
+  return '<div class="pagewrap mc">'+
+    '<svg id="mcmap" viewBox="0 0 '+MAP.w+' '+MAP.h+'" role="img" '+
+      'aria-label="Battles of Himachal Pradesh in chronological order">'+paths+pins+'</svg>'+
+    '<input id="mcscrub" type="range" min="0" max="'+(CHIPS.length - 1)+'" value="'+at+'" '+
+      'aria-label="Scrub through the battles in order">'+
+    '<div class="mc-cap" style="--ec:var('+ERA[cur.era].v+')">'+
+      '<span class="yr">'+cur.yr+'</span>'+
+      '<button class="nm" type="button" data-c="'+cur.id+'">'+cur.name+'</button>'+
+      '<p>'+D.battles.find(b => b.id === cur.id).sig.split(". ")[0]+'.</p>'+
+    '</div></div>';
+}
+
+function mountMarch(){
+  const r = $("#mcscrub"); if(!r) return;
+  r.addEventListener("input", e => { S.marchAt = +e.target.value; render(); });
+}
 
 function viewBattles(){
   const MODES = [["cards","Cards"],["march","March"],["campaign","Campaign"]];
@@ -2885,7 +2923,8 @@ function render(){
   else if(S.view === "timeline"){ s.innerHTML = viewTimeline(); paintSelection(); }
   else if(S.view === "battles") {
     s.innerHTML = viewBattles();
-    if(S.battleMode === "campaign" && S.campaignRun && S.campaignRun.pass === "place") mountCampaignMap();
+    if(S.battleMode === "march") mountMarch();
+    else if(S.battleMode === "campaign" && S.campaignRun && S.campaignRun.pass === "place") mountCampaignMap();
     else paintSelection();
   }
   else if(S.view === "topics")  { s.innerHTML = viewTopics(); paintSelection(); }

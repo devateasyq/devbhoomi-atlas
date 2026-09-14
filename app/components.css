@@ -845,3 +845,17 @@ button.brow:hover .blab{color:var(--accent)}
   font-variant-numeric:tabular-nums}
 .cg-done .cg-final span{font-size:1.1rem;color:var(--ink-2);font-weight:400}
 .cg-done .cg-chip i{font-style:normal;color:var(--ink-2)}
+
+/* ---------- march ---------- */
+.mc #mcmap{width:100%;height:auto;max-height:56vh}
+.mc #mcmap .dist{fill:var(--card);stroke:var(--line);stroke-width:1.5}
+.mc-pin{fill:var(--ec);opacity:.7;transition:r .2s}
+.mc-pin.now{opacity:1;stroke:var(--bg);stroke-width:3}
+.mc-pin.ok{fill:var(--good)}
+.mc-pin.off{fill:var(--warn)}
+#mcscrub{width:100%;margin:14px 0 12px;accent-color:var(--accent);min-height:34px}
+.mc-cap{border-left:3px solid var(--ec);padding:2px 0 2px 13px}
+.mc-cap .yr{font-size:.8rem;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.mc-cap .nm{display:block;background:none;border:0;padding:0;color:var(--ink);
+  font:inherit;font-size:1.1rem;font-weight:600;text-align:left;cursor:pointer}
+.mc-cap p{margin:5px 0 0;font-size:.88rem;line-height:1.5;color:var(--ink-2)}
