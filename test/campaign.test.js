@@ -149,3 +149,30 @@ test("side display order is a stable shuffle, and does shuffle", () => {
   });
   assert.ok(anyMixed, "the shuffle never mixes which side holds the winner");
 });
+
+/* A parity-only hash (odd multiplier, lowest bit read out) collapses to just
+   two complementary arrangements no matter how many salts you try, because
+   multiplying by an odd number preserves parity: h&1 only ever tracks
+   (parity of salt) XOR (parity of the chip id's char codes). A real shuffle
+   must produce many distinct board arrangements across salts. */
+test("arrangements are diverse across salts, not just two complementary boards", () => {
+  const arrangements = new Set();
+  for(let s = 0; s < 40; s++){
+    arrangements.add(CHIPS.map(ch => c.sideOrder(ch.id, s)[0]).join(""));
+  }
+  assert.ok(arrangements.size > 8,
+    "expected more than 8 distinct arrangements across salts 0..39, got " + arrangements.size);
+});
+
+/* Regression guard: two specific different salts must not produce the exact
+   same arrangement for every chip. This is the shape of assertion a
+   parity-only hash (h&1) would fail, since it only has two possible outputs
+   and salt 0 vs salt 1 flip parity — but salt 0 vs salt 2 do not, which is
+   exactly the case that must still differ under a proper mix. */
+test("different salts produce a different arrangement for at least one chip", () => {
+  const arrangementAt = s => CHIPS.map(ch => c.sideOrder(ch.id, s)[0]);
+  const s0 = arrangementAt(0);
+  const s2 = arrangementAt(2);
+  assert.ok(s0.some((v, i) => v !== s2[i]),
+    "salt 0 and salt 2 produced identical arrangements — hash is not mixing salt properly");
+});

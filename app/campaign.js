@@ -83,15 +83,45 @@ function gradeWinner(chip, sideIndex){
   return sideIndex === chip.winSide;
 }
 
-/* Which side to show first. Eleven of the sixteen battles have winSide 0,
-   so an unshuffled pass hands 11/16 to a reader who always taps left. The
+/* Which side to show first. Twelve of the sixteen battles have winSide 0,
+   so an unshuffled pass hands 12/16 to a reader who always taps left. The
    shuffle is derived from the chip id and a per-run salt so it is stable
    within a run (a re-render must not move the buttons under a thumb) and
-   different between runs. */
+   different between runs.
+
+   IMPORTANT: do not read the lowest bit of a plain `h = h*31 + c` rolling
+   hash for this. 31 is odd, and multiplying by an odd number never changes
+   parity, so every step of that loop preserves h's parity from the previous
+   step; the salt the loop starts from is the only thing that can flip it.
+   The result is that h&1 collapses to just (parity of salt) XOR (parity of
+   the chip id's char codes) — only two possible outcomes ever, and they are
+   exact complements of each other, no matter how many distinct salts a run
+   picks from. The salt is then decorative: it can only toggle between the
+   same two board layouts, one of which still hands a fixed-side player a
+   knowable, better-than-chance score. To get an unpredictable, well-mixed
+   bit we fold the salt in with a large odd multiplier (so it perturbs more
+   than just the low bit) and finish with an xorshift-multiply avalanche
+   (shift-xor, multiply, shift-xor) before reading out a MID-order bit
+   (bit 15, not bit 0) of that finalized value. */
 function sideOrder(chipId, salt){
-  var h = salt | 0;
+  var h = 0;
   for(var i = 0; i < chipId.length; i++) h = (h * 31 + chipId.charCodeAt(i)) | 0;
-  return (h & 1) ? [1, 0] : [0, 1];
+  /* Fold the salt in with a large odd constant so it perturbs high bits too,
+     not just the parity of h. */
+  h = (h ^ (Math.imul(salt | 0, 2654435761) | 0)) | 0;
+  /* xorshift-multiply finalizer (a la murmur3/splitmix-style mixing): each
+     shift-xor step spreads entropy across bit positions, and multiplying by
+     a large odd constant in between prevents any single input bit from
+     mapping to a single, predictable output bit. */
+  h = (h ^ (h >>> 16)) | 0;
+  h = Math.imul(h, 2246822519) | 0;
+  h = (h ^ (h >>> 13)) | 0;
+  h = Math.imul(h, 3266489917) | 0;
+  h = (h ^ (h >>> 16)) | 0;
+  /* Read a mid-order bit of the finalized value rather than bit 0: after the
+     avalanche every bit is well mixed, but staying away from the very
+     lowest bit keeps this robust even if a future edit weakens the mix. */
+  return ((h >>> 15) & 1) ? [1, 0] : [0, 1];
 }
 
 if(typeof module !== "undefined" && module.exports){
