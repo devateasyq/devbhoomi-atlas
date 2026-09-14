@@ -88,8 +88,10 @@ lesson, not a flaw: Kangra fort is the hinge of hill history.
 
 ### Pass 4 — Who won
 
-The chip shows `sides[0]` versus `sides[1]`; the reader taps the winner, graded
-against `winner`. Bhangani and Nadaun are served consecutively by design.
+The chip shows its two `sides` and the reader taps the winner, graded against
+`winSide` (see the data traps below — `winner` is prose and cannot be matched
+against `sides`, and the two sides must be shown in a shuffled order). Bhangani
+and Nadaun are served consecutively by design.
 
 ### Chain round — per chip, not a tail
 
@@ -125,9 +127,34 @@ any era whose numeric span contains the battle's `y`. The union, so both the
 authored value and every defensible reading are accepted. The lock-in card shows
 the authored `era` as the canonical one.
 
-This is the one change to authored data: `D.eras` records gain numeric `y0`/`y1`
+This is the first of two changes to authored data: `D.eras` records gain numeric `y0`/`y1`
 fields alongside the existing display `span` string. Structural, not content — no
 new facts are introduced and nothing can drift from the cards.
+
+### `winner` is prose, and `outcome` is not a side index
+
+The winner pass cannot be built by comparing `winner` against `sides`:
+
+- `winner` is free prose written for a reader — `"Gorkhas (tactically)"`,
+  `"The state, momentarily"`, `"The people's movement"`, `"Hill rajas and the
+  Guru"`. None of these equals either `sides` string.
+- `outcome` looks like it should resolve this and does not. Bhangani is
+  `outcome:"loss"` while `sides[0]` — Guru Gobind Singh — won it. `outcome`
+  reads from the hill states' point of view, which is a different question.
+
+**Rule:** each battle record gains `winSide: 0 | 1`, the index into its own
+`sides` array. Eleven of the sixteen are side 0, so the winner pass **must
+shuffle which side is shown first, per chip, per run** — otherwise a reader who
+always taps the left-hand option scores eleven out of sixteen without knowing
+anything.
+
+The lock-in card still shows the full `winner` prose, so the nuance that Kalanga
+and Jaithak were Gorkha *tactical* wins inside a British campaign victory is not
+flattened by the game.
+
+This is the second and last change to authored data. Like `y0`/`y1` it adds no
+new facts — `winSide` only records, machine-readably, which of the two named
+sides the existing `winner` sentence is about.
 
 ### Everything else is read as authored
 
