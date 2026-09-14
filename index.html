@@ -5,8 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Parikrama Path — Himachal Pradesh general studies for HPAS, HPRCA, Police and TET</title>
 <meta name="description" content="The Himachal Pradesh material every HP competitive exam shares: a clickable map of the 12 districts and the hill states, a timeline to statehood, topic notes, sortable comparison tables, a scrollable fact feed and the HPAS past-paper bank.">
-<meta name="theme-color" content="#EDEEE9" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#111614" media="(prefers-color-scheme: dark)">
+<!-- Both carry ids because applyTheme() rewrites their content when the
+     reader forces a theme. A forced theme that left the browser chrome
+     following the system would put a light status bar above a dark app. -->
+<meta name="theme-color" id="tc-light" content="#EDEEE9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" id="tc-dark" content="#111614" media="(prefers-color-scheme: dark)">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="icon.svg?v=2" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
@@ -90,6 +93,11 @@
         <span id="crumbtitle">Overview</span><small id="crumbsub">Start here</small>
       </div>
       <div class="bartools">
+        <!-- The header is the one strip that survives every width, so this is
+             the control that is actually reachable on a phone: the rail's
+             Theme button is hidden below 1000px. applyTheme() fills in the
+             icon and the labels, so the markup carries no default state. -->
+        <button id="themetog" type="button" title="Switch theme"></button>
         <button id="acctbtn" type="button" hidden></button>
         <div class="searchwrap">
           <svg class="si" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>

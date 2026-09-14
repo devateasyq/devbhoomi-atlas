@@ -2715,6 +2715,11 @@ function viewProfile(){
        the one page reachable at every width, via the header account button,
        and it is already the page about the reader rather than the syllabus. */
     '<div class="syllabus" style="margin-top:26px">'+
+      '<div class="secthead"><h3>Appearance</h3></div>'+
+      '<p class="pmuted">Auto follows your phone or computer\u2019s own setting.</p>'+
+      '<div class="pdata">'+themeSeg()+'</div>'+
+    '</div>'+
+    '<div class="syllabus" style="margin-top:26px">'+
       '<div class="secthead"><h3>Updates</h3></div>'+
       '<p class="pmuted">The Telegram channel carries what changes in the atlas — '+
         'new records, new past papers, corrections.</p>'+
@@ -2843,7 +2848,8 @@ document.addEventListener("click", e => {
 
   if(hit("#pclose")){ closePanel(); return; }
   if(hit("#pshare")){ shareCurrent(); return; }
-  if(hit("#themebtn")){ cycleTheme(); return; }
+  if(hit("#themebtn") || hit("#themetog")){ cycleTheme(); return; }
+  const tset = hit("[data-theme-set]"); if(tset){ setTheme(tset.dataset.themeSet); return; }
   if(hit("#randbtn")){ surpriseMe(); return; }
   if(hit("#resetbtn")){
     if(confirm("Clear saved quiz and past-paper progress? This cannot be undone.")){
@@ -2945,6 +2951,35 @@ document.addEventListener("keydown", e => {
 });
 
 /* ---------- theme ---------- */
+/* The rail's Theme button cycles, which is fine for a control you pass on
+   your way past. It is the wrong shape for a settings surface, and it was
+   also the ONLY way to change theme: the rail is hidden below 1000px, so a
+   phone had no route to it at all. The profile carries these three as a
+   segmented control instead — you can see which one is on and pick another
+   directly, rather than tapping twice to find out. */
+const THEMES = [["system","Auto"],["light","Light"],["dark","Dark"]];
+/* Half-filled disc for auto, sun for light, moon for dark — the icon says
+   which mode is ON, not which one the tap would bring, because a control
+   that shows its destination reads as the wrong state to everyone who has
+   not worked out that it is a cycle. */
+const THEME_IC = {
+  system:'<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 010 16z" fill="currentColor" stroke="none"/>',
+  light:'<circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M4.4 12H2.2M21.8 12h-2.2M6.6 6.6L5 5M19 19l-1.6-1.6M17.4 6.6L19 5M5 19l1.6-1.6"/>',
+  dark:'<path d="M20 14.4A8.4 8.4 0 119.6 4a6.9 6.9 0 1010.4 10.4z"/>'
+};
+const GROUND = {light:"#EDEEE9", dark:"#111614"};
+function themeSeg(){
+  const cur = store.get("theme","system");
+  return '<div class="seg themeseg" role="group" aria-label="Appearance">'+
+    THEMES.map(t => '<button type="button" data-theme-set="'+t[0]+'" '+
+      'aria-pressed="'+(cur === t[0])+'">'+t[1]+'</button>').join('')+
+    '</div>';
+}
+function setTheme(v){
+  if(!THEMES.some(t => t[0] === v)) return;
+  store.set("theme", v);
+  applyTheme();
+}
 function cycleTheme(){
   const cur = store.get("theme","system");
   store.set("theme", cur === "system" ? "light" : cur === "light" ? "dark" : "system");
@@ -2956,6 +2991,29 @@ function applyTheme(){
   else document.documentElement.setAttribute("data-theme", t);
   const b = $("#themebtn");
   if(b) b.textContent = t === "system" ? "Theme: auto" : t === "light" ? "Theme: light" : "Theme: dark";
+  /* The header copy, which is the only one a phone can reach. */
+  const tg = $("#themetog");
+  if(tg){
+    const lb = t === "system" ? "Auto" : t === "light" ? "Light" : "Dark";
+    tg.innerHTML = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+THEME_IC[t]+'</svg>';
+    tg.setAttribute("aria-label", "Theme: "+lb+". Switch theme");
+    tg.setAttribute("title", "Theme: "+lb);
+  }
+  /* Both controls are on screen together above 1000px, so the segment has
+     to follow the rail button rather than only its own taps. Updated in
+     place rather than by re-rendering: the profile is a long page and
+     redrawing it under the reader's thumb would lose their scroll. */
+  document.querySelectorAll("[data-theme-set]").forEach(el =>
+    el.setAttribute("aria-pressed", String(el.dataset.themeSet === t)));
+  /* A forced theme has to take the browser chrome with it. Both metas are
+     set to the same colour so that whichever media query matches reports
+     the forced one; on "system" they go back to disagreeing, which is what
+     makes them follow the OS again. */
+  const lm = $("#tc-light"), dm = $("#tc-dark");
+  if(lm && dm){
+    lm.setAttribute("content", t === "system" ? GROUND.light : GROUND[t]);
+    dm.setAttribute("content", t === "system" ? GROUND.dark  : GROUND[t]);
+  }
 }
 
 /* ---------- boot ---------- */
