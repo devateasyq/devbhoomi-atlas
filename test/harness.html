@@ -507,6 +507,23 @@ window.addEventListener("load", async () => {
     !doc.getElementById("panel").style.transform,
     doc.getElementById("panel").style.transform || "(cleared)");
 
+  /* Exams: the coverage line is the point of the page, so every exam must
+     state plainly what past papers this atlas holds for it (HPAS only)
+     and every link into the shared material must land somewhere real. */
+  const TITLE_HAS = v => !!ev("TITLE[" + JSON.stringify(v) + "]");
+  ev('S.view="exams"; render();');
+  await wait(300);
+  check("the exams view lists every exam",
+    doc.querySelectorAll(".exrow").length === ev("EXAMS.rows.length"),
+    doc.querySelectorAll(".exrow").length + " rows");
+  check("every exam states what is here for it",
+    [...doc.querySelectorAll(".exrow")].every(r => r.querySelector(".exhas, .exnot")));
+  check("only HPAS claims past papers",
+    doc.querySelectorAll(".exhas").length === 1,
+    doc.querySelectorAll(".exhas").length + " exams claim papers");
+  check("each exam links into a section that exists",
+    [...doc.querySelectorAll(".exlink")].every(b => !!TITLE_HAS(b.dataset.view)));
+
   /* Compare: the superlative is the question type, so the table has to
      answer it without being scanned — and must not claim a superlative
      that is not one. */
