@@ -267,8 +267,8 @@ exam below says plainly what is here for it.</p>
 ${examRows}
 <a class="cta" href="${SITE}/">Open the atlas &rarr;</a>
 <footer>Conducting bodies last checked ${esc(EXAMS.updated)}. They do change —
-the Hamirpur recruitment board was dissolved in 2023 and replaced by HPRCA —
-so confirm against the board's own site before you rely on it.</footer>
+the state's previous staff selection board was dissolved in 2023 and its
+recruitment moved to HPRCA — so confirm against the board's own site before you rely on it.</footer>
 </main>
 </body>
 </html>
