@@ -815,3 +815,17 @@ button.brow:hover .blab{color:var(--accent)}
 .cg-slot.full{border-style:solid;color:var(--ink)}
 .cg-slot i{color:var(--ink-2);font-style:normal}
 @media(max-width:560px){.cg-chip{font-size:.8rem;padding:7px 11px}}
+.cg-ask{font-size:1.15rem;font-weight:600;margin:0 0 14px}
+.cg-ask span{font-weight:400;color:var(--ink-2);font-size:.9rem}
+#cgmap{width:100%;height:auto;max-height:62vh;touch-action:manipulation}
+#cgmap .dist{fill:var(--card);stroke:var(--line);stroke-width:1.5}
+.cg-pt{fill:var(--accent);opacity:.55;cursor:pointer}
+.cg-pt:hover{opacity:1}
+.cg-ptl{fill:var(--ink-2);font-size:15px;text-anchor:middle;pointer-events:none}
+.cg-sides{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cg-side{flex:1 1 220px;min-height:64px;border:1px solid var(--line);background:var(--card);
+  color:var(--ink);border-radius:12px;padding:14px;font:inherit;font-size:.95rem;
+  text-align:left;cursor:pointer}
+.cg-side:hover{border-color:var(--accent)}
+.cg-sides .vs{color:var(--ink-2);font-size:.8rem;text-transform:uppercase;letter-spacing:.08em}
+@media(max-width:560px){.cg-side{flex:1 1 100%}}

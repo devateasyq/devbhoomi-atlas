@@ -1899,6 +1899,77 @@ function viewCampaignYear(){
     bands+'</div>';
 }
 
+function viewCampaignPlace(){
+  const pool = campaignPool();
+  const id = pool[0];
+  const ch = campaignChip(id);
+  const pts = Object.entries(MAP.places)
+    .filter(([, p]) => p.k === "battle")
+    .map(([pid, p]) => '<circle class="cg-pt" data-cgplace="'+pid+'" cx="'+p.x+'" cy="'+p.y+'" r="13"/>'+
+      '<text class="cg-ptl" x="'+p.x+'" y="'+(p.y - 17)+'">'+p.n+'</text>').join('');
+  const paths = Object.entries(MAP.paths).map(([n, d]) =>
+    '<path class="dist" d="'+d+'" data-name="'+n+'"/>').join('');
+  return '<div class="pagewrap cg">'+
+    campaignHeader("Pass 3 — Where", "Tap the place this was fought.")+
+    '<p class="cg-ask">'+ch.name+'</p>'+
+    '<svg id="cgmap" viewBox="0 0 1000 1000" role="img" aria-label="Map of Himachal Pradesh">'+
+      paths+pts+'</svg></div>';
+}
+
+function viewCampaignWinner(){
+  const pool = campaignPool();
+  const id = pool[0];
+  const ch = campaignChip(id);
+  /* Twelve of sixteen have winSide 0. Without this shuffle, always-tap-left
+     scores 12/16 while knowing nothing. */
+  const order = sideOrder(id, S.campaignRun.salt);
+  return '<div class="pagewrap cg">'+
+    campaignHeader("Pass 4 — Who won", "Tap the side that came out on top.")+
+    '<p class="cg-ask">'+ch.name+' <span>'+ch.yr+'</span></p>'+
+    '<div class="cg-sides">'+order.map(i =>
+      '<button class="cg-side" type="button" data-cgwin="'+i+'">'+ch.sides[i]+'</button>'
+    ).join('<span class="vs">vs</span>')+'</div></div>';
+}
+
+/* Mirrors mountMap()'s drag discipline: capture is taken only once movement
+   passes the threshold, and the action fires on pointerup against the element
+   recorded at pointerdown. Do not simplify this to a click handler with
+   pointer capture on pointerdown — that is the bug that silently swallowed
+   every map tap. */
+function mountCampaignMap(){
+  const svg = $("#cgmap"); if(!svg) return;
+  const DRAG = 8;
+  let down = null, moved = false;
+  svg.addEventListener("pointerdown", e => {
+    down = {x: e.clientX, y: e.clientY, target: e.target.closest("[data-cgplace]")};
+    moved = false;
+  });
+  /* Distance is measured from the recorded pointerdown position (as
+     mountMap() does), not from e.movementX/e.movementY. movementX/Y is a
+     per-event delta that the browser only fills in for real HID input —
+     a synthetic dispatchEvent(new PointerEvent(...)) leaves it at 0, which
+     would make the drag threshold below unreachable and let a drag place
+     an answer, exactly the bug this pattern exists to avoid. */
+  svg.addEventListener("pointermove", e => {
+    if(!down || moved) return;
+    const dx = e.clientX - down.x, dy = e.clientY - down.y;
+    if(Math.abs(dx) + Math.abs(dy) > DRAG){
+      moved = true;
+      try{ svg.setPointerCapture(e.pointerId); }catch(err){}
+    }
+  });
+  svg.addEventListener("pointerup", () => {
+    const el = down && down.target; down = null;
+    if(!el || moved) return;
+    const run = S.campaignRun;
+    const id = campaignPool()[0];
+    const ok = gradePlace(campaignChip(id), el.dataset.cgplace);
+    recordAttempt(run, id, "place", ok);
+    if(ok) campaignAdvance(); else toast("Not there — look again");
+    campaignTouch(); render();
+  });
+}
+
 function viewCampaign(){
   if(!S.campaignRun) return viewCampaignStart();
   if(S.campaignRun.pass === "band")   return viewCampaignBand();
@@ -2768,7 +2839,11 @@ function render(){
   if(S.view === "home")           s.innerHTML = viewHome();
   else if(S.view === "map")     { s.innerHTML = viewMap(); mountMap(); }
   else if(S.view === "timeline"){ s.innerHTML = viewTimeline(); paintSelection(); }
-  else if(S.view === "battles") { s.innerHTML = viewBattles(); paintSelection(); }
+  else if(S.view === "battles") {
+    s.innerHTML = viewBattles();
+    if(S.battleMode === "campaign" && S.campaignRun && S.campaignRun.pass === "place") mountCampaignMap();
+    else paintSelection();
+  }
   else if(S.view === "topics")  { s.innerHTML = viewTopics(); paintSelection(); }
   else if(S.view === "people")  { s.innerHTML = viewPeople(); paintSelection(); }
   else if(S.view === "trends")    s.innerHTML = viewTrends();
@@ -2844,6 +2919,13 @@ document.addEventListener("click", e => {
     recordAttempt(run, id, "year", ok);
     if(ok){ run.year[era].push(id); campaignAdvance(); }
     else toast("Something came before that one");
+    campaignTouch(); render(); return;
+  }
+  const cw = hit("[data-cgwin]");   if(cw){
+    const run = S.campaignRun, id = campaignPool()[0];
+    const ok = gradeWinner(campaignChip(id), +cw.dataset.cgwin);
+    recordAttempt(run, id, "winner", ok);
+    if(ok) campaignAdvance(); else toast("The other side");
     campaignTouch(); render(); return;
   }
   const ts  = hit("[data-ts]");     if(ts){ S.topicSec = ts.dataset.ts; render(); return; }

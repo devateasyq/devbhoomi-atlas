@@ -633,6 +633,46 @@ window.addEventListener("load", async () => {
       doc.getElementById("ptitle").textContent);
   }
 
+  /* The campaign map must answer a tap and ignore a drag. This is the same
+     discipline the Atlas map needs and the same bug it once had.
+
+     NB: `S` and `D` are top-level `const`s in classic scripts, so they are
+     script-scope bindings, not properties of the iframe's window — `win.S`
+     and `win.D` are undefined even though `S.foo` resolves fine inside
+     `ev()`. Every read or mutation of them below goes through `ev()`, same
+     as the rest of this harness. */
+  ev('S.view = "battles";'); await wait(120);
+  ev('S.battleMode = "campaign"; campaignStart(false);');
+  /* Fast-forward to the place pass without playing passes 1 and 2. */
+  ev('S.campaignRun.pool.forEach(function(id){' +
+     ' recordAttempt(S.campaignRun, id, "band", true);' +
+     ' recordAttempt(S.campaignRun, id, "year", true); });' +
+     ' S.campaignRun.pass = "place"; render();');
+  await wait(120);
+
+  const target = doc.querySelector('[data-cgplace]');
+  check("campaign map renders its place targets", !!target);
+
+  if(target){
+    const before = ev("scoreRun(S.campaignRun).score");
+    pointerAt(target, "pointerdown", 10, 10);
+    pointerAt(target, "pointermove", 200, 200);
+    pointerAt(target, "pointerup", 200, 200);
+    await wait(60);
+    check("a drag across the campaign map places nothing",
+      ev("scoreRun(S.campaignRun).score") === before);
+
+    const first = ev("S.campaignRun.pool[0]");
+    const placeId = ev('D.battles.find(function(b){ return b.id === ' +
+      JSON.stringify(first) + '; }).place');
+    const right = doc.querySelector('[data-cgplace="' + placeId + '"]');
+    pointerAt(right, "pointerdown", 10, 10);
+    pointerAt(right, "pointerup", 10, 10);
+    await wait(60);
+    check("a tap on the right place scores",
+      ev("scoreRun(S.campaignRun).score") === before + 1);
+  }
+
   out.innerHTML += "\n" + pass + " passed, " + fail + " failed";
   document.title = fail ? "FAIL (" + fail + ")" : "PASS";
 });
