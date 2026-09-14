@@ -11,7 +11,7 @@ css  = "\n".join(pathlib.Path("app", f).read_text() for f in ("tokens.css","layo
 # Keep this list in the same order as the <script> tags in index.html.
 js   = "\n".join(pathlib.Path("data", f).read_text()
                  for f in ("geo.js","places.js","history.js","topics.js",
-                           "rivers.js","features.js","quiz.js","pyq.js","economy.js"))
+                           "rivers.js","features.js","quiz.js","pyq.js","economy.js","exams.js"))
 js  += "\n" + "\n".join(pathlib.Path("app", f).read_text()
                         for f in ("logo.js","trends.js","mapkit.js","credits.js","rounds.js","sync.js",
                                   "firebase-config.js","auth.js","app.js"))
