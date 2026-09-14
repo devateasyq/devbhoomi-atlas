@@ -233,3 +233,24 @@ test("every battle year falls inside some era span, or its own authored era", ()
     assert.ok(inSome, b.id + " (y=" + b.y + ") falls in no era span at all");
   }
 });
+
+/* `winner` is prose ("Gorkhas (tactically)", "The state, momentarily") and
+   `outcome` reads from the hill states' point of view, not as a side index —
+   Bhangani is outcome:"loss" while sides[0] won it. winSide is the only
+   machine-readable answer to "which of these two won?". */
+test("every battle names which of its two sides won", () => {
+  for(const b of D.battles){
+    assert.ok(b.winSide === 0 || b.winSide === 1,
+      b.id + " has winSide " + JSON.stringify(b.winSide) + ", expected 0 or 1");
+    assert.equal(b.sides.length, 2, b.id + " does not have exactly two sides");
+  }
+});
+
+/* Guards the shuffle requirement: eleven of sixteen are side 0, so a reader
+   who always taps the left-hand option would score 11/16 on an unshuffled
+   winner pass. This test documents the imbalance so the UI cannot forget it. */
+test("winSide is lopsided enough that the winner pass must shuffle", () => {
+  const zero = D.battles.filter(b => b.winSide === 0).length;
+  assert.ok(zero > D.battles.length / 2,
+    "expected a side-0 majority (the reason the pass shuffles), got " + zero);
+});
