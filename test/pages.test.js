@@ -104,3 +104,28 @@ test("the app no longer sells itself as HPAS-only", () => {
   const page = fs.readFileSync(path.join(R, "d-kangra", "index.html"), "utf8");
   assert.ok(!/HPPSC <b>HPAS<\/b> syllabus/.test(page), "a generated page still says HPAS syllabus");
 });
+
+test("the exams page is pre-rendered and indexable", () => {
+  const p = path.join(ROOT, "exams", "index.html");
+  assert.ok(fs.existsSync(p), "no /exams/ page was generated");
+  const h = fs.readFileSync(p, "utf8");
+  const {EXAMS} = require("../data/exams.js");
+  for(const e of EXAMS.rows)
+    assert.ok(h.includes(e.name), "the exams page does not mention " + e.id);
+  assert.match(h, /rel="canonical" href="https:\/\/www\.parikramapath\.com\/exams\/"/);
+  assert.match(h, /property="og:url" content="https:\/\/www\.parikramapath\.com\/exams\/"/);
+  assert.ok(!/<script/i.test(h), "a page that needs JS is a page a crawler cannot read");
+});
+
+test("the exams page states coverage honestly", () => {
+  const h = fs.readFileSync(path.join(ROOT, "exams", "index.html"), "utf8");
+  assert.match(h, /448/, "the HPAS paper count is missing");
+  assert.match(h, /No past papers here yet/, "an exam without papers does not say so");
+  for(const dead of ["HPSSC", "HPSSSB"])
+    assert.ok(!h.includes(dead), "the page names a dissolved body: " + dead);
+});
+
+test("the sitemap includes the exams page", () => {
+  const xml = fs.readFileSync(path.join(ROOT, "sitemap.xml"), "utf8");
+  assert.ok(xml.includes("<loc>https://www.parikramapath.com/exams/</loc>"));
+});
