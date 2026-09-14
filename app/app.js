@@ -31,6 +31,8 @@ const IDX = new Map();
 const PLACE_REC = new Map((D.features || []).map(r => [r.pid, r.id]));
 /* Facts are a projection of the records, built once at load like SEARCH. */
 const FACTS = buildFacts(D);
+const CHIPS = buildChips(D);
+const CHIPS_BY_ID = Object.fromEntries(CHIPS.map(ch => [ch.id, ch]));
 
 /* Every marker's district, resolved once at load. A record's own
    `districts` list wins where it has one — it is curated, and it is right
@@ -345,7 +347,7 @@ function factsList(pairs){
 const S = {
   view:"home", sel:null, trail:[], seen:[], legendOpen:false, focus:"",
   era:"all", battleFilter:"all", topicSec:"all",
-  battleMode:"cards", campaignRun:null,
+  battleMode:"cards", campaignRun:null, campaignSel:null,
   cmpTab:"districts", cmpKey:"area", cmpDesc:true,
   revMode:"papers",
   qIdx:0, qSec:"all", qAnswered:null,
@@ -1816,6 +1818,87 @@ function viewCampaignStart(){
     '</div></div>';
 }
 
+/* Tap-to-select, then tap-to-place. Never HTML5 drag: it is unusable on
+   touch, and this app is phone-first. */
+function campaignPool(){
+  const run = S.campaignRun, pass = run.pass;
+  return run.pool.filter(id => !(run.done[id] || {})[pass]);
+}
+function campaignChip(id){
+  return CHIPS_BY_ID[id];
+}
+function campaignAdvance(){
+  const run = S.campaignRun;
+  const pass = run.pass;
+  const left = run.pool.some(id => !(run.done[id] || {})[pass]);
+  if(left) return;
+  const i = PASSES.indexOf(pass);
+  if(i < PASSES.length - 1) run.pass = PASSES[i + 1];
+  S.campaignSel = null;
+}
+
+function campaignHeader(label, hint){
+  const run = S.campaignRun;
+  const s = scoreRun(run);
+  const left = campaignPool().length;
+  return '<div class="cg-head"><div><h3>'+label+'</h3><p>'+hint+'</p></div>'+
+    '<span class="cg-score">'+s.score+' / '+s.max+'</span></div>'+
+    '<div class="cg-prog"><i style="width:'+
+      Math.round(100 * (run.pool.length - left) / run.pool.length)+'%"></i></div>';
+}
+
+function campaignChipRow(ids){
+  return '<div class="cg-pool">'+ids.map(id => {
+    const ch = campaignChip(id);
+    return '<button class="cg-chip'+(S.campaignSel===id?" sel":"")+'" type="button" '+
+      'data-cgchip="'+id+'" aria-pressed="'+(S.campaignSel===id)+'">'+ch.name+'</button>';
+  }).join('')+'</div>';
+}
+
+function viewCampaignBand(){
+  const pool = campaignPool();
+  const bands = D.eras.map(e => {
+    const run = S.campaignRun;
+    const inBand = run.pool.filter(id =>
+      (run.done[id] || {}).band && (run.band || {})[id] === e.id);
+    return '<button class="cg-band" type="button" data-cgband="'+e.id+'" '+
+      'style="--ec:var('+e.v+')"><span class="nm">'+e.name+'</span>'+
+      '<span class="sp">'+e.span+'</span>'+
+      '<span class="got">'+inBand.map(id => campaignChip(id).name).join(' · ')+'</span></button>';
+  }).join('');
+  return '<div class="pagewrap cg">'+
+    campaignHeader("Pass 1 — When", "Tap a battle, then tap the era it belongs to.")+
+    campaignChipRow(pool)+
+    '<div class="cg-bands">'+bands+'</div></div>';
+}
+
+function viewCampaignYear(){
+  const run = S.campaignRun;
+  /* Ordering runs over the AUTHORED band, not wherever the reader put the
+     chip in pass 1 — pass 1 grades leniently, so following the reader's
+     choice through would make the slots non-deterministic. */
+  const bands = D.eras.filter(e => canonicalOrder(D, e.id).length)
+    .map(e => {
+      const order  = canonicalOrder(D, e.id).filter(id => run.pool.indexOf(id) >= 0);
+      const placed = (run.year || {})[e.id] || [];
+      const left   = order.filter(id => placed.indexOf(id) < 0);
+      const slots  = order.map((_, i) => {
+        const id = placed[i];
+        return '<span class="cg-slot'+(id?" full":"")+'">'+
+          (id ? campaignChip(id).name+' <i>'+campaignChip(id).yr+'</i>' : (i+1))+'</span>';
+      }).join('');
+      return '<div class="cg-yband" style="--ec:var('+e.v+')">'+
+        '<h4>'+e.name+' <span>'+e.span+'</span></h4>'+
+        '<div class="cg-slots">'+slots+'</div>'+
+        '<div class="cg-pool">'+left.map(id =>
+          '<button class="cg-chip" type="button" data-cgyear="'+e.id+'|'+id+'">'+
+          campaignChip(id).name+'</button>').join('')+'</div></div>';
+    }).join('');
+  return '<div class="pagewrap cg">'+
+    campaignHeader("Pass 2 — Order", "Earliest first. Tap the battle that comes next in each era.")+
+    bands+'</div>';
+}
+
 function viewCampaign(){
   if(!S.campaignRun) return viewCampaignStart();
   if(S.campaignRun.pass === "band")   return viewCampaignBand();
@@ -2731,6 +2814,37 @@ document.addEventListener("click", e => {
     if(a === "resume") S.campaignRun = campaignState().run;
     else campaignStart(a === "weak");
     render(); return;
+  }
+  const cc = hit("[data-cgchip]");  if(cc){
+    S.campaignSel = (S.campaignSel === cc.dataset.cgchip) ? null : cc.dataset.cgchip;
+    render(); return;
+  }
+  const cb = hit("[data-cgband]");  if(cb){
+    if(!S.campaignSel){ toast("Pick a battle first"); return; }
+    const run = S.campaignRun, id = S.campaignSel, band = cb.dataset.cgband;
+    const ok = gradeBand(D, campaignChip(id), band);
+    recordAttempt(run, id, "band", ok);
+    if(ok){
+      run.band = run.band || {};
+      /* The board snaps the chip to its AUTHORED era even when the reader
+         picked a different, equally defensible overlapping band — pass 2
+         needs one deterministic home per chip. */
+      run.band[id] = campaignChip(id).era;
+      S.campaignSel = null;
+      campaignAdvance();
+    } else toast("Not that era — try again");
+    campaignTouch(); render(); return;
+  }
+  const cy = hit("[data-cgyear]");  if(cy){
+    const parts = cy.dataset.cgyear.split("|"), era = parts[0], id = parts[1];
+    const run = S.campaignRun;
+    run.year = run.year || {};
+    run.year[era] = run.year[era] || [];
+    const ok = gradeYear(D, era, run.year[era].length, id);
+    recordAttempt(run, id, "year", ok);
+    if(ok){ run.year[era].push(id); campaignAdvance(); }
+    else toast("Something came before that one");
+    campaignTouch(); render(); return;
   }
   const ts  = hit("[data-ts]");     if(ts){ S.topicSec = ts.dataset.ts; render(); return; }
   const rm  = hit("[data-rm]");     if(rm){ S.revMode = rm.dataset.rm; S.qAnswered = null; render(); return; }

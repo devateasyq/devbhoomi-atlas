@@ -785,3 +785,33 @@ button.brow:hover .blab{color:var(--accent)}
 .modebar .tog[aria-pressed="true"]{background:var(--accent);color:var(--bg)}
 .campaign-start .best{margin:14px 0;color:var(--ink-2)}
 .campaign-start .tog.primary{background:var(--accent);color:var(--bg);font-weight:600}
+
+/* ---------- Campaign board ---------- */
+.cg{padding-bottom:40px}
+.cg-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px}
+.cg-head h3{margin:0;font-size:1.05rem}
+.cg-head p{margin:2px 0 0;color:var(--ink-2);font-size:.85rem}
+.cg-score{font-variant-numeric:tabular-nums;font-weight:700;color:var(--gold)}
+.cg-prog{height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin-bottom:16px}
+.cg-prog i{display:block;height:100%;background:var(--accent);transition:width .25s}
+.cg-pool{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px}
+.cg-chip{border:1px solid var(--line);background:var(--card);color:var(--ink);
+  border-radius:999px;padding:7px 13px;font:inherit;font-size:.85rem;cursor:pointer;
+  min-height:38px}
+.cg-chip.sel{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.cg-bands{display:grid;gap:8px}
+.cg-band{display:grid;gap:2px;text-align:left;border:1px solid var(--line);
+  border-left:3px solid var(--ec);background:var(--card);color:var(--ink);
+  border-radius:10px;padding:11px 13px;font:inherit;cursor:pointer;min-height:56px}
+.cg-band .nm{font-weight:600}
+.cg-band .sp,.cg-band .got{font-size:.8rem;color:var(--ink-2)}
+.cg-band .got:empty{display:none}
+.cg-yband{border-left:3px solid var(--ec);padding-left:12px;margin-bottom:20px}
+.cg-yband h4{margin:0 0 8px;font-size:.95rem}
+.cg-yband h4 span{font-weight:400;color:var(--ink-2);font-size:.82rem}
+.cg-slots{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px}
+.cg-slot{border:1px dashed var(--line);border-radius:8px;padding:6px 11px;
+  font-size:.82rem;color:var(--ink-2);min-width:34px;text-align:center}
+.cg-slot.full{border-style:solid;color:var(--ink)}
+.cg-slot i{color:var(--ink-2);font-style:normal}
+@media(max-width:560px){.cg-chip{font-size:.8rem;padding:7px 11px}}
