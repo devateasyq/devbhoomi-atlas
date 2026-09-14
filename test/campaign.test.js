@@ -209,6 +209,46 @@ test("the shuffle is stable for one salt", () => {
   assert.deepEqual(a, b);
 });
 
+/* The old rotate-and-swap scheme could only ever produce 6 of the 24
+   permutations, and structurally could NEVER place `cause` first or `sig`
+   last — a shortcut that hands the player half the "find the cause and put
+   it first" task for free. A fair shuffle must let every key land in every
+   slot a meaningful fraction of the time. */
+test("every chain key can land in every slot at a fair rate", () => {
+  const counts = [0, 1, 2, 3].map(() => ({cause: 0, course: 0, result: 0, sig: 0}));
+  let total = 0;
+  for(const ch of CHIPS){
+    for(let s = 0; s < 500; s++){
+      const keys = c.shuffleChain(D, ch.id, s).map(p => p.key);
+      for(let slot = 0; slot < 4; slot++) counts[slot][keys[slot]]++;
+      total++;
+    }
+  }
+  const report = counts.map((row, slot) =>
+    "slot" + slot + " | " + c.CHAIN_KEYS.map(k =>
+      k + ":" + (100 * row[k] / total).toFixed(1) + "%").join("  ")).join("\n");
+  for(let slot = 0; slot < 4; slot++){
+    for(const k of c.CHAIN_KEYS){
+      const pct = counts[slot][k] / total;
+      assert.ok(pct >= 0.10,
+        k + " lands in slot" + slot + " only " + (100 * pct).toFixed(1) +
+        "% of the time (need >=10%)\n" + report);
+    }
+  }
+});
+
+/* A parity/low-diversity scheme can only ever emit a handful of distinct
+   orderings across many salts. A real shuffle should range far more widely. */
+test("shuffleChain produces many distinct orderings across salts", () => {
+  const orderings = new Set();
+  for(let s = 0; s < 500; s++){
+    orderings.add(c.shuffleChain(D, "b-nadaun", s).map(p => p.key).join(","));
+  }
+  assert.ok(orderings.size >= 15,
+    "expected at least 15 distinct orderings for b-nadaun across salts 0..499, got " +
+    orderings.size);
+});
+
 test("a chain is correct only in full order", () => {
   assert.equal(c.gradeChain(["cause", "course", "result", "sig"]), true);
   assert.equal(c.gradeChain(["cause", "result", "course", "sig"]), false);

@@ -138,24 +138,72 @@ function chainParts(D, chipId){
   });
 }
 
-/* A deterministic rotate-and-swap. Salt 0 would leave the parts in canonical
-   order, which hands the reader the answer, so the rotation is always at
-   least one and the result is checked against canonical before returning. */
+/* Mix chipId and salt into a well-mixed 32-bit seed, reusing the same
+   xorshift-multiply avalanche sideOrder relies on above (see the long
+   comment on sideOrder for why a plain `h*31+c` rolling hash read at a low
+   bit is not good enough here: 31 is odd, so that scheme's low bit collapses
+   to parity and never really mixes). Salt is folded in with a large odd
+   multiplier before the avalanche so it perturbs high bits too. */
+function chainSeed(chipId, salt){
+  var h = 0;
+  for(var i = 0; i < chipId.length; i++) h = (h * 31 + chipId.charCodeAt(i)) | 0;
+  h = (h ^ (Math.imul(salt | 0, 2654435761) | 0)) | 0;
+  h = (h ^ (h >>> 16)) | 0;
+  h = Math.imul(h, 2246822519) | 0;
+  h = (h ^ (h >>> 13)) | 0;
+  h = Math.imul(h, 3266489917) | 0;
+  h = (h ^ (h >>> 16)) | 0;
+  return h >>> 0;                              /* unsigned 32-bit seed */
+}
+
+/* mulberry32: a small, fast, deterministic PRNG. Good enough for shuffling
+   four items; not for anything cryptographic. */
+function mulberry32(seed){
+  var state = seed >>> 0;
+  return function(){
+    state = (state + 0x6D2B79F5) | 0;
+    var t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/* A seeded Fisher-Yates shuffle over the four chain parts.
+
+   WHY NOT rotate-and-swap: an earlier version of this function rotated the
+   canonical array by 1-3 positions and then conditionally swapped the
+   middle two. That can only ever produce 6 of the 24 possible permutations,
+   and worse, it is structurally biased: a rotation by 1-3 can NEVER leave
+   `cause` (index 0) in slot 0, and can NEVER leave `sig` (index 3) in slot
+   3 — the swap only ever touches the middle two slots, so it cannot repair
+   either edge. That guaranteed `cause` was never served first and `sig`
+   was never served last, which is a free hint for a game whose whole point
+   is "find the cause and place it first". Fisher-Yates over a PRNG seed
+   has no such structural blind spot: every slot is reachable by every key. */
 function shuffleChain(D, chipId, salt){
   var parts = chainParts(D, chipId);
   if(parts.length !== 4) return parts;
-  var h = (salt | 0);
-  for(var i = 0; i < chipId.length; i++) h = (h * 31 + chipId.charCodeAt(i)) | 0;
-  h = Math.abs(h);
-  var rot = 1 + (h % 3);                       /* 1..3, never 0 */
-  var out = parts.slice(rot).concat(parts.slice(0, rot));
-  if(h & 4){ var t = out[1]; out[1] = out[2]; out[2] = t; }
-  /* The swap can undo the rotation for some values; rotate once more rather
-     than return the solved order. */
-  if(out[0].key === CHAIN_KEYS[0] && out[1].key === CHAIN_KEYS[1] &&
-     out[2].key === CHAIN_KEYS[2] && out[3].key === CHAIN_KEYS[3]){
-    out = out.slice(1).concat(out.slice(0, 1));
+  var seed = chainSeed(chipId, salt);
+  var out;
+  for(var attempt = 0; attempt < 8; attempt++){
+    var rng = mulberry32(seed);
+    out = parts.slice();
+    for(var i = out.length - 1; i > 0; i--){
+      var j = Math.floor(rng() * (i + 1));
+      var tmp = out[i]; out[i] = out[j]; out[j] = tmp;
+    }
+    if(!(out[0].key === CHAIN_KEYS[0] && out[1].key === CHAIN_KEYS[1] &&
+         out[2].key === CHAIN_KEYS[2] && out[3].key === CHAIN_KEYS[3])){
+      return out;
+    }
+    /* Landed on the solved order: reshuffle with an advanced seed rather
+       than "fixing up" this result (e.g. rotating it), which is exactly
+       the kind of post-hoc tweak that reintroduces positional bias. */
+    seed = (seed + 0x9E3779B9) >>> 0;
   }
+  /* Vanishingly unlikely: every attempt landed solved. Terminate safely by
+     swapping the first two elements rather than looping forever. */
+  var t = out[0]; out[0] = out[1]; out[1] = t;
   return out;
 }
 
