@@ -415,19 +415,13 @@ test("orderInPool narrows canonicalOrder to only the ids present in the pool", (
    MAP.places, and gradePlace() only ever accepts a tap that matches
    chip.place exactly. Those two must be driven off the SAME set of ids
    or a chip whose place is never drawn can never be graded correct —
-   deadlocking that pass forever. This mirrors the renderer's own
+   deadlocking that pass forever. This asserts against placeOptions(), the SAME function the renderer draws from, so the view and the test cannot each keep their own copy of the rule. (It used to mirror the renderer's own
    filter (see the WHY comment on viewCampaignPlace in app/app.js) so a
-   future edit that narrows the filter back down catches itself here.
+   future edit that narrows the rule catches itself here.)
    ------------------------------------------------------------------ */
-function renderedPlaceIds(D, MAP){
-  var chipPlaces = new Set(c.buildChips(D).map(function(ch){ return ch.place; }));
-  return new Set(Object.keys(MAP.places).filter(function(pid){
-    return MAP.places[pid].k === "battle" || chipPlaces.has(pid);
-  }));
-}
 
 test("every chip's place exists on the map and is among the rendered pass-3 options", () => {
-  const rendered = renderedPlaceIds(D, MAP);
+  const rendered = new Set(c.placeOptions(D, MAP));
   for(const ch of CHIPS){
     assert.ok(MAP.places[ch.place], ch.id + " points at missing place " + ch.place);
     assert.ok(rendered.has(ch.place),

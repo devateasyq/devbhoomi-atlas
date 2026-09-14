@@ -342,7 +342,7 @@ if(typeof module !== "undefined" && module.exports){
                     acceptedBands: acceptedBands, gradeBand: gradeBand,
                     canonicalOrder: canonicalOrder, orderInPool: orderInPool,
                     gradeYear: gradeYear,
-                    gradePlace: gradePlace, gradeWinner: gradeWinner,
+                    gradePlace: gradePlace, placeOptions: placeOptions, gradeWinner: gradeWinner,
                     sideOrder: sideOrder,
                     CHAIN_KEYS: CHAIN_KEYS, CHAIN_LABELS: CHAIN_LABELS,
                     chainParts: chainParts, shuffleChain: shuffleChain,

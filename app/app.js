@@ -1918,11 +1918,11 @@ function viewCampaignPlace(){
      never advance, and every run that reached b-dhami hard-deadlocked.
      The view's option list and the grader's accepted answer must be
      drawn from one source, or they drift exactly like this. */
-  const chipPlaces = new Set(CHIPS.map(c => c.place));
-  const pts = Object.entries(MAP.places)
-    .filter(([pid, p]) => p.k === "battle" || chipPlaces.has(pid))
-    .map(([pid, p]) => '<circle class="cg-pt" data-cgplace="'+pid+'" cx="'+p.x+'" cy="'+p.y+'" r="13"/>'+
-      '<text class="cg-ptl" x="'+p.x+'" y="'+(p.y - 17)+'">'+p.n+'</text>').join('');
+  const pts = placeOptions(D, MAP).map(pid => {
+    const p = MAP.places[pid];
+    return '<circle class="cg-pt" data-cgplace="'+pid+'" cx="'+p.x+'" cy="'+p.y+'" r="13"/>'+
+      '<text class="cg-ptl" x="'+p.x+'" y="'+(p.y - 17)+'">'+p.n+'</text>';
+  }).join('');
   const paths = Object.entries(MAP.paths).map(([n, d]) =>
     '<path class="dist" d="'+d+'" data-name="'+n+'"/>').join('');
   return '<div class="pagewrap cg">'+
