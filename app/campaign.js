@@ -124,10 +124,54 @@ function sideOrder(chipId, salt){
   return ((h >>> 15) & 1) ? [1, 0] : [0, 1];
 }
 
+/* The four-part shape a mains answer needs. `sig` is last because it is the
+   "why it matters" close, not because it is least important. */
+var CHAIN_KEYS = ["cause", "course", "result", "sig"];
+var CHAIN_LABELS = {cause: "Cause", course: "Course",
+                    result: "Result", sig: "Why it matters"};
+
+function chainParts(D, chipId){
+  var b = (D.battles || []).find(function(x){ return x.id === chipId; });
+  if(!b) return [];
+  return CHAIN_KEYS.map(function(k){
+    return {key: k, label: CHAIN_LABELS[k], text: b[k]};
+  });
+}
+
+/* A deterministic rotate-and-swap. Salt 0 would leave the parts in canonical
+   order, which hands the reader the answer, so the rotation is always at
+   least one and the result is checked against canonical before returning. */
+function shuffleChain(D, chipId, salt){
+  var parts = chainParts(D, chipId);
+  if(parts.length !== 4) return parts;
+  var h = (salt | 0);
+  for(var i = 0; i < chipId.length; i++) h = (h * 31 + chipId.charCodeAt(i)) | 0;
+  h = Math.abs(h);
+  var rot = 1 + (h % 3);                       /* 1..3, never 0 */
+  var out = parts.slice(rot).concat(parts.slice(0, rot));
+  if(h & 4){ var t = out[1]; out[1] = out[2]; out[2] = t; }
+  /* The swap can undo the rotation for some values; rotate once more rather
+     than return the solved order. */
+  if(out[0].key === CHAIN_KEYS[0] && out[1].key === CHAIN_KEYS[1] &&
+     out[2].key === CHAIN_KEYS[2] && out[3].key === CHAIN_KEYS[3]){
+    out = out.slice(1).concat(out.slice(0, 1));
+  }
+  return out;
+}
+
+function gradeChain(keys){
+  if(!keys || keys.length !== CHAIN_KEYS.length) return false;
+  for(var i = 0; i < CHAIN_KEYS.length; i++) if(keys[i] !== CHAIN_KEYS[i]) return false;
+  return true;
+}
+
 if(typeof module !== "undefined" && module.exports){
   module.exports = {PASSES: PASSES, buildChips: buildChips,
                     acceptedBands: acceptedBands, gradeBand: gradeBand,
                     canonicalOrder: canonicalOrder, gradeYear: gradeYear,
                     gradePlace: gradePlace, gradeWinner: gradeWinner,
-                    sideOrder: sideOrder};
+                    sideOrder: sideOrder,
+                    CHAIN_KEYS: CHAIN_KEYS, CHAIN_LABELS: CHAIN_LABELS,
+                    chainParts: chainParts, shuffleChain: shuffleChain,
+                    gradeChain: gradeChain};
 }

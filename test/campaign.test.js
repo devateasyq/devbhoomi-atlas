@@ -176,3 +176,42 @@ test("different salts produce a different arrangement for at least one chip", ()
   assert.ok(s0.some((v, i) => v !== s2[i]),
     "salt 0 and salt 2 produced identical arrangements — hash is not mixing salt properly");
 });
+
+test("every battle has all four chain paragraphs with text", () => {
+  for(const ch of CHIPS){
+    const parts = c.chainParts(D, ch.id);
+    assert.equal(parts.length, 4, ch.id + " has " + parts.length + " chain parts");
+    assert.deepEqual(parts.map(p => p.key), ["cause", "course", "result", "sig"]);
+    for(const p of parts){
+      assert.ok(p.text && p.text.trim().length > 20,
+        ch.id + " chain part " + p.key + " is empty or too short");
+      assert.ok(p.label && p.label.trim(), ch.id + " chain part " + p.key + " has no label");
+    }
+  }
+});
+
+test("the shuffle keeps all four parts and never hands back the answer", () => {
+  for(const ch of CHIPS){
+    for(const salt of [0, 1, 2, 3]){
+      const keys = c.shuffleChain(D, ch.id, salt).map(p => p.key);
+      assert.equal(keys.length, 4, ch.id + " lost a part at salt " + salt);
+      assert.deepEqual(keys.slice().sort(), ["cause", "course", "result", "sig"],
+        ch.id + " duplicated or dropped a part at salt " + salt);
+      assert.notDeepEqual(keys, c.CHAIN_KEYS,
+        ch.id + " was served already-solved at salt " + salt);
+    }
+  }
+});
+
+test("the shuffle is stable for one salt", () => {
+  const a = c.shuffleChain(D, "b-nadaun", 5).map(p => p.key);
+  const b = c.shuffleChain(D, "b-nadaun", 5).map(p => p.key);
+  assert.deepEqual(a, b);
+});
+
+test("a chain is correct only in full order", () => {
+  assert.equal(c.gradeChain(["cause", "course", "result", "sig"]), true);
+  assert.equal(c.gradeChain(["cause", "result", "course", "sig"]), false);
+  assert.equal(c.gradeChain(["cause", "course", "result"]), false);
+  assert.equal(c.gradeChain([]), false);
+});
