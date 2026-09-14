@@ -1276,9 +1276,14 @@ function mountMap(){
         all = document.createElement("button");
         all.type = "button"; all.className = "lgall"; all.id = "lgall";
         all.textContent = "Show all";
+        /* .lghint is a grandchild of .maplegend, not a child: inserting
+           before it from legendEl throws NotFoundError and takes the rest
+           of commit() — applyLayers() included — down with it. Insert into
+           the hint's own parent, which is where the rendered markup puts
+           the button too. */
         const hint = legendEl.querySelector(".lghint");
-        if(hint) legendEl.insertBefore(all, hint);
-        else legendEl.appendChild(all);
+        if(hint && hint.parentNode) hint.parentNode.insertBefore(all, hint);
+        else (legendEl.querySelector(".lgbody") || legendEl).appendChild(all);
       } else if(!S.mapOff.length && all) all.remove();
       applyLayers();
       applyFocus();

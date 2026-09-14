@@ -321,6 +321,9 @@ window.addEventListener("load", async () => {
       doc.getElementById("lgtoggle").click();
       await wait(150);
     }
+    /* the marker tests above left the panel open; close it so the assertion
+       below observes what focusing did, not what they did */
+    ev("closePanel();"); await wait(150);
     fsel.value = "d-kinnaur";
     fsel.dispatchEvent(new win.Event("change"));
     await wait(600);
@@ -368,11 +371,11 @@ window.addEventListener("load", async () => {
   const vb = doc.getElementById("viewbar");
   check("a view bar exists below the header", !!vb);
   if(vb){
-    ev('S.view="map"; render();'); await wait(250);
+    ev('go("map");'); await wait(250);
     check("the view bar names the current view",
       /Atlas/.test(doc.getElementById("vbtitle").textContent),
       doc.getElementById("vbtitle").textContent);
-    ev('S.view="rounds"; render();'); await wait(250);
+    ev('go("rounds");'); await wait(250);
     check("the view bar follows the view",
       /Rounds/.test(doc.getElementById("vbtitle").textContent),
       doc.getElementById("vbtitle").textContent);
@@ -511,7 +514,11 @@ window.addEventListener("load", async () => {
      state plainly what past papers this atlas holds for it (HPAS only)
      and every link into the shared material must land somewhere real. */
   const TITLE_HAS = v => !!ev("TITLE[" + JSON.stringify(v) + "]");
-  ev('S.view="exams"; render();');
+  /* go() rather than poking S.view: the sheet-drag test above can still have a
+     hash write in flight, and a hashchange that disagrees with S.view calls
+     applyHash() and renders straight over whatever was just drawn. Writing the
+     hash here means a late hashchange resolves to exams too. */
+  win.go("exams");
   await wait(300);
   check("the exams view lists every exam",
     doc.querySelectorAll(".exrow").length === ev("EXAMS.rows.length"),
@@ -563,12 +570,16 @@ window.addEventListener("load", async () => {
      say so rather than look broken. */
   ev('S.cmpTab="economy"; render();');
   await wait(300);
+  const econRows = Number(ev("ECON.rows.length"));
   check("the Economic Survey tab lists the indicators the papers ask about",
-    doc.querySelectorAll("table.econ tbody tr:not(.econgrp)").length === 21,
-    doc.querySelectorAll("table.econ tbody tr:not(.econgrp)").length + " rows");
-  check("an empty Economic Survey table says where the figures come from",
-    !!doc.querySelector(".econwarn") &&
-    /Economic Survey/.test(doc.querySelector(".econwarn").textContent));
+    doc.querySelectorAll("table.econ tbody tr:not(.econgrp)").length === econRows,
+    doc.querySelectorAll("table.econ tbody tr:not(.econgrp)").length + " of " + econRows + " rows");
+  /* Two branches render this: .econwarn while the table is wholly empty, the
+     sourced hint once figures land. Either must name the Survey, so assert the
+     promise rather than whichever element happens to be carrying it. */
+  check("the Economic Survey table says where the figures come from",
+    /Economic Survey/.test(doc.querySelector(".cmpbar .cmphint").textContent),
+    doc.querySelector(".cmpbar .cmphint").textContent.slice(0, 80));
   /* Every figure must be traceable: a number with no source is a number
      you cannot re-check when the next Survey moves it. */
   check("every filled row names where its figure came from",
