@@ -1912,7 +1912,7 @@ function viewCampaignPlace(){
   return '<div class="pagewrap cg">'+
     campaignHeader("Pass 3 — Where", "Tap the place this was fought.")+
     '<p class="cg-ask">'+ch.name+'</p>'+
-    '<svg id="cgmap" viewBox="0 0 1000 1000" role="img" aria-label="Map of Himachal Pradesh">'+
+    '<svg id="cgmap" viewBox="0 0 '+MAP.w+' '+MAP.h+'" role="img" aria-label="Map of Himachal Pradesh">'+
       paths+pts+'</svg></div>';
 }
 
@@ -2032,36 +2032,71 @@ function viewMarch(){
      like this one can still read it. campaignState().run would therefore
      be null the moment a run finishes — exactly the case this replay
      exists for — so the in-memory run is the only correct source here. */
-  const run = S.campaignRun;
-  const marks = (run && run.marks) || {};
   /* CHIPS is built once at load (app.js:34) and is already chronological. */
-  const at = Math.min(S.marchAt, CHIPS.length - 1);
-  const shown = CHIPS.slice(0, at + 1);
-  const cur = CHIPS[at];
+  const at = marchAt();
   const paths = Object.entries(MAP.paths).map(([n, d]) =>
     '<path class="dist" d="'+d+'" data-name="'+n+'"/>').join('');
-  const pins = shown.map((ch, i) => {
+  return '<div class="pagewrap mc">'+
+    '<svg id="mcmap" viewBox="0 0 '+MAP.w+' '+MAP.h+'" role="img" '+
+      'aria-label="Battles of Himachal Pradesh in chronological order">'+
+      paths+'<g id="mcpins">'+marchPins()+'</g></svg>'+
+    '<input id="mcscrub" type="range" min="0" max="'+(CHIPS.length - 1)+'" value="'+at+'" '+
+      'aria-label="Scrub through the battles in order">'+
+    '<div class="mc-cap" id="mccap" style="--ec:var('+ERA[CHIPS[at].era].v+')">'+
+      marchCaption()+'</div></div>';
+}
+
+/* Clamped at BOTH ends: a stale S.marchAt above the range would index past
+   the last chip, and a negative one would index backwards from it. */
+function marchAt(){
+  return Math.max(0, Math.min(S.marchAt | 0, CHIPS.length - 1));
+}
+
+/* The pins and the caption are the only two things a scrub changes, so they
+   live in their own functions and viewMarch() and paintMarch() share them.
+   Building the markup in one place is what keeps the first render and every
+   repaint from drifting apart. */
+function marchPins(){
+  const at = marchAt();
+  /* campaignTouch() nulls the PERSISTED run the instant it finalises but
+     deliberately leaves S.campaignRun in memory, so the in-memory run is the
+     only source that still has marks the moment a run ends — which is exactly
+     when this replay is worth watching. */
+  const marks = (S.campaignRun && S.campaignRun.marks) || {};
+  return CHIPS.slice(0, at + 1).map((ch, i) => {
     const p = MAP.places[ch.place]; if(!p) return "";
     const m = marks[ch.id];
     const cls = !m ? "" : (Object.keys(m).every(k => m[k] === 1) ? " ok" : " off");
     return '<circle class="mc-pin'+cls+(i === at ? " now" : "")+'" cx="'+p.x+'" cy="'+p.y+
       '" r="'+(i === at ? 16 : 9)+'" style="--ec:var('+ERA[ch.era].v+')"/>';
   }).join('');
-  return '<div class="pagewrap mc">'+
-    '<svg id="mcmap" viewBox="0 0 '+MAP.w+' '+MAP.h+'" role="img" '+
-      'aria-label="Battles of Himachal Pradesh in chronological order">'+paths+pins+'</svg>'+
-    '<input id="mcscrub" type="range" min="0" max="'+(CHIPS.length - 1)+'" value="'+at+'" '+
-      'aria-label="Scrub through the battles in order">'+
-    '<div class="mc-cap" style="--ec:var('+ERA[cur.era].v+')">'+
-      '<span class="yr">'+cur.yr+'</span>'+
-      '<button class="nm" type="button" data-c="'+cur.id+'">'+cur.name+'</button>'+
-      '<p>'+D.battles.find(b => b.id === cur.id).sig.split(". ")[0]+'.</p>'+
-    '</div></div>';
+}
+
+function marchCaption(){
+  const cur = CHIPS[marchAt()];
+  return '<span class="yr">'+cur.yr+'</span>'+
+    '<button class="nm" type="button" data-c="'+cur.id+'">'+cur.name+'</button>'+
+    '<p>'+D.battles.find(b => b.id === cur.id).sig.split(". ")[0]+'.</p>';
+}
+
+/* Repaint ONLY the pins and the caption. Never re-render the stage from the
+   scrubber's own input handler: render() does s.innerHTML = viewBattles(),
+   which destroys and recreates the <input> being dragged. A native range
+   thumb's tracking is bound to that specific element instance, so replacing
+   it mid-gesture drops the drag — the thumb moves one step and then stops
+   until the user releases and presses again. The live input's own value is
+   left alone here; during a drag the browser owns it. */
+function paintMarch(){
+  const pins = $("#mcpins"), cap = $("#mccap");
+  if(!pins || !cap) return;
+  pins.innerHTML = marchPins();
+  cap.innerHTML = marchCaption();
+  cap.style.setProperty("--ec", "var("+ERA[CHIPS[marchAt()].era].v+")");
 }
 
 function mountMarch(){
   const r = $("#mcscrub"); if(!r) return;
-  r.addEventListener("input", e => { S.marchAt = +e.target.value; render(); });
+  r.addEventListener("input", e => { S.marchAt = +e.target.value; paintMarch(); });
 }
 
 function viewBattles(){

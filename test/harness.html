@@ -716,6 +716,57 @@ window.addEventListener("load", async () => {
     ev('campaignSave({run: null})');
   }
 
+  /* March scrubber must survive being dragged. mountMarch()'s `input`
+     listener used to call render(), which does s.innerHTML = viewBattles()
+     — a full destructive rebuild of #stage that replaces the <input>
+     element itself, synchronously, from inside that input's own event
+     handler. A native range thumb's drag tracking is bound to the specific
+     element instance via the browser's pointer capture; destroying that
+     instance mid-gesture invalidates it, so a real click-drag advances one
+     tick and then stops until the button is released and pressed again.
+     Comparing node IDENTITY after two ticks is the only way to catch that:
+     a stale but still-non-null reference passes a plain truthiness check.
+
+     NOTE: the resume block above RELOADS the iframe, so the outer `doc` and
+     `ev` captured at the top of this file now point at a detached document
+     and a dead window. Re-capture both here or every query silently returns
+     null and these checks pass vacuously. */
+  {
+    const f2 = document.getElementById("app");
+    const w2 = f2.contentWindow, d2 = f2.contentDocument;
+    const ev2 = src => w2.eval(src);
+    ev2('location.hash = "#/battles"');
+    await wait(120);
+    ev2('S.battleMode = "march"; S.marchAt = 0; render();');
+    await wait(120);
+
+    const scrubRef = d2.getElementById("mcscrub");
+    check("march scrubber renders", !!scrubRef,
+      "mode=" + ev2("S.battleMode") + " hasMap=" + ev2('!!document.getElementById("mcmap")'));
+
+    if(scrubRef){
+      const pinsBefore = d2.querySelectorAll(".mc-pin").length;
+      const max = ev2("CHIPS.length - 1");
+      const fireInput = v => {
+        scrubRef.value = v;
+        scrubRef.dispatchEvent(new Event("input", {bubbles: true}));
+      };
+      fireInput(Math.min(3, max));
+      fireInput(Math.min(9, max));
+      await wait(60);
+
+      check("the #mcscrub node survives a scrub (its drag tracking is not dropped)",
+        d2.getElementById("mcscrub") === scrubRef,
+        "getElementById returned a different node — the input was rebuilt mid-drag");
+      const pinsAfter = d2.querySelectorAll(".mc-pin").length;
+      check("scrubbing repaints the pins on the map", pinsAfter > pinsBefore,
+        "before=" + pinsBefore + " after=" + pinsAfter);
+      check("scrubbing repaints the caption",
+        /\S/.test((d2.getElementById("mccap") || {}).textContent || ""),
+        "caption is empty after a scrub");
+    }
+  }
+
   out.innerHTML += "\n" + pass + " passed, " + fail + " failed";
   document.title = fail ? "FAIL (" + fail + ")" : "PASS";
 });
