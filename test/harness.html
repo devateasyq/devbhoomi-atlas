@@ -265,6 +265,140 @@ window.addEventListener("load", async () => {
   check("the Overview does not carry a profile card",
     !reach.has("profile"), [...reach].join(","));
 
+  /* Today's five, plus the reader's own ring at the head of the rail. The
+     node suite proves the selection is stable for a day; only the harness
+     can prove the rail reaches the DOM and that a ring opens the dialog
+     rather than sitting there as decoration. */
+  const rail = [...doc.querySelectorAll("#stage .stories .sring")];
+  check("the rail carries the You ring and today's five", rail.length === 6,
+    rail.length + " rings");
+  check("the You ring comes first",
+    !!(rail[0] && rail[0].classList.contains("syou")),
+    rail.map(b => b.className).join(" | "));
+  const rings = rail.slice(1);
+  check("the rail sits above the cover, not below it",
+    !!(rail[0] && doc.querySelector("#stage .cover") &&
+       (rail[0].closest(".stories").compareDocumentPosition(doc.querySelector("#stage .cover"))
+        & Node.DOCUMENT_POSITION_FOLLOWING)));
+  /* The strip it replaced must be gone, or progress is stated twice. */
+  check("the old progress block is gone from the Overview",
+    !doc.querySelector("#stage .hprog"));
+
+  /* The hub closes on what to do next, not on a second list of doors. */
+  check("the syllabus is no longer on the Overview",
+    !doc.querySelector("#stage .syllabus"));
+  check("the Overview closes with what to revise next",
+    !!doc.querySelector("#stage .rnext"));
+  check("the revise block is the last thing on the hub",
+    doc.querySelector("#stage .home").lastElementChild.classList.contains("rnext"),
+    doc.querySelector("#stage .home").lastElementChild.className);
+  /* With nothing answered there is no tally, so it must still offer a way
+     in rather than rendering an empty heading. */
+  check("the revise block always offers a next step",
+    !!doc.querySelector("#stage .rnext [data-view]") &&
+    !!doc.querySelector("#stage .rnext .rnsay").textContent.trim());
+  /* A wrong answer must surface as a chip pointing at that topic. */
+  const wrongQ = ev('(function(){var q=D.quiz.find(function(x){return x.t==="t-gorkha"});' +
+    'var p=store.get("quiz",{}); p[q.q]=0; store.set("quiz",p); return q.t;})()');
+  ev('render();'); await wait(200);
+  const chips = [...doc.querySelectorAll("#stage .rnext .relchip")];
+  check("a wrong answer surfaces as a chip to revise",
+    chips.some(c => c.dataset.go === wrongQ),
+    chips.map(c => c.dataset.go).join(",") || "no chips");
+  check("the chip opens that topic's record", !!(chips.length &&
+    ev('IDX.has(' + JSON.stringify(chips[0].dataset.go) + ')')));
+  ev('store.del("quiz"); render();'); await wait(200);
+  const ringIds = rings.map(b => b.dataset.story);
+  check("every story ring points at a record the app can open",
+    ringIds.length === 5 && ringIds.every(id => ev('IDX.has(' + JSON.stringify(id) + ')')),
+    ringIds.join(","));
+  check("the five story rings are five different records",
+    new Set(ringIds).size === 5, ringIds.join(","));
+  check("every ring is labelled", rail.every(b => b.querySelector(".srn").textContent.trim()));
+  /* Re-rendering must not re-roll the set — that is the whole point of a
+     selection fixed for the day, and a Math.random() creeping back into
+     storyStrip is exactly how it would be lost. */
+  ev('render();'); await wait(200);
+  const again = [...doc.querySelectorAll("#stage .stories .sring[data-story]")]
+    .map(b => b.dataset.story);
+  check("the rail does not re-roll on a re-render",
+    again.join(",") === ringIds.join(","), ringIds.join(",") + " then " + again.join(","));
+
+  /* A story ring opens the dialog, not the page. */
+  const firstRing = () => doc.querySelector("#stage .stories .sring[data-story]");
+  const target = firstRing();
+  const wantId = target.dataset.story;
+  check("an unread ring is not greyed", !target.classList.contains("seen"), target.className);
+  /* Earlier sections of this harness leave a record selected, so the test
+     is that the tap does not MOVE the selection — not that nothing is
+     selected. Asserting S.sel === null here would be testing the tidiness
+     of the checks above rather than anything about the rail. */
+  const selBefore = ev("S.sel");
+  target.dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(250);
+  const sdlg = doc.getElementById("storydlg");
+  check("tapping a story ring opens the dialog", !sdlg.hidden);
+  check("the dialog stays on the Overview rather than navigating",
+    ev("S.view") === "home" && ev("S.sel") === selBefore && ev("S.sel") !== wantId,
+    "view=" + ev("S.view") + " sel=" + ev("S.sel") + " before=" + selBefore);
+  check("the dialog names the record and offers a way through",
+    !!sdlg.querySelector('[data-dlggo="' + wantId + '"]'),
+    sdlg.textContent.slice(0, 60));
+
+  /* Instagram's rule: a read ring loses its colour and drops to the end. */
+  const afterRead = [...doc.querySelectorAll("#stage .stories .sring[data-story]")];
+  const readRing = afterRead.find(b => b.dataset.story === wantId);
+  check("a read ring is greyed", !!readRing && readRing.classList.contains("seen"),
+    readRing ? readRing.className : "ring vanished");
+  check("a read ring drops to the end of the rail",
+    afterRead[afterRead.length - 1].dataset.story === wantId,
+    afterRead.map(b => b.dataset.story).join(","));
+  check("the rail still carries all five records after a read",
+    afterRead.length === 5 &&
+    new Set(afterRead.map(b => b.dataset.story)).size === 5,
+    afterRead.map(b => b.dataset.story).join(","));
+  check("the You ring stays at the head of the rail",
+    doc.querySelector("#stage .stories .sring").classList.contains("syou"));
+  /* The read must survive a re-render, or it is not persisted at all. */
+  ev('render();'); await wait(200);
+  check("the read survives a re-render",
+    doc.querySelectorAll("#stage .stories .sring.seen[data-story]").length === 1,
+    doc.querySelectorAll("#stage .stories .sring.seen[data-story]").length + " greyed");
+
+  /* Escape closes it without leaving the page. */
+  doc.dispatchEvent(new KeyboardEvent("keydown", {key:"Escape", bubbles:true}));
+  await wait(150);
+  check("Escape closes the ring dialog", sdlg.hidden);
+
+  /* And the way through actually opens the record. */
+  const nextRing = firstRing();
+  const nextId = nextRing.dataset.story;
+  nextRing.dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(250);
+  sdlg.querySelector('[data-dlggo]').dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(250);
+  check("the dialog's button opens that record's panel",
+    ev("S.sel") === nextId && !doc.getElementById("panel").hidden,
+    "sel=" + ev("S.sel") + " want=" + nextId);
+  check("opening the record closes the dialog behind it", sdlg.hidden);
+
+  /* The You ring opens the progress dialog instead. */
+  ev('S.view="home"; S.sel=null; document.getElementById("panel").hidden=true; render();');
+  await wait(250);
+  doc.querySelector("#stage .stories .syou").dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(200);
+  check("the You ring opens the progress dialog",
+    !sdlg.hidden && !!sdlg.querySelector(".sdlgrings"), sdlg.textContent.slice(0, 60));
+  check("the progress dialog offers a route onward", !!sdlg.querySelector("[data-dlgview]"));
+  sdlg.querySelector('[data-dlgclose]').dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(150);
+  check("the progress dialog closes on its own button", sdlg.hidden);
+  /* The You ring is the reader's own, so it never greys or moves. */
+  check("the You ring does not grey when opened",
+    !doc.querySelector("#stage .stories .syou").classList.contains("seen"));
+  ev('localStorage.removeItem("hpatlas:storyseen"); S.view="home"; render();');
+  await wait(200);
+
   const mtabs = [...doc.querySelectorAll("#mtabs .mtab")].map(b => b.dataset.view);
   /* Four, not five. Profile was briefly a fifth tab; the dock that replaced
      the old bar carries four and a search circle, and the route to the
@@ -531,6 +665,19 @@ window.addEventListener("load", async () => {
   check("each exam links into a section that exists",
     [...doc.querySelectorAll(".exlink")].every(b => !!TITLE_HAS(b.dataset.view)));
 
+  /* The syllabus moved here from the Overview, under the nine exams: this
+     page already says the atlas is the material those exams share, and the
+     eleven blocks are that material enumerated. */
+  const syl = [...doc.querySelectorAll("#stage .syllabus .sylrow")];
+  check("the syllabus sits on Exams", syl.length === ev("SYLLABUS.length"),
+    syl.length + " rows");
+  check("the syllabus comes below the exam list", !!(syl.length &&
+    doc.querySelector("#stage .exlist").compareDocumentPosition(
+      doc.querySelector("#stage .syllabus")) & Node.DOCUMENT_POSITION_FOLLOWING));
+  check("every syllabus row opens a record that exists",
+    syl.length > 0 && syl.every(b => ev('IDX.has(' + JSON.stringify(b.dataset.go) + ')')),
+    syl.map(b => b.dataset.go).join(","));
+
   /* Compare: the superlative is the question type, so the table has to
      answer it without being scanned — and must not claim a superlative
      that is not one. */
@@ -596,6 +743,122 @@ window.addEventListener("load", async () => {
      account button further up, and this block navigated away from it. */
   win.go("profile");
   await wait(350);
+
+  /* The header toggle is the whole point of this change: it is the one
+     theme control a phone can reach, so it has to be present and hittable
+     at phone width, not merely present in the markup. */
+  const tt = doc.getElementById("themetog");
+  check("the header carries a theme toggle", !!tt);
+  /* Measured at phone width, not at the harness's default 1000px. The bug
+     being fixed is precisely that the existing control vanishes below the
+     breakpoint, so a check taken at desktop width would prove nothing. */
+  const frame = document.getElementById("app");
+  const wasWide = frame.style.width;
+  frame.style.width = "390px";
+  await wait(350);
+  const phoneBox = tt.getBoundingClientRect();
+  const railGone = !doc.querySelector(".rail-foot") ||
+    win.getComputedStyle(doc.querySelector(".rail-foot")).display === "none" ||
+    doc.querySelector(".rail-foot").getBoundingClientRect().width === 0;
+  check("the rail's Theme button really is out of reach on a phone", railGone,
+    "rail-foot still measurable");
+  check("the theme toggle is reachable at phone width",
+    phoneBox.width > 0 && phoneBox.height > 0,
+    phoneBox.width + "x" + phoneBox.height);
+  check("the theme toggle meets the 32px tap floor on a phone",
+    phoneBox.width >= 32 && phoneBox.height >= 32,
+    phoneBox.width + "x" + phoneBox.height);
+  frame.style.width = wasWide;
+  await wait(350);
+  check("the toggle says which theme is on, for a screen reader",
+    !!tt && /Theme: (Auto|Light|Dark)/.test(tt.getAttribute("aria-label") || ""),
+    tt ? tt.getAttribute("aria-label") : "absent");
+  ev('store.set("theme","system"); applyTheme();');
+  const iconFor = () => (doc.getElementById("themetog").innerHTML || "").length;
+  const autoIcon = iconFor();
+  tt.dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(150);
+  check("tapping the header toggle changes the theme",
+    doc.documentElement.getAttribute("data-theme") === "light",
+    doc.documentElement.getAttribute("data-theme") + "");
+  check("the toggle's icon follows the mode it is in",
+    iconFor() !== autoIcon && /Theme: Light/.test(tt.getAttribute("aria-label")),
+    tt.getAttribute("aria-label"));
+  tt.dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(120);
+  tt.dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(120);
+  check("three taps return to auto", !doc.documentElement.hasAttribute("data-theme"),
+    doc.documentElement.getAttribute("data-theme") + "");
+
+  /* Appearance. The rail's Theme button was the only way to change theme,
+     and the rail is hidden below 1000px — a phone had no route to it at
+     all, which is the bug this fixes. */
+  const segBtn = v => doc.querySelector('#stage [data-theme-set="' + v + '"]');
+  check("the profile offers all three appearance modes",
+    doc.querySelectorAll("#stage [data-theme-set]").length === 3,
+    doc.querySelectorAll("#stage [data-theme-set]").length + " modes");
+  check("exactly one mode reads as selected",
+    [...doc.querySelectorAll("#stage [data-theme-set]")]
+      .filter(b => b.getAttribute("aria-pressed") === "true").length === 1);
+  ev('store.set("theme","system"); applyTheme();');
+  segBtn("dark").dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(150);
+  check("picking dark forces the dark theme",
+    doc.documentElement.getAttribute("data-theme") === "dark",
+    doc.documentElement.getAttribute("data-theme") + "");
+  check("the picked mode reads as selected",
+    segBtn("dark").getAttribute("aria-pressed") === "true" &&
+    segBtn("light").getAttribute("aria-pressed") === "false");
+  check("the choice is stored, so it survives a reload",
+    ev('store.get("theme","")') === "dark", ev('store.get("theme","")'));
+  /* A forced theme has to take the browser chrome with it, or a dark app
+     sits under a light status bar. */
+  check("a forced theme drags the browser chrome with it",
+    doc.getElementById("tc-light").getAttribute("content") ===
+    doc.getElementById("tc-dark").getAttribute("content"),
+    doc.getElementById("tc-light").getAttribute("content") + " / " +
+    doc.getElementById("tc-dark").getAttribute("content"));
+  segBtn("light").dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(150);
+  check("switching again forces light",
+    doc.documentElement.getAttribute("data-theme") === "light");
+  segBtn("system").dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  await wait(150);
+  check("auto hands the theme back to the system",
+    !doc.documentElement.hasAttribute("data-theme"),
+    doc.documentElement.getAttribute("data-theme") + "");
+  check("auto lets the browser chrome follow the system again",
+    doc.getElementById("tc-light").getAttribute("content") !==
+    doc.getElementById("tc-dark").getAttribute("content"));
+  /* Both controls are on screen together above 1000px, so the segment must
+     follow the rail button and not only its own taps. */
+  ev('cycleTheme();'); await wait(150);
+  check("the segment follows the rail's Theme button",
+    segBtn(ev('store.get("theme","")')).getAttribute("aria-pressed") === "true",
+    "theme=" + ev('store.get("theme","")'));
+  ev('store.set("theme","system"); applyTheme();'); await wait(100);
+
+  /* The channel link. It leaves the app, so what matters is that it points
+     at the right handle and cannot hand the opened tab a window.opener
+     reference back into this one. The rail footer carries it too, but the
+     rail is desktop-only, so the profile copy is the one most readers see. */
+  const tg = doc.querySelector("#stage .tgbtn");
+  check("the profile offers the Telegram channel", !!tg);
+  check("the channel link points at @parikramapath",
+    !!tg && tg.getAttribute("href") === "https://t.me/parikramapath",
+    tg ? tg.getAttribute("href") : "absent");
+  check("the channel link opens safely in a new tab",
+    !!tg && tg.getAttribute("target") === "_blank" &&
+    /\bnoopener\b/.test(tg.getAttribute("rel") || ""),
+    tg ? tg.getAttribute("target") + " / " + tg.getAttribute("rel") : "absent");
+  const tgrail = doc.querySelector(".rail-foot .tg");
+  check("the sidebar footer carries the same link",
+    !!tgrail && tgrail.getAttribute("href") === (tg && tg.getAttribute("href")),
+    tgrail ? tgrail.getAttribute("href") : "absent");
+  check("the sidebar copy is also safe to open",
+    !!tgrail && tgrail.getAttribute("target") === "_blank" &&
+    /\bnoopener\b/.test(tgrail.getAttribute("rel") || ""));
 
   check("the profile draws three streak rings",
     doc.querySelectorAll(".rings .rg-p").length === 3,

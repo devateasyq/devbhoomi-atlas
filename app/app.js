@@ -1414,25 +1414,6 @@ function coverRings(d){
     {v: d.notes.n, goal: d.notes.of, lb: "Records noted", r: 32, c: "var(--vermilion)"}
   ];
 }
-function progressStrip(seen, done, right){
-  const d = trackData(seen);
-  const msg = progressLine(d);
-  const items = coverRings(d);
-  /* Accuracy is a share too, so it can stay: it says how well the reading
-     is going without saying how much there is left to read. */
-  const acc = done ? '<p class="hacc">'+Math.round(right/done*100)+
-    '% of the quiz questions you have answered were right.</p>' : '';
-  return '<div class="hprog">'+
-    '<div class="rings"><svg viewBox="0 0 200 200" role="img" '+
-      'aria-label="Covered so far: '+ringSpokenPct(items)+'">'+ringArcs(items)+'</svg></div>'+
-    '<div class="hprog-say">'+
-      '<b>'+esc(msg.h)+'</b>'+
-      '<div class="rg-legend">'+ringLegendPct(items)+'</div>'+
-      '<span>'+esc(msg.s)+'</span>'+acc+
-      '<button class="btn sm" type="button" data-view="'+msg.view+'">Go there</button>'+
-    '</div></div>';
-}
-
 /* ---------- Compare ---------- */
 /* The superlative is the question type: "largest district", "highest
    density", "which state merged last". A table that makes you scan for
@@ -1619,6 +1600,7 @@ function viewExams(){
     'share — geography, history, polity, economy and culture. The past-paper bank '+
     'is HPAS only, and each exam below says plainly what is here for it.</p>'+
     '<div class="exlist">'+rows+'</div>'+
+    syllabusBlock()+
     '<p class="exnote">Conducting bodies last checked '+esc(when)+'. '+
     'They do change — the state\'s previous staff selection board was dissolved in '+
     '2023 and its recruitment moved to HPRCA — '+
@@ -1666,39 +1648,213 @@ function viewCompare(){
     '<tbody>'+body+'</tbody></table></div></div>';
 }
 
-function viewHome(){
-  const syl = [
-    ["01","Ancient Himachal","Pre-history, Vedic references and the janapadas","t-janapadas"],
-    ["02","Early medieval states","Kangra, Kullu and Chamba emerge","s-chamba"],
-    ["03","Mughals and Sikhs","The hill states and their neighbours","t-mughal-relations"],
-    ["04","The Gorkha invasion","Its nature, and the Treaty of Segauli","t-gorkha"],
-    ["05","Under colonial power","Sanads, grants, agency administration","t-colonial-admin"],
-    ["06","Praja Mandal, 1848–1948","The national movement in the hill states","t-freedom"],
-    ["07","Making Himachal","1948, the 1966 transfer, statehood in 1971","t-statehood"],
-    ["08","Art and culture","Temples, monasteries and Pahari painting","t-pahari-painting"],
-    ["09","Geography","Physiography, rivers, passes, peaks, lakes","t-physio"],
-    ["10","Polity and governance","Constitutional evolution and panchayati raj","t-polity"],
-    ["11","Economy","Horticulture, hydropower, industry and tourism","t-economy"]
-  ];
-  const prog  = store.get("quiz",{});
-  const done  = Object.keys(prog).length;
-  const right = Object.values(prog).filter(v => answerValue(v) === 1).length;
-  const seen  = (S.seen || []).length;
+/* ---------- today's stories ---------- */
+/* A ring rail at the very top of the Overview. The first ring is the
+   reader's own — the three coverage arcs that used to sit in a block
+   halfway down the page — and the five after it are records picked once a
+   day. Circles, deliberately: the reader already knows what this shape
+   means and that the first one is theirs.
 
+   The selection lives in stories.js and is a pure function of the date, so
+   the five seen at breakfast are the five still there at night — which is
+   what makes the set something you can finish.
+
+   Every ring opens a dialog rather than navigating. A rail is a glance, and
+   a glance should not cost you the page you were on; the dialog carries the
+   way through to the full record for when it is wanted. */
+function youRing(){
+  const d = trackData((S.seen || []).length);
+  const items = coverRings(d);
+  const pct = Math.round(items.reduce((a, g) =>
+    a + (g.goal ? Math.min(1, g.v / g.goal) : 0), 0) / items.length * 100);
+  return '<button class="sring syou" type="button" data-progress="1" '+
+      'title="Your coverage so far — '+ringSpokenPct(items)+'">'+
+    '<span class="srdisc"><span class="syoub">'+
+      '<svg viewBox="0 0 200 200" aria-hidden="true">'+ringArcs(items)+'</svg>'+
+    '</span></span>'+
+    '<span class="srn">You &middot; '+pct+'%</span>'+
+    '</button>';
+}
+/* Read-state lives under its own key and carries the day it belongs to,
+   so it expires with the rail rather than accumulating for ever. */
+function storySeen(){ return seenForDay(store.get("storyseen", null), dayKey()); }
+function markStoryRead(id){
+  store.set("storyseen", markSeen(store.get("storyseen", null), dayKey(), id));
+}
+function storyStrip(){
+  const picked = todayStories([...IDX.values()], STORY_N, dayKey());
+  /* Five distinct kinds means five different fallback photographs, so the
+     rail cannot show the same hillside twice — except where two kinds
+     share one (battle borrows the state's fort, person the event's lodge).
+     A circle crops hard enough that a repeat is obvious, so the second one
+     falls back to a tinted disc carrying the record's initial.
+
+     Assigned over the PICKED order, not the displayed one. Reading a ring
+     moves it to the end, and deciding "who gets the shared photograph" on
+     the displayed order would hand it to the other record as the rail
+     reorders — a picture visibly jumping between two rings on a tap. */
+  const used = {}, picOf = {};
+  picked.forEach(e => {
+    const cand = PIC_REC[e.r.id] || PICS[e.kind];
+    if(cand && !used[cand.s]){ used[cand.s] = 1; picOf[e.r.id] = cand; }
+  });
+  const rings = orderBySeen(picked, storySeen()).map(e => {
+    const k = KINDS[e.kind];
+    const nm = nameOf(e) || e.r.id;
+    const pic = picOf[e.r.id] || null;
+    /* A ring already opened today goes grey and sits at the end: the
+       colour is the signal for what is still to read. */
+    return '<button class="sring'+(e.seen ? " seen" : "")+'" type="button" '+
+        'data-story="'+esc(e.r.id)+'" '+
+        'style="--kc:'+(k ? k.c : "var(--accent)")+'" '+
+        'title="'+esc(nm + (k ? " \u2014 " + k.lb : "") + (e.seen ? " (read)" : ""))+'">'+
+      '<span class="srdisc">'+
+        (pic ? '<img src="'+pic.s+'" alt="" loading="lazy" decoding="async">'
+             : '<span class="srin" aria-hidden="true">'+esc(nm.slice(0,1))+'</span>')+
+      '</span>'+
+      /* Names here are not Instagram handles: the median is sixteen
+         characters but the events run to fifty-seven, and they are the
+         commonest kind in the rail. Three lines in an 84px column takes
+         about thirty-eight, which covers nine names in ten; the full name
+         stays on the button's title. */
+      '<span class="srn">'+esc(clamp(nm, 38))+'</span>'+
+      '</button>';
+  }).join('');
+  return '<div class="stories">'+
+    '<div class="strow" role="list" aria-label="Your progress and today\u2019s five records">'+
+      youRing()+rings+'</div>'+
+    '</div>';
+}
+
+/* ---------- the ring dialog ---------- */
+/* One overlay serves both kinds of ring. It follows #acctdlg exactly —
+   a fixed backdrop toggled by [hidden], not <dialog>, which is what the
+   rest of the app already does. */
+function showDlg(html){
+  const dlg = $("#storydlg"); if(!dlg) return;
+  $("#sdlgcard").innerHTML = html;
+  dlg.hidden = false;
+  const first = dlg.querySelector("button");
+  if(first) first.focus();
+}
+function closeDlg(){
+  const dlg = $("#storydlg"); if(!dlg) return;
+  dlg.hidden = true;
+  $("#sdlgcard").innerHTML = "";
+}
+function progressDlg(){
+  const d = trackData((S.seen || []).length);
+  const msg = progressLine(d);
+  const items = coverRings(d);
+  const prog = store.get("quiz", {});
+  const done = Object.keys(prog).length;
+  const right = Object.values(prog).filter(v => answerValue(v) === 1).length;
+  /* Accuracy is a share, so it can stay: it says how well the reading is
+     going without saying how much there is left to read. */
+  const acc = done ? '<p class="hacc">'+Math.round(right/done*100)+
+    '% of the quiz questions you have answered were right.</p>' : '';
+  return '<h3>'+esc(msg.h)+'</h3>'+
+    '<div class="sdlgrings"><svg viewBox="0 0 200 200" role="img" '+
+      'aria-label="Covered so far: '+ringSpokenPct(items)+'">'+ringArcs(items)+'</svg></div>'+
+    '<div class="rg-legend">'+ringLegendPct(items)+'</div>'+
+    '<p>'+esc(msg.s)+'</p>'+acc+
+    '<button class="btn" type="button" data-dlgview="'+esc(msg.view)+'">Go there</button>'+
+    '<button class="btn sm" type="button" data-dlgclose="1">Close</button>';
+}
+function storyDlg(id){
+  const o = IDX.get(id); if(!o) return "";
+  const k = KINDS[o.kind];
+  const pic = PIC_REC[id] || PICS[o.kind];
+  return (pic ? '<img class="sdlgpic" src="'+pic.s+'" alt="" decoding="async">' : '')+
+    '<span class="sdlgk" style="--kc:'+(k ? k.c : "var(--accent)")+'">'+
+      esc(k ? k.lb : "Record")+'</span>'+
+    '<h3>'+esc(nameOf(o) || id)+'</h3>'+
+    '<p>'+esc(teaser(o.r, 320))+'</p>'+
+    '<button class="btn" type="button" data-dlggo="'+esc(id)+'">Open the full note &rarr;</button>'+
+    '<button class="btn sm" type="button" data-dlgclose="1">Close</button>';
+}
+
+/* ---------- the syllabus, as eleven blocks ---------- */
+/* It sits on Exams, not on the Overview. On the hub it was a second
+   navigation list stacked straight after the section tiles — the same job
+   in a different visual language — and it was the one thing on a page that
+   now opens with a daily rail that never changed. Under the nine exams it
+   is answering the question the page already asks: the intro there says
+   this atlas is the Himachal material those exams share, and this is that
+   material, enumerated.
+
+   Each row still opens a single record. That is an honest shortcut rather
+   than a coverage map, which is why the heading says "start here" and not
+   "everything in this block": D.topics carries five sections, not eleven,
+   so a real per-block coverage figure needs a block-to-records mapping the
+   data does not have yet. */
+const SYLLABUS = [
+  ["01","Ancient Himachal","Pre-history, Vedic references and the janapadas","t-janapadas"],
+  ["02","Early medieval states","Kangra, Kullu and Chamba emerge","s-chamba"],
+  ["03","Mughals and Sikhs","The hill states and their neighbours","t-mughal-relations"],
+  ["04","The Gorkha invasion","Its nature, and the Treaty of Segauli","t-gorkha"],
+  ["05","Under colonial power","Sanads, grants, agency administration","t-colonial-admin"],
+  ["06","Praja Mandal, 1848–1948","The national movement in the hill states","t-freedom"],
+  ["07","Making Himachal","1948, the 1966 transfer, statehood in 1971","t-statehood"],
+  ["08","Art and culture","Temples, monasteries and Pahari painting","t-pahari-painting"],
+  ["09","Geography","Physiography, rivers, passes, peaks, lakes","t-physio"],
+  ["10","Polity and governance","Constitutional evolution and panchayati raj","t-polity"],
+  ["11","Economy","Horticulture, hydropower, industry and tourism","t-economy"]
+];
+function syllabusBlock(){
+  return '<div class="syllabus">'+
+    '<div class="secthead"><h3>The syllabus, as eleven blocks</h3>'+
+      '<span class="n">tap any row to start there</span></div>'+
+    SYLLABUS.map(x => '<button class="sylrow" type="button" data-go="'+x[3]+'">'+
+      '<span class="sn">'+x[0]+'</span><span><span class="st">'+x[1]+'</span>'+
+      '<span class="sd">'+x[2]+'</span></span></button>').join('')+
+    '</div>';
+}
+
+/* ---------- what to revise next ---------- */
+/* The beat the hub was missing. The tiles say where everything is; this
+   says what to do now, which is the question a reader actually arrives
+   with. Every chip is a topic whose questions you have got wrong, worst
+   first — the tally quizUI() has always computed, except that there it
+   only appears once you are already on the quiz tab and is narrowed to
+   whatever section filter is set. Here it runs over the whole bank.
+
+   With nothing attempted there is no tally to show, so the block falls
+   back to progressLine's invitation, which is what the progress strip
+   used to carry: the page keeps a next step on day one. */
+function reviseNext(){
+  const weak = weakTopics(D.quiz, store.get("quiz", {}), 4, answerValue)
+    .filter(t => IDX.has(t.id));
+  const msg = progressLine(trackData((S.seen || []).length));
+  const chips = weak.map(t =>
+    '<button class="relchip" type="button" data-go="'+esc(t.id)+'">'+
+      '<i class="k" style="background:var(--crit)"></i>'+
+      esc(nameOf(IDX.get(t.id)) || t.id)+
+      ' <span class="wn">'+t.misses+'</span></button>').join('');
+  return '<div class="rnext">'+
+    '<div class="secthead"><h3>'+(weak.length ? "What to revise next" : esc(msg.h))+'</h3>'+
+      (weak.length ? '<span class="n">where the answers went wrong</span>' : '')+'</div>'+
+    (weak.length ? '<div class="weak">'+chips+'</div>' : '')+
+    '<p class="rnsay">'+esc(msg.s)+'</p>'+
+    '<button class="btn sm" type="button" data-view="'+esc(msg.view)+'">Go there</button>'+
+    '</div>';
+}
+
+function viewHome(){
   const cover = COVERS[Math.floor(Math.random()*COVERS.length)];
   const cpic  = PICS[cover];
   const fact  = FACTS.length ? FACTS[Math.floor(Math.random()*FACTS.length)] : null;
 
-  /* a live fact on the cover, as the invitation in */
-  const teaser = fact
+  /* a live fact on the cover, as the invitation in. Named covfact, not
+     teaser: stories.js defines a global teaser(), and a local of that name
+     here shadows it for the whole function. */
+  const covfact = fact
     ? '<button class="covfact" type="button" data-view="rounds">'+
         '<span class="cfk">'+(KINDS[fact.kind] ? KINDS[fact.kind].lb : "Fact")+'</span>'+
         '<span class="cfn">'+fact.name+'</span>'+
         '<span class="cft">'+fact.text+'</span>'+
         '<span class="cfg">Start scrolling &rarr;</span></button>'
     : '';
-
-  const strip = progressStrip(seen, done, right);
 
   /* The hub lists the content sections. Profile is not one of them — it is
      yours, not the syllabus — and it has the phone bar and the header's
@@ -1715,24 +1871,19 @@ function viewHome(){
   }).join('');
 
   return '<div class="home">'+
+  storyStrip()+
   '<div class="cover">'+
     '<img class="covpic" src="'+cpic.s+'" alt="" decoding="async">'+
     '<div class="covbody">'+
       '<div class="kicker">Himachal Pradesh · competitive exams</div>'+
       '<h1>Everything Himachal, connected.</h1>'+
       '<p class="pitch">Revision, not repetition.</p>'+
-      teaser+
+      covfact+
     '</div>'+
     '<span class="covcred">'+cpic.t+' &middot; '+cpic.a+' / '+cpic.l+'</span>'+
   '</div>'+
-  strip+
   '<div class="sections">'+sections+'</div>'+
-  '<div class="syllabus">'+
-    '<div class="secthead"><h3>The syllabus, as eleven blocks</h3><span class="n">tap any row</span></div>'+
-    syl.map(x => '<button class="sylrow" type="button" data-go="'+x[3]+'">'+
-      '<span class="sn">'+x[0]+'</span><span><span class="st">'+x[1]+'</span>'+
-      '<span class="sd">'+x[2]+'</span></span></button>').join('')+
-  '</div>'+
+  reviseNext()+
   '</div>';
 }
 
@@ -2335,9 +2486,9 @@ function quizUI(){
   const attempted = pool.filter(q => answerValue(prog[q.q]) !== undefined).length;
   const correct = pool.filter(q => answerValue(prog[q.q]) === 1).length;
   const pct = attempted ? Math.round(correct/attempted*100) : 0;
-  const weak = {};
-  pool.forEach(q => { if(answerValue(prog[q.q]) === 0) weak[q.t] = (weak[q.t]||0)+1; });
-  const weakList = Object.entries(weak).sort((a,b) => b[1]-a[1]).slice(0,6);
+  /* Same tally the Overview shows, narrowed to the section filter in force
+     here. It lives in revise.js so the two cannot drift. */
+  const weakList = weakTopics(pool, prog, 6, answerValue);
   if(S.qIdx >= pool.length) S.qIdx = 0;
   const q = pool[S.qIdx];
   if(!q) return '<div class="qcard">No questions in this section.</div>';
@@ -2348,9 +2499,9 @@ function quizUI(){
     '<div class="stat"><span class="v">'+pct+'%</span><span class="l">accuracy</span></div>'+
     '<div class="meter"><i style="width:'+pct+'%"></i></div></div>'+
     (weakList.length ? '<div class="blk" style="margin-bottom:14px"><h5>Weakest topics so far</h5>'+
-      '<div class="weak">'+weakList.map(w => '<button class="relchip" type="button" data-go="'+w[0]+'">'+
+      '<div class="weak">'+weakList.map(w => '<button class="relchip" type="button" data-go="'+esc(w.id)+'">'+
       '<i class="k" style="background:var(--crit)"></i>'+
-      (IDX.has(w[0]) ? IDX.get(w[0]).r.title : w[0])+' · '+w[1]+'</button>').join('')+'</div></div>' : "");
+      esc(IDX.has(w.id) ? (nameOf(IDX.get(w.id)) || w.id) : w.id)+' &middot; '+w.misses+'</button>').join('')+'</div></div>' : "");
   const opts = q.o.map((o,i) => {
     let cls = "opt";
     if(ans !== null){ if(i === q.a) cls += " right"; else if(i === ans) cls += " wrong"; }
@@ -2981,6 +3132,24 @@ function viewProfile(){
     '<div class="pcols">'+
     '<div class="syllabus"><div class="secthead"><h3>Your notes — '+ids.length+'</h3></div>'+
       noteList+'</div>'+
+    /* The rail footer carries this too, but the rail is desktop-only — it is
+       hidden below 1000px, which is where most readers are. The profile is
+       the one page reachable at every width, via the header account button,
+       and it is already the page about the reader rather than the syllabus. */
+    '<div class="syllabus" style="margin-top:26px">'+
+      '<div class="secthead"><h3>Appearance</h3></div>'+
+      '<p class="pmuted">Auto follows your phone or computer\u2019s own setting.</p>'+
+      '<div class="pdata">'+themeSeg()+'</div>'+
+    '</div>'+
+    '<div class="syllabus" style="margin-top:26px">'+
+      '<div class="secthead"><h3>Updates</h3></div>'+
+      '<p class="pmuted">The Telegram channel carries what changes in the atlas — '+
+        'new records, new past papers, corrections.</p>'+
+      '<div class="pdata"><a class="btn tgbtn" href="https://t.me/parikramapath" '+
+        'target="_blank" rel="noopener">'+
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.5 4.3L2.9 11.4c-.9.3-.9 1.6 0 1.9l4.6 1.5 1.8 5.5c.2.7 1.1.9 1.6.3l2.5-2.7 4.6 3.4c.6.4 1.4.1 1.6-.6l3.1-15c.2-.8-.6-1.5-1.2-1.4z"/><path d="M7.5 14.8L18 7.2l-8 8.6"/></svg>'+
+        '<span>Join @parikramapath</span></a></div>'+
+    '</div>'+
     '<div class="syllabus" style="margin-top:26px">'+
       '<div class="secthead"><h3>Your data</h3></div>'+
       '<div class="pdata"><button class="btn" type="button" id="pexport">Export everything</button>'+
@@ -3054,6 +3223,25 @@ document.addEventListener("click", e => {
   const t = e.target;
   const hit = sel => t.closest(sel);
 
+  /* The ring dialog, before anything else: its own buttons must not fall
+     through to the generic [data-view] / [data-go] handlers below. */
+  if(hit("[data-dlgclose]")){ closeDlg(); return; }
+  const dgo = hit("[data-dlggo]");
+  if(dgo){ const id = dgo.dataset.dlggo; closeDlg(); goTo(id); return; }
+  const dvw = hit("[data-dlgview]");
+  if(dvw){ const v = dvw.dataset.dlgview; closeDlg(); go(v); return; }
+  /* A tap on the backdrop, but not inside the card, closes it. */
+  if(e.target && e.target.id === "storydlg"){ closeDlg(); return; }
+  const sty = hit("[data-story]");
+  if(sty){
+    /* Opening the dialog is the read, not the trip through to the record:
+       the dialog carries the teaser, which is the thing the ring promised. */
+    markStoryRead(sty.dataset.story);
+    showDlg(storyDlg(sty.dataset.story));
+    if(S.view === "home") render();
+    return;
+  }
+  if(hit("[data-progress]")){ showDlg(progressDlg()); return; }
   if(hit("#msearch")){ openSearch(); return; }
   if(hit("#msx")){ closeSearch(); return; }
 
@@ -3156,7 +3344,8 @@ document.addEventListener("click", e => {
 
   if(hit("#pclose")){ closePanel(); return; }
   if(hit("#pshare")){ shareCurrent(); return; }
-  if(hit("#themebtn")){ cycleTheme(); return; }
+  if(hit("#themebtn") || hit("#themetog")){ cycleTheme(); return; }
+  const tset = hit("[data-theme-set]"); if(tset){ setTheme(tset.dataset.themeSet); return; }
   if(hit("#randbtn")){ surpriseMe(); return; }
   if(hit("#resetbtn")){
     if(confirm("Clear saved quiz and past-paper progress? This cannot be undone.")){
@@ -3238,6 +3427,8 @@ document.addEventListener("keydown", e => {
     if(PHONE.matches) openSearch();
     $("#search").focus(); $("#search").select(); return; }
   if(e.key === "Escape"){
+    const sdlg = $("#storydlg");
+    if(sdlg && !sdlg.hidden){ closeDlg(); return; }
     const dlg = $("#acctdlg");
     if(dlg && !dlg.hidden){ dlg.hidden = true; return; }
     if(!$("#panel").hidden) closePanel();
@@ -3256,6 +3447,35 @@ document.addEventListener("keydown", e => {
 });
 
 /* ---------- theme ---------- */
+/* The rail's Theme button cycles, which is fine for a control you pass on
+   your way past. It is the wrong shape for a settings surface, and it was
+   also the ONLY way to change theme: the rail is hidden below 1000px, so a
+   phone had no route to it at all. The profile carries these three as a
+   segmented control instead — you can see which one is on and pick another
+   directly, rather than tapping twice to find out. */
+const THEMES = [["system","Auto"],["light","Light"],["dark","Dark"]];
+/* Half-filled disc for auto, sun for light, moon for dark — the icon says
+   which mode is ON, not which one the tap would bring, because a control
+   that shows its destination reads as the wrong state to everyone who has
+   not worked out that it is a cycle. */
+const THEME_IC = {
+  system:'<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 010 16z" fill="currentColor" stroke="none"/>',
+  light:'<circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M4.4 12H2.2M21.8 12h-2.2M6.6 6.6L5 5M19 19l-1.6-1.6M17.4 6.6L19 5M5 19l1.6-1.6"/>',
+  dark:'<path d="M20 14.4A8.4 8.4 0 119.6 4a6.9 6.9 0 1010.4 10.4z"/>'
+};
+const GROUND = {light:"#EDEEE9", dark:"#111614"};
+function themeSeg(){
+  const cur = store.get("theme","system");
+  return '<div class="seg themeseg" role="group" aria-label="Appearance">'+
+    THEMES.map(t => '<button type="button" data-theme-set="'+t[0]+'" '+
+      'aria-pressed="'+(cur === t[0])+'">'+t[1]+'</button>').join('')+
+    '</div>';
+}
+function setTheme(v){
+  if(!THEMES.some(t => t[0] === v)) return;
+  store.set("theme", v);
+  applyTheme();
+}
 function cycleTheme(){
   const cur = store.get("theme","system");
   store.set("theme", cur === "system" ? "light" : cur === "light" ? "dark" : "system");
@@ -3267,6 +3487,29 @@ function applyTheme(){
   else document.documentElement.setAttribute("data-theme", t);
   const b = $("#themebtn");
   if(b) b.textContent = t === "system" ? "Theme: auto" : t === "light" ? "Theme: light" : "Theme: dark";
+  /* The header copy, which is the only one a phone can reach. */
+  const tg = $("#themetog");
+  if(tg){
+    const lb = t === "system" ? "Auto" : t === "light" ? "Light" : "Dark";
+    tg.innerHTML = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+THEME_IC[t]+'</svg>';
+    tg.setAttribute("aria-label", "Theme: "+lb+". Switch theme");
+    tg.setAttribute("title", "Theme: "+lb);
+  }
+  /* Both controls are on screen together above 1000px, so the segment has
+     to follow the rail button rather than only its own taps. Updated in
+     place rather than by re-rendering: the profile is a long page and
+     redrawing it under the reader's thumb would lose their scroll. */
+  document.querySelectorAll("[data-theme-set]").forEach(el =>
+    el.setAttribute("aria-pressed", String(el.dataset.themeSet === t)));
+  /* A forced theme has to take the browser chrome with it. Both metas are
+     set to the same colour so that whichever media query matches reports
+     the forced one; on "system" they go back to disagreeing, which is what
+     makes them follow the OS again. */
+  const lm = $("#tc-light"), dm = $("#tc-dark");
+  if(lm && dm){
+    lm.setAttribute("content", t === "system" ? GROUND.light : GROUND[t]);
+    dm.setAttribute("content", t === "system" ? GROUND.dark  : GROUND[t]);
+  }
 }
 
 /* ---------- boot ---------- */
