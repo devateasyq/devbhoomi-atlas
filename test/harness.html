@@ -283,6 +283,31 @@ window.addEventListener("load", async () => {
   /* The strip it replaced must be gone, or progress is stated twice. */
   check("the old progress block is gone from the Overview",
     !doc.querySelector("#stage .hprog"));
+
+  /* The hub closes on what to do next, not on a second list of doors. */
+  check("the syllabus is no longer on the Overview",
+    !doc.querySelector("#stage .syllabus"));
+  check("the Overview closes with what to revise next",
+    !!doc.querySelector("#stage .rnext"));
+  check("the revise block is the last thing on the hub",
+    doc.querySelector("#stage .home").lastElementChild.classList.contains("rnext"),
+    doc.querySelector("#stage .home").lastElementChild.className);
+  /* With nothing answered there is no tally, so it must still offer a way
+     in rather than rendering an empty heading. */
+  check("the revise block always offers a next step",
+    !!doc.querySelector("#stage .rnext [data-view]") &&
+    !!doc.querySelector("#stage .rnext .rnsay").textContent.trim());
+  /* A wrong answer must surface as a chip pointing at that topic. */
+  const wrongQ = ev('(function(){var q=D.quiz.find(function(x){return x.t==="t-gorkha"});' +
+    'var p=store.get("quiz",{}); p[q.q]=0; store.set("quiz",p); return q.t;})()');
+  ev('render();'); await wait(200);
+  const chips = [...doc.querySelectorAll("#stage .rnext .relchip")];
+  check("a wrong answer surfaces as a chip to revise",
+    chips.some(c => c.dataset.go === wrongQ),
+    chips.map(c => c.dataset.go).join(",") || "no chips");
+  check("the chip opens that topic's record", !!(chips.length &&
+    ev('IDX.has(' + JSON.stringify(chips[0].dataset.go) + ')')));
+  ev('store.del("quiz"); render();'); await wait(200);
   const ringIds = rings.map(b => b.dataset.story);
   check("every story ring points at a record the app can open",
     ringIds.length === 5 && ringIds.every(id => ev('IDX.has(' + JSON.stringify(id) + ')')),
@@ -639,6 +664,19 @@ window.addEventListener("load", async () => {
     doc.querySelectorAll(".exhas").length + " exams claim papers");
   check("each exam links into a section that exists",
     [...doc.querySelectorAll(".exlink")].every(b => !!TITLE_HAS(b.dataset.view)));
+
+  /* The syllabus moved here from the Overview, under the nine exams: this
+     page already says the atlas is the material those exams share, and the
+     eleven blocks are that material enumerated. */
+  const syl = [...doc.querySelectorAll("#stage .syllabus .sylrow")];
+  check("the syllabus sits on Exams", syl.length === ev("SYLLABUS.length"),
+    syl.length + " rows");
+  check("the syllabus comes below the exam list", !!(syl.length &&
+    doc.querySelector("#stage .exlist").compareDocumentPosition(
+      doc.querySelector("#stage .syllabus")) & Node.DOCUMENT_POSITION_FOLLOWING));
+  check("every syllabus row opens a record that exists",
+    syl.length > 0 && syl.every(b => ev('IDX.has(' + JSON.stringify(b.dataset.go) + ')')),
+    syl.map(b => b.dataset.go).join(","));
 
   /* Compare: the superlative is the question type, so the table has to
      answer it without being scanned — and must not claim a superlative
