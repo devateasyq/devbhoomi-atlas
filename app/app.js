@@ -1703,7 +1703,7 @@ function viewHome(){
   '<div class="cover">'+
     '<img class="covpic" src="'+cpic.s+'" alt="" decoding="async">'+
     '<div class="covbody">'+
-      '<div class="kicker">HPPSC · HPAS 2026 · Himachal Pradesh</div>'+
+      '<div class="kicker">Himachal Pradesh · competitive exams</div>'+
       '<h1>Everything Himachal, connected.</h1>'+
       '<p class="pitch">Revision, not repetition.</p>'+
       teaser+

@@ -1,8 +1,9 @@
 # Parikrama Path
 
-An interactive revision atlas for the **Himachal Pradesh** portion of the **HPPSC HPAS** syllabus —
-a clickable map of the 12 districts and the princely hill states, a timeline from prehistory to
-statehood, battles and treaties, topic notes, generated a question bank.
+An interactive revision atlas for the **Himachal Pradesh** material that every HP
+competitive exam shares — a clickable map of the 12 districts and the princely hill
+states, a timeline from prehistory to statehood, battles and treaties, topic notes,
+sortable comparison tables, a scrollable fact feed and a past-paper question bank.
 
 Plain static files. No build step, no framework, no backend.
 
@@ -74,6 +75,24 @@ Nothing is origin-specific — relative paths throughout, so it works from a sub
   state are device preferences and never sync. Everything can be exported, and the account and
   its data deleted, from the profile. The page does load Vercel Analytics
   (`cdn.vercel-insights.com`), which counts page views.
+
+## Which exams this is for
+
+The material here is Himachal general studies — geography, history, polity,
+economy, culture — and it is the same material whichever HP exam you are sitting.
+Nine are listed in `data/exams.js`, across three bodies:
+
+- **HPPSC**, Shimla — HPAS, Assistant Professor, and Police Constable.
+- **HPRCA**, Hamirpur — Patwari, Panchayat Secretary, JOA (IT), Clerk.
+  (HPSSC Hamirpur was dissolved in February 2023 and replaced by HPRCA.)
+- **HPBOSE**, Dharamshala — HP TET, JBT and TGT.
+
+**The past papers are HPAS only** — all 448, 2020–2025 — and every exam on the
+`#/exams` page says plainly what is here for it. An exam gets a paper bank the day
+someone supplies the papers, not before.
+
+Conducting bodies change. `EXAMS.updated` records when they were last checked
+against the boards' own sites; re-check it before each release.
 
 ## Pages a crawler can read
 

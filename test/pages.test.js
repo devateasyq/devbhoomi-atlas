@@ -93,9 +93,14 @@ test("robots.txt allows crawling and names the sitemap", () => {
   assert.match(t, /Sitemap: https:\/\/www\.parikramapath\.com\/sitemap\.xml/);
 });
 
-test("the app's own page points at the real domain", () => {
+test("the app no longer sells itself as HPAS-only", () => {
   const h = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   assert.ok(!h.includes("devateasyq.github.io"), "an old URL is still baked into index.html");
   assert.match(h, /property="og:image" content="https:\/\/www\.parikramapath\.com\/og\.jpg"/);
   assert.match(h, /rel="canonical" href="https:\/\/www\.parikramapath\.com\/"/);
+  /* The title may name HPAS, but not as the only thing this is for. */
+  const title = (h.match(/<title>([^<]+)<\/title>/) || [])[1];
+  assert.ok(/HPRCA|TET|Police|HP exams/i.test(title), "the title still names only HPAS: " + title);
+  const page = fs.readFileSync(path.join(R, "d-kangra", "index.html"), "utf8");
+  assert.ok(!/HPPSC <b>HPAS<\/b> syllabus/.test(page), "a generated page still says HPAS syllabus");
 });

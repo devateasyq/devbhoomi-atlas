@@ -186,7 +186,8 @@ function page(id, entry){
 ${factsHtml(r, kind)}${blocksHtml(r)}
 <a class="cta" href="${esc(app)}">Open in the atlas &rarr;</a>
 <footer>
-Revision notes for the <b>Himachal Pradesh</b> portion of the HPPSC <b>HPAS</b> syllabus.
+Revision notes for the <b>Himachal Pradesh</b> portion of HP competitive exam
+syllabuses — HPAS, HPRCA, Police and TET.
 <a href="${SITE}/">See the whole atlas</a> — a clickable map, five years of past papers,
 and a fact feed.
 </footer>
