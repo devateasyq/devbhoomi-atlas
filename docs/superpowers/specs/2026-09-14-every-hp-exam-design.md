@@ -53,8 +53,31 @@ failure as an invented GSDP figure, in a different costume.
 `index.html`, listed in `sw.js`, `test/load.js` and `build-single.sh`.
 
 Each exam carries: `id`, `name`, `body` (the conducting authority), `bodyUrl`,
-`level`, `what` (what the Himachal portion of it tests), `papers` (how many this
-app holds, and for which years), and `covers` (which sections of the app apply).
+`level`, `what` (one line on what the Himachal portion of it tests), `papers`
+(how many this app holds and for which years, or 0), and `covers` — an array of
+the app's own view ids (`map`, `timeline`, `battles`, `topics`, `people`,
+`compare`, `rounds`, `revise`), so a row can link into the sections that serve
+it and a test can check those ids exist.
+
+### The exams listed
+
+Nine, chosen because they test the Himachal general-studies material this app
+holds. Anything whose Himachal portion is negligible is left out rather than
+padded in:
+
+| Exam | Body |
+|---|---|
+| HPAS (Combined Competitive) | HPPSC |
+| HPPSC Assistant Professor | HPPSC |
+| HP Police Constable | HPPSC |
+| HPRCA Patwari | HPRCA |
+| HPRCA Panchayat Secretary | HPRCA |
+| HPRCA JOA (IT) | HPRCA |
+| HPRCA Clerk | HPRCA |
+| HP TET — JBT | HPBOSE |
+| HP TET — TGT | HPBOSE |
+
+Only the first holds past papers here.
 
 ### The conducting bodies, verified
 
@@ -103,7 +126,9 @@ app does not currently have. Far more people search "HPRCA Patwari syllabus" or
 - The registry names no dissolved body — `HPSSC` and `HPSSSB` appear nowhere as
   a current authority.
 - `/exams/` is in the sitemap, and its canonical matches its URL.
-- No page still describes the app as HPAS-only.
+- The app no longer describes itself as HPAS-only: `index.html`'s `<title>` and
+  meta description, and every generated page's footer, name more than one exam
+  or name none. Asserted by string check, so it cannot regress quietly.
 
 **Browser harness:**
 - The exams view renders every exam in the registry.
@@ -122,3 +147,6 @@ recurring human check, noted above.
   papers.
 - **No per-exam syllabus mapping beyond the one-line `what`.** Real syllabus
   breakdowns are a separate piece of sourced work.
+- **No exam dates, vacancy counts or application windows.** They change monthly
+  and would be stale within weeks; the body's own site is linked instead, which
+  is always current by definition.
