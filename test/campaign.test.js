@@ -64,3 +64,19 @@ test("every chip has at least one accepted band", () => {
     assert.ok(c.acceptedBands(D, ch).length > 0, ch.id + " can never be placed correctly");
   }
 });
+
+test("accepted bands are in chronological order", () => {
+  const bands = c.acceptedBands(D, chip("b-suket1948"));
+  assert.deepEqual(bands, ["e9", "e10"],
+    "b-suket1948 should return [e9, e10] in chronological order, got [" + bands.join(",") + "]");
+});
+
+test("unknown era ids are placed last after known eras", () => {
+  const unknownChip = {id: "x", era: "eZZ", y: 1806};
+  const bands = c.acceptedBands(D, unknownChip);
+  assert.ok(bands.includes("eZZ"), "unknown era eZZ must be included");
+  assert.equal(bands[bands.length - 1], "eZZ", "unknown era eZZ must be last");
+  const realEraIndex = bands.indexOf("e7");
+  assert.ok(realEraIndex >= 0, "e7 should be included (1806 falls in e7 span)");
+  assert.ok(realEraIndex < bands.length - 1, "real era e7 should come before unknown era eZZ");
+});

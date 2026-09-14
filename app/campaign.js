@@ -37,7 +37,19 @@ function acceptedBands(D, chip){
     var e = eras[i];
     if(chip.y >= e.y0 && chip.y <= e.y1 && out.indexOf(e.id) < 0) out.push(e.id);
   }
-  return out.sort();
+  /* Sort into the order eras appear in D.eras (chronological order).
+     Any era id not in D.eras is placed last. */
+  var eraIndex = {};
+  for(var i = 0; i < eras.length; i++){
+    eraIndex[eras[i].id] = i;
+  }
+  return out.sort(function(a, b){
+    var aIdx = eraIndex.hasOwnProperty(a) ? eraIndex[a] : eras.length;
+    var bIdx = eraIndex.hasOwnProperty(b) ? eraIndex[b] : eras.length;
+    if(aIdx !== bIdx) return aIdx - bIdx;
+    /* Preserve original order for unknown eras (those with the same index). */
+    return 0;
+  });
 }
 
 function gradeBand(D, chip, eraId){
