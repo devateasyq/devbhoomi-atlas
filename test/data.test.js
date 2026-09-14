@@ -212,3 +212,24 @@ test("every marker kind on the map has a LAYERS entry", () => {
     assert.ok(kit.LAYER_BY_KIND[k], "MAP.places has kind " + k + " with no matching LAYERS entry in app/mapkit.js");
   }
 });
+
+/* The Campaign band pass grades a placement against era date ranges. The
+   display `span` strings are not one parseable format ("c. 40,000 BCE – 1000
+   BCE", "1948 – present"), so the numeric range is authored alongside them. */
+test("every era carries a numeric span that brackets its display span", () => {
+  for(const e of D.eras){
+    assert.equal(typeof e.y0, "number", e.id + " has no numeric y0");
+    assert.equal(typeof e.y1, "number", e.id + " has no numeric y1");
+    assert.ok(e.y1 > e.y0, e.id + " has an inverted span: " + e.y0 + "–" + e.y1);
+  }
+});
+
+test("every battle year falls inside some era span, or its own authored era", () => {
+  const spans = Object.fromEntries(D.eras.map(e => [e.id, e]));
+  for(const b of D.battles){
+    const own = spans[b.era];
+    assert.ok(own, b.id + " points at missing era " + b.era);
+    const inSome = D.eras.some(e => b.y >= e.y0 && b.y <= e.y1);
+    assert.ok(inSome, b.id + " (y=" + b.y + ") falls in no era span at all");
+  }
+});
