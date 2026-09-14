@@ -757,3 +757,24 @@ button.brow:hover .blab{color:var(--accent)}
   border-radius:8px;border:1px solid var(--line);background:var(--ground);color:var(--ink);resize:vertical}
 #cardlg select{width:100%;font:inherit;font-size:13px;padding:8px 10px;border-radius:8px;
   border:1px solid var(--line);background:var(--ground);color:var(--ink);margin-bottom:10px}
+
+/* ---------- exams ---------- */
+.exintro{max-width:62ch;font-size:14.5px;line-height:1.6;color:var(--ink-2);margin:0 0 22px}
+.exlist{display:grid;gap:14px}
+.exrow{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:16px 18px}
+.exhead{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px}
+.exhead h3{font-family:var(--f-display);font-size:18px;font-weight:600;margin:0}
+.exbody{font-family:var(--f-mono);font-size:11px;letter-spacing:.04em;color:var(--accent);
+  text-decoration:underline;text-underline-offset:2px}
+.exlevel{font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);margin-top:4px}
+.exwhat{font-size:13.5px;line-height:1.55;color:var(--ink-2);margin:10px 0 12px;max-width:70ch}
+.exfoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+/* What we have and what we do not, said in the same breath and the same size. */
+.exhas{font-family:var(--f-mono);font-size:11px;color:var(--good)}
+.exnot{font-family:var(--f-mono);font-size:11px;color:var(--ink-3)}
+.exlinks{display:flex;flex-wrap:wrap;gap:6px}
+.exlink{font-size:11.5px;padding:4px 10px;border-radius:14px;border:1px solid var(--line);
+  background:var(--ground);color:var(--ink-2);cursor:pointer;font-family:inherit}
+.exlink:hover{border-color:var(--accent-line);color:var(--accent)}
+.exnote{margin-top:20px;font-size:11.5px;line-height:1.6;color:var(--ink-3);max-width:62ch}

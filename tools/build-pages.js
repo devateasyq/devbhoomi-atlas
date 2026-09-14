@@ -149,7 +149,12 @@ function page(id, entry){
   const k = KINDS[kind] || {lb: "Record", view: "map"};
   const name = nameOf(r);
   const title = name + " — " + k.lb + " | Parikrama Path";
-  const desc = clamp(firstProse(r) || (name + ", in the Himachal Pradesh section of the HPAS syllabus."), 155);
+  /* Used by the records that carry no prose block. It is a meta
+     description on a real page, so it must not describe the site as
+     HPAS-only any more than the hand-written ones do. */
+  const desc = clamp(firstProse(r) ||
+    (name + " \u2014 " + (KINDS[entry.kind] || {lb:"record"}).lb.toLowerCase() +
+     " in the Himachal Pradesh material shared by HPAS, HPRCA, Police and TET exams."), 155);
   const url = SITE + "/r/" + id + "/";
   const app = SITE + "/#/" + k.view + "/" + id;
 
@@ -186,9 +191,10 @@ function page(id, entry){
 ${factsHtml(r, kind)}${blocksHtml(r)}
 <a class="cta" href="${esc(app)}">Open in the atlas &rarr;</a>
 <footer>
-Revision notes for the <b>Himachal Pradesh</b> portion of the HPPSC <b>HPAS</b> syllabus.
+Revision notes for the <b>Himachal Pradesh</b> portion of HP competitive exam
+syllabuses — HPAS, HPRCA, Police and TET.
 <a href="${SITE}/">See the whole atlas</a> — a clickable map, five years of past papers,
-and a fact feed.
+and a fact feed — or <a href="${SITE}/exams/">which exams it helps with</a>.
 </footer>
 </main>
 </body>
@@ -209,6 +215,67 @@ for(const [id, entry] of IDX){
   urls.push(SITE + "/r/" + id + "/");
   n++;
 }
+
+/* The exams page, pre-rendered for the same reason the records are: a
+   crawler never runs the app, and "HPRCA Patwari syllabus" is searched
+   far more than "HPAS". */
+const {EXAMS} = require("../data/exams.js");
+const examRows = EXAMS.rows.map(e =>
+  '<div class="exrow"><h2>' + esc(e.name) + "</h2>\n" +
+  '<p class="who"><a href="' + esc(e.bodyUrl) + '" rel="noopener">' + esc(e.body) +
+    "</a> · " + esc(e.level) + "</p>\n" +
+  "<p>" + esc(e.what) + "</p>\n" +
+  "<p class=\"held\">" + (e.papers && e.papers.n
+    ? esc(e.papers.n + " past papers here, " + e.papers.years)
+    : "No past papers here yet — the shared Himachal material applies in full") +
+  "</p></div>").join("\n");
+
+const examsDesc = "Which Himachal Pradesh exams this atlas helps with — HPAS, " +
+  "HPRCA Patwari, Panchayat Secretary, JOA and Clerk, HP Police Constable and " +
+  "HP TET — and exactly what it holds for each.";
+const examsUrl = SITE + "/exams/";
+const examsHtml = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Which HP exams this helps with | Parikrama Path</title>
+<meta name="description" content="${esc(examsDesc)}">
+<link rel="canonical" href="${esc(examsUrl)}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Parikrama Path">
+<meta property="og:url" content="${esc(examsUrl)}">
+<meta property="og:title" content="Which HP exams this helps with">
+<meta property="og:description" content="${esc(examsDesc)}">
+<meta property="og:image" content="${SITE}/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Which HP exams this helps with">
+<meta name="twitter:description" content="${esc(examsDesc)}">
+<link rel="icon" href="${SITE}/icon.svg" type="image/svg+xml">
+<style>${CSS}
+.exrow{border-top:1px solid var(--line);padding-top:16px;margin-top:20px}
+.who{font-size:14px}.held{font-size:14px;color:var(--dim)}</style>
+</head>
+<body>
+<main>
+<a class="home" href="${SITE}/">&larr; Parikrama Path</a>
+<div class="kick">Himachal Pradesh</div>
+<h1>Which exams this helps with</h1>
+<p>Everything here is the Himachal Pradesh material these exams share — geography,
+history, polity, economy and culture. The past-paper bank is HPAS only, and each
+exam below says plainly what is here for it.</p>
+${examRows}
+<a class="cta" href="${SITE}/">Open the atlas &rarr;</a>
+<footer>Conducting bodies last checked ${esc(EXAMS.updated)}. They do change —
+the state's previous staff selection board was dissolved in 2023 and its
+recruitment moved to HPRCA — so confirm against the board's own site before you rely on it.</footer>
+</main>
+</body>
+</html>
+`;
+fs.mkdirSync(path.join(ROOT, "exams"), {recursive: true});
+fs.writeFileSync(path.join(ROOT, "exams", "index.html"), examsHtml);
+urls.push(examsUrl);
 
 const today = new Date().toISOString().slice(0, 10);
 const sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n' +

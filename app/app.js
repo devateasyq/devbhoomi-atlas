@@ -362,6 +362,7 @@ const NAV = [
   /* Earns a rail slot where the profile did not: this is syllabus material,
      not the reader's own. Not in the dock, which stays four and a search. */
   {id:"compare",  lb:"Compare",  ic:'<path d="M3 5h18M3 12h18M3 19h18"/><path d="M9 5v14M15 5v14"/>'},
+  {id:"exams",    lb:"Exams",    ic:'<path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/>'},
   {id:"rounds",   lb:"Rounds", mob:1,   ic:'<path d="M12 3a9 9 0 109 9"/><path d="M12 7a5 5 0 105 5"/><circle cx="12" cy="12" r="1.6"/>'},
   {id:"revise",   lb:"Revise", mob:1,   ic:'<path d="M4 5.5A2.5 2.5 0 016.5 3H19v15H6.5A2.5 2.5 0 004 20.5z"/><path d="M9 8h6"/>'},
   /* mobOnly: neither nav carries it. The rail is already nine deep, and the
@@ -378,10 +379,10 @@ const SUB = {home:"Start here", map:"12 districts · "+D.states.length+" hill st
              timeline:"Prehistory to 1971", battles:"Wars, sieges and treaties",
              topics:"Notes by subject", people:"Rulers, rebels, builders",
              trends:"What the papers actually ask", rounds:"One fact at a time",
-             compare:"Side by side, sortable", revise:"Past papers and quiz"};
+             compare:"Side by side, sortable", exams:"Which exam this helps with", revise:"Past papers and quiz"};
 const TITLE = {home:"Overview", map:"Atlas", timeline:"Timeline", battles:"Battles & Treaties",
                topics:"Topics", people:"People", trends:"Question Trends", rounds:"Rounds",
-               compare:"Compare", revise:"Revise"};
+               compare:"Compare", exams:"Exams", revise:"Revise"};
 /* Not in NAV: the rail already carries nine entries and the phone bar is
    deliberately four. The header account button is the way in. */
 TITLE.profile = "Your profile";
@@ -393,9 +394,15 @@ function writeHash(){
   const h = currentHash();
   if(location.hash !== h) location.hash = h;
 }
+/* Own keys only. A plain object literal inherits constructor, toString,
+   valueOf and hasOwnProperty, so `TITLE[x]` is truthy for names nobody put
+   there — #/constructor would set the header to the function's source.
+   This has bitten this codebase repeatedly; route every data-sourced key
+   lookup on a literal through here. */
+function has(o, k){ return Object.prototype.hasOwnProperty.call(o, k); }
 function readHash(){
   const parts = location.hash.replace(/^#\/?/,"").split("/").filter(Boolean);
-  const view = parts[0] && TITLE[parts[0]] ? parts[0] : "home";
+  const view = parts[0] && has(TITLE, parts[0]) ? parts[0] : "home";
   const id = parts[1] && IDX.has(parts[1]) ? parts[1] : null;
   return {view, id};
 }
@@ -1269,9 +1276,14 @@ function mountMap(){
         all = document.createElement("button");
         all.type = "button"; all.className = "lgall"; all.id = "lgall";
         all.textContent = "Show all";
+        /* .lghint is a grandchild of .maplegend, not a child: inserting
+           before it from legendEl throws NotFoundError and takes the rest
+           of commit() — applyLayers() included — down with it. Insert into
+           the hint's own parent, which is where the rendered markup puts
+           the button too. */
         const hint = legendEl.querySelector(".lghint");
-        if(hint) legendEl.insertBefore(all, hint);
-        else legendEl.appendChild(all);
+        if(hint && hint.parentNode) hint.parentNode.insertBefore(all, hint);
+        else (legendEl.querySelector(".lgbody") || legendEl).appendChild(all);
       } else if(!S.mapOff.length && all) all.remove();
       applyLayers();
       applyFocus();
@@ -1577,6 +1589,39 @@ function cmpTabs(active){
       esc(k === "economy" ? "Economic Survey" : CMP[k].lb)+'</button>').join('');
 }
 
+/* One row per exam, each stating what this atlas actually holds for it.
+   The coverage line is not decoration: somebody arriving from a search
+   for "HPRCA Patwari syllabus" has to be able to tell in one screen what
+   they are getting and what they are not. */
+function viewExams(){
+  const rows = (typeof EXAMS !== "undefined" ? EXAMS.rows : []).map(e => {
+    const held = e.papers && e.papers.n
+      ? '<span class="exhas">'+num(e.papers.n)+' past papers · '+esc(e.papers.years)+'</span>'
+      : '<span class="exnot">No past papers here yet</span>';
+    const links = (e.covers || []).map(v =>
+      '<button class="exlink" type="button" data-view="'+esc(v)+'">'+
+        esc(has(TITLE, v) ? TITLE[v] : v)+'</button>').join('');
+    return '<div class="exrow">'+
+      '<div class="exhead"><h3>'+esc(e.name)+'</h3>'+
+        '<a class="exbody" href="'+esc(e.bodyUrl)+'" target="_blank" rel="noopener">'+
+          esc(e.body)+'</a></div>'+
+      '<div class="exlevel">'+esc(e.level)+'</div>'+
+      '<p class="exwhat">'+esc(e.what)+'</p>'+
+      '<div class="exfoot">'+held+'<div class="exlinks">'+links+'</div></div>'+
+    '</div>';
+  }).join('');
+  const when = typeof EXAMS !== "undefined" ? EXAMS.updated : "";
+  return '<div class="pagewrap"><p class="exintro">'+
+    'Everything in this atlas is the <b>Himachal Pradesh</b> material these exams '+
+    'share — geography, history, polity, economy and culture. The past-paper bank '+
+    'is HPAS only, and each exam below says plainly what is here for it.</p>'+
+    '<div class="exlist">'+rows+'</div>'+
+    '<p class="exnote">Conducting bodies last checked '+esc(when)+'. '+
+    'They do change — the state\'s previous staff selection board was dissolved in '+
+    '2023 and its recruitment moved to HPRCA — '+
+    'so confirm against the board\'s own site, linked above, before you rely on it.</p>'+
+    '</div>';
+}
 function viewCompare(){
   if(S.cmpTab === "economy") return viewEconomy();
   const tab = CMP[S.cmpTab] ? S.cmpTab : "districts";
@@ -1670,7 +1715,7 @@ function viewHome(){
   '<div class="cover">'+
     '<img class="covpic" src="'+cpic.s+'" alt="" decoding="async">'+
     '<div class="covbody">'+
-      '<div class="kicker">HPPSC · HPAS 2026 · Himachal Pradesh</div>'+
+      '<div class="kicker">Himachal Pradesh · competitive exams</div>'+
       '<h1>Everything Himachal, connected.</h1>'+
       '<p class="pitch">Revision, not repetition.</p>'+
       teaser+
@@ -2568,6 +2613,7 @@ function render(){
   else if(S.view === "rounds")  { s.innerHTML = viewRounds(); mountRounds(); }
   else if(S.view === "revise")    s.innerHTML = viewRevise();
   else if(S.view === "compare") s.innerHTML = viewCompare();
+  else if(S.view === "exams") s.innerHTML = viewExams();
   else if(S.view === "profile") { s.innerHTML = viewProfile(); mountProfile(); }
 }
 
